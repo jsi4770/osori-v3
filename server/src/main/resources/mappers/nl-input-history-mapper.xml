@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="nlInputHistoryMapper">
+
+	<insert id="upsert" parameterType="NlInputHistory">
+		INSERT INTO NL_INPUT_HISTORY (
+			HISTORY_ID,
+			USER_ID,
+			TYPE,
+			INPUT_TEXT,
+			USE_COUNT,
+			UPDATED_AT
+		) VALUES (
+			nextval('SEQ_NL_INPUT_HISTORY'),
+			#{userId},
+			#{type},
+			#{inputText},
+			1,
+			CURRENT_TIMESTAMP
+		)
+		ON CONFLICT (USER_ID, TYPE, INPUT_TEXT) DO UPDATE SET
+			USE_COUNT = NL_INPUT_HISTORY.USE_COUNT + 1,
+			UPDATED_AT = CURRENT_TIMESTAMP
+	</insert>
+
+	<select id="selectTopTexts" resultType="string">
+		SELECT INPUT_TEXT
+		FROM NL_INPUT_HISTORY
+		WHERE USER_ID = #{userId}
+		  AND TYPE = #{type}
+		ORDER BY USE_COUNT DESC, UPDATED_AT DESC
+		FETCH FIRST #{limit} ROWS ONLY
+	</select>
+
+</mapper>

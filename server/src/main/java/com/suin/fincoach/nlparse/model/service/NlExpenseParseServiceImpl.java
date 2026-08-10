@@ -1,6 +1,8 @@
 package com.suin.fincoach.nlparse.model.service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +16,9 @@ import org.springframework.stereotype.Service;
 
 import com.suin.fincoach.coaching.model.service.GeminiClient;
 import com.suin.fincoach.nlparse.model.dao.MerchantCacheDao;
+import com.suin.fincoach.nlparse.model.dao.NlInputHistoryDao;
 import com.suin.fincoach.nlparse.model.vo.MerchantCategoryCache;
+import com.suin.fincoach.nlparse.model.vo.NlInputHistory;
 import com.suin.fincoach.nlparse.util.RegexExpenseParser;
 
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +36,9 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 	private MerchantCacheDao merchantCacheDao;
 
 	@Autowired
+	private NlInputHistoryDao nlInputHistoryDao;
+
+	@Autowired
 	private SqlSessionTemplate sqlSession;
 
 	@Value("${coaching.llm.enabled:false}")
@@ -39,6 +46,14 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 
 	// 이 값 미만이면 원탭 확인 UI를 거치고, 이상이면 확인 없이 바로 저장한다.
 	private static final double CONFIDENCE_THRESHOLD = 0.7;
+
+	// 예시 칩 개수(개인화 이력이 있을 때). 정적 기본 예시 개수와 맞춤.
+	private static final int EXAMPLE_LIMIT = 3;
+
+	// 서버 기본 타임존이 흔들려도(Railway 등) "오늘"은 항상 한국 기준이어야 한다 —
+	// FincoachApplication에서 JVM 기본 타임존을 이미 Asia/Seoul로 고정했지만, 여기서도
+	// 명시적으로 지정해 이 클래스만 봐도 의도가 분명하도록 한다.
+	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
 	// app/src/constants/categories.js의 EXPENSE_CATEGORIES/INCOME_CATEGORIES와 동일하게 유지해야 함.
 	private static final List<String> EXPENSE_CATEGORIES = List.of(
@@ -52,7 +67,7 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 	public Map<String, Object> parse(int userId, String text, String type) {
 		String txType = normalizeType(type);
 		List<String> categories = categoriesFor(txType);
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(KST);
 		Integer regexAmount = RegexExpenseParser.parseAmount(text);
 
 		JSONObject llm = null;
@@ -128,16 +143,34 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 	}
 
 	@Override
-	public void learn(int userId, String merchant, String category, String type) {
-		if (merchant == null || merchant.isBlank() || category == null || category.isBlank()) {
-			return;
+	public void learn(int userId, String merchant, String category, String type, String rawText) {
+		String txType = normalizeType(type);
+
+		if (merchant != null && !merchant.isBlank() && category != null && !category.isBlank()) {
+			MerchantCategoryCache cache = MerchantCategoryCache.builder()
+					.userId(userId)
+					.merchant(normalizeMerchant(txType, merchant))
+					.category(category)
+					.build();
+			merchantCacheDao.upsert(sqlSession, cache);
 		}
-		MerchantCategoryCache cache = MerchantCategoryCache.builder()
-				.userId(userId)
-				.merchant(normalizeMerchant(normalizeType(type), merchant))
-				.category(category)
-				.build();
-		merchantCacheDao.upsert(sqlSession, cache);
+
+		// 원문 문장도 함께 기록해 예시 칩을 개인화한다. merchant 유무와 무관하게 독립적으로 동작.
+		if (rawText != null && !rawText.isBlank()) {
+			String trimmed = rawText.trim();
+			NlInputHistory history = NlInputHistory.builder()
+					.userId(userId)
+					.type(txType)
+					.inputText(trimmed.length() > 200 ? trimmed.substring(0, 200) : trimmed)
+					.build();
+			nlInputHistoryDao.upsert(sqlSession, history);
+		}
+	}
+
+	@Override
+	public List<String> getExamples(int userId, String type) {
+		List<String> texts = nlInputHistoryDao.selectTopTexts(sqlSession, userId, normalizeType(type), EXAMPLE_LIMIT);
+		return texts == null ? Collections.emptyList() : texts;
 	}
 
 	private String normalizeType(String type) {

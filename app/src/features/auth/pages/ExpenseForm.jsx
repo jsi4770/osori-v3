@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ExpenseForm.css';
 import transApi from '../../../api/transApi';
@@ -26,7 +26,20 @@ const ExpenseForm = () => {
   const [nlParsing, setNlParsing] = useState(false);
   // 지출 등록의 기본 화면은 AI 빠른 입력 — 영수증/직접 입력은 필요할 때만 펼친다.
   const [showManualEntry, setShowManualEntry] = useState(false);
+  // 이 사용자가 자주/최근에 쓴 문장 — 있으면 정적 예시 대신 이걸 보여준다.
+  const [personalExamples, setPersonalExamples] = useState([]);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    const apiType = formData.type === '수입' ? 'IN' : 'OUT';
+    let cancelled = false;
+    nlParseApi.getExamples({ userId: user.userId, type: apiType })
+      .then((data) => { if (!cancelled) setPersonalExamples(data?.examples || []); })
+      .catch(() => { if (!cancelled) setPersonalExamples([]); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId, formData.type]);
 
   const getToday = () => {
     const date = new Date();
@@ -194,12 +207,14 @@ const ExpenseForm = () => {
         excludeAnalysis: 'N',
         userId: user?.userId,
       });
-      if (parsed.merchant) {
-        // 학습은 저장 성공을 막지 않도록 실패해도 조용히 무시
-        nlParseApi.learn({
-          userId: user?.userId, merchant: parsed.merchant, category: parsed.category, type: apiType,
-        }).catch(() => {});
-      }
+      // merchant -> category 학습 + 예시 칩 개인화용 원문 기록. 저장 성공을 막지 않도록 실패해도 조용히 무시.
+      nlParseApi.learn({
+        userId: user?.userId,
+        merchant: parsed.merchant,
+        category: parsed.category,
+        type: apiType,
+        text: nlText,
+      }).catch(() => {});
       toast('저장되었습니다!', { type: 'success' });
       setNlText('');
       setNlPreviewAmount(null);
@@ -340,7 +355,10 @@ const ExpenseForm = () => {
               )}
 
               <div className="nl-hero-examples">
-                {(formData.type === '수입' ? NL_INCOME_EXAMPLES : NL_EXPENSE_EXAMPLES).map((example) => (
+                {(personalExamples.length > 0
+                  ? personalExamples
+                  : (formData.type === '수입' ? NL_INCOME_EXAMPLES : NL_EXPENSE_EXAMPLES)
+                ).map((example) => (
                   <button
                     key={example}
                     type="button"

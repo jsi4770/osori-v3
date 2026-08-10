@@ -1,5 +1,6 @@
 package com.suin.fincoach.nlparse.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,9 +8,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.suin.fincoach.coaching.model.service.GeminiCallBudget;
@@ -53,17 +56,25 @@ public class NlExpenseParseController {
 		return ResponseEntity.ok(service.parse(userId, text, type));
 	}
 
-	// 사용자가 저장(자동/확인 후)한 merchant -> category를 학습 캐시에 반영. LLM을 호출하지 않으므로
-	// 일일 캡을 소모하지 않는다.
+	// 사용자가 저장(자동/확인 후)한 merchant -> category, 그리고 원문 문장(text)을 학습에 반영.
+	// LLM을 호출하지 않으므로 일일 캡을 소모하지 않는다.
 	@PostMapping("/learn")
 	public ResponseEntity<?> learn(@RequestBody Map<String, Object> body) {
 		int userId = toInt(body.get("userId"));
 		String merchant = body.get("merchant") == null ? null : String.valueOf(body.get("merchant"));
 		String category = body.get("category") == null ? null : String.valueOf(body.get("category"));
 		String type = body.get("type") == null ? "OUT" : String.valueOf(body.get("type"));
+		String text = body.get("text") == null ? null : String.valueOf(body.get("text"));
 
-		service.learn(userId, merchant, category, type);
+		service.learn(userId, merchant, category, type, text);
 		return ResponseEntity.ok(Map.of("ok", true));
+	}
+
+	// 빠른 입력창 아래 예시 칩 개인화 — 이 사용자가 자주/최근에 쓴 문장. LLM을 호출하지 않는다.
+	@GetMapping("/examples")
+	public ResponseEntity<?> examples(@RequestParam int userId, @RequestParam(defaultValue = "OUT") String type) {
+		List<String> examples = service.getExamples(userId, type);
+		return ResponseEntity.ok(Map.of("examples", examples));
 	}
 
 	private int toInt(Object value) {

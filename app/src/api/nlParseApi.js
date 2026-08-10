@@ -8,8 +8,13 @@ export const nlParseApi = {
         return response.data;
     },
 
-    learn: async ({ userId, merchant, category, type = 'OUT' }) => {
-        const response = await api.post('/nlparse/learn', { userId, merchant, category, type });
+    learn: async ({ userId, merchant, category, type = 'OUT', text }) => {
+        const response = await api.post('/nlparse/learn', { userId, merchant, category, type, text });
+        return response.data;
+    },
+
+    getExamples: async ({ userId, type = 'OUT' }) => {
+        const response = await api.get('/nlparse/examples', { params: { userId, type } });
         return response.data;
     },
 };
