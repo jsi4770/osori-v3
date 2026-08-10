@@ -100,12 +100,12 @@
 
 .nl-hero-input {
   flex: 1;
-  height: 64px;
-  padding: 0 22px;
+  height: 84px;
+  padding: 0 24px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-family: inherit;
   color: var(--text-main);
   box-sizing: border-box;

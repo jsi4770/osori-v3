@@ -43,13 +43,14 @@ public class NlExpenseParseController {
 
 		int userId = toInt(body.get("userId"));
 		String text = body.get("text") == null ? null : String.valueOf(body.get("text")).trim();
+		String type = body.get("type") == null ? "OUT" : String.valueOf(body.get("type"));
 
 		if (text == null || text.isBlank()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Map.of("ok", false, "errorReason", "EMPTY_TEXT", "message", "입력이 비어 있습니다."));
 		}
 
-		return ResponseEntity.ok(service.parse(userId, text));
+		return ResponseEntity.ok(service.parse(userId, text, type));
 	}
 
 	// 사용자가 저장(자동/확인 후)한 merchant -> category를 학습 캐시에 반영. LLM을 호출하지 않으므로
@@ -59,8 +60,9 @@ public class NlExpenseParseController {
 		int userId = toInt(body.get("userId"));
 		String merchant = body.get("merchant") == null ? null : String.valueOf(body.get("merchant"));
 		String category = body.get("category") == null ? null : String.valueOf(body.get("category"));
+		String type = body.get("type") == null ? "OUT" : String.valueOf(body.get("type"));
 
-		service.learn(userId, merchant, category);
+		service.learn(userId, merchant, category, type);
 		return ResponseEntity.ok(Map.of("ok", true));
 	}
 

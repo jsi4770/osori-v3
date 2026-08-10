@@ -9,7 +9,8 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/catego
 import { useFeedback } from '../../../context/FeedbackContext';
 
 // 문장 입력이 감이 안 잡히는 사용자를 위한 예시 — 탭하면 그대로 입력창에 채워진다.
-const NL_EXAMPLES = ['스타벅스 아메리카노 5천원', '어제 친구랑 밥 3만원', '택시 12000원'];
+const NL_EXPENSE_EXAMPLES = ['스타벅스 아메리카노 5천원', '어제 친구랑 밥 3만원', '택시 12000원'];
+const NL_INCOME_EXAMPLES = ['이번 달 월급 250만원', '용돈 10만원', '예금 이자 3200원'];
 
 const ExpenseForm = () => {
   const { user } = useAuth();
@@ -57,12 +58,11 @@ const ExpenseForm = () => {
       originalAmount: '',
       memo: ''
     });
-    if (type === '수입') {
-      setPreviewUrl(null);
-    } else {
-      // 지출로 돌아오면 AI 빠른 입력 화면부터 다시 보여준다.
-      setShowManualEntry(false);
-    }
+    if (type === '수입') setPreviewUrl(null);
+    // 탭을 바꾸면 항상 AI 빠른 입력 화면부터 다시 보여준다(수입/지출 둘 다 지원).
+    setShowManualEntry(false);
+    setNlText('');
+    setNlPreviewAmount(null);
   };
 
   const handleChange = (e) => {
@@ -181,11 +181,11 @@ const ExpenseForm = () => {
     setNlPreviewAmount(previewAmountFromText(example));
   };
 
-  // 파싱 결과를 그대로 저장(자동 저장 또는 원탭 확인 "저장" 선택 시)
-  const saveParsedExpense = async (parsed) => {
+  // 파싱 결과를 그대로 저장(자동 저장 또는 원탭 확인 "저장" 선택 시). apiType: "IN" | "OUT"
+  const saveParsedExpense = async (parsed, apiType) => {
     try {
       await transApi.myTransSave({
-        type: 'OUT',
+        type: apiType,
         transDate: parsed.date,
         title: parsed.merchant || parsed.memo || nlText,
         originalAmount: parsed.amount,
@@ -196,7 +196,9 @@ const ExpenseForm = () => {
       });
       if (parsed.merchant) {
         // 학습은 저장 성공을 막지 않도록 실패해도 조용히 무시
-        nlParseApi.learn({ userId: user?.userId, merchant: parsed.merchant, category: parsed.category }).catch(() => {});
+        nlParseApi.learn({
+          userId: user?.userId, merchant: parsed.merchant, category: parsed.category, type: apiType,
+        }).catch(() => {});
       }
       toast('저장되었습니다!', { type: 'success' });
       setNlText('');
@@ -208,15 +210,17 @@ const ExpenseForm = () => {
   };
 
   // 확신이 낮을 때 "수정" 선택 시 — 자동 저장하지 않고 아래 수동 폼에 미리 채워 사용자가 직접 확인/수정하게 함
-  const applyParsedToManualForm = (parsed) => {
-    setCurrentCategories(EXPENSE_CATEGORIES);
+  const applyParsedToManualForm = (parsed, apiType) => {
+    const isIncome = apiType === 'IN';
+    const categories = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    setCurrentCategories(categories);
     setFormData(prev => ({
       ...prev,
-      type: '지출',
+      type: isIncome ? '수입' : '지출',
       transDate: parsed.date || today,
       title: parsed.merchant || parsed.memo || nlText,
       originalAmount: parsed.amount || '',
-      category: EXPENSE_CATEGORIES.includes(parsed.category) ? parsed.category : '기타',
+      category: categories.includes(parsed.category) ? parsed.category : '기타',
       memo: parsed.memo || nlText,
     }));
     setShowManualEntry(true);
@@ -227,9 +231,11 @@ const ExpenseForm = () => {
     const text = nlText.trim();
     if (!text || nlParsing) return;
 
+    const apiType = formData.type === '수입' ? 'IN' : 'OUT';
+
     setNlParsing(true);
     try {
-      const result = await nlParseApi.parse({ userId: user?.userId, text });
+      const result = await nlParseApi.parse({ userId: user?.userId, text, type: apiType });
 
       if (!result.ok) {
         toast(result.message || '금액을 찾지 못했어요. 다시 입력해주세요.', { type: 'error' });
@@ -243,13 +249,13 @@ const ExpenseForm = () => {
           `${result.date}로 저장할까요?`;
         const ok = await confirm(summary, { confirmLabel: '저장', cancelLabel: '수정' });
         if (ok) {
-          await saveParsedExpense(result);
+          await saveParsedExpense(result, apiType);
         } else {
-          applyParsedToManualForm(result);
+          applyParsedToManualForm(result, apiType);
           toast('아래에서 확인하고 저장해주세요.', { type: 'info' });
         }
       } else {
-        await saveParsedExpense(result);
+        await saveParsedExpense(result, apiType);
       }
     } catch (error) {
       toast(error?.response?.data?.message || '인식에 실패했어요. 직접 입력해주세요.', { type: 'error' });
@@ -298,17 +304,23 @@ const ExpenseForm = () => {
           </div>
         </div>
 
-        {formData.type === '지출' && !showManualEntry && (
+        {!showManualEntry && (
           <div className="nl-hero">
             <form className="nl-hero-form" onSubmit={handleNlSubmit}>
-              <h3 className="nl-hero-title">이번 지출, 문장으로 말해보세요</h3>
-              <p className="nl-hero-subtitle">금액·카테고리·날짜까지 AI가 알아서 채워드려요</p>
+              <h3 className="nl-hero-title">
+                {formData.type === '수입' ? '이번 수입, 문장으로 말해보세요' : '이번 지출, 문장으로 말해보세요'}
+              </h3>
+              <p className="nl-hero-subtitle">
+                {formData.type === '수입'
+                  ? '금액·출처·날짜까지 AI가 알아서 채워드려요'
+                  : '금액·카테고리·날짜까지 AI가 알아서 채워드려요'}
+              </p>
 
               <div className="nl-hero-input-row">
                 <input
                   type="text"
                   className="nl-hero-input"
-                  placeholder="예: 스타벅스 아메리카노 5천원"
+                  placeholder={formData.type === '수입' ? '예: 이번 달 월급 250만원' : '예: 스타벅스 아메리카노 5천원'}
                   value={nlText}
                   onChange={handleNlTextChange}
                   disabled={nlParsing}
@@ -328,7 +340,7 @@ const ExpenseForm = () => {
               )}
 
               <div className="nl-hero-examples">
-                {NL_EXAMPLES.map((example) => (
+                {(formData.type === '수입' ? NL_INCOME_EXAMPLES : NL_EXPENSE_EXAMPLES).map((example) => (
                   <button
                     key={example}
                     type="button"
@@ -343,18 +355,16 @@ const ExpenseForm = () => {
             </form>
 
             <button type="button" className="nl-manual-link" onClick={() => setShowManualEntry(true)}>
-              영수증으로 등록하거나 직접 입력할게요
+              {formData.type === '수입' ? '직접 입력할게요' : '영수증으로 등록하거나 직접 입력할게요'}
             </button>
           </div>
         )}
 
-        {(formData.type === '수입' || showManualEntry) && (
+        {showManualEntry && (
           <>
-            {formData.type === '지출' && (
-              <button type="button" className="nl-manual-link nl-back-link" onClick={() => setShowManualEntry(false)}>
-                ← AI로 빠르게 입력하기
-              </button>
-            )}
+            <button type="button" className="nl-manual-link nl-back-link" onClick={() => setShowManualEntry(false)}>
+              ← AI로 빠르게 입력하기
+            </button>
 
             {formData.type === '지출' && (
               <div
