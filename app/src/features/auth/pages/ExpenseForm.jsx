@@ -4,7 +4,7 @@ import './ExpenseForm.css';
 import transApi from '../../../api/transApi';
 import nlParseApi from '../../../api/nlParseApi';
 import { useAuth } from '../../../context/AuthContext';
-import { IconReceipt } from '../../../components/icons';
+import { IconReceipt, IconArrowUp } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
 import { useFeedback } from '../../../context/FeedbackContext';
 
@@ -331,10 +331,10 @@ const ExpenseForm = () => {
                   : '금액·카테고리·날짜까지 AI가 알아서 채워드려요'}
               </p>
 
-              <div className="nl-hero-input-row">
+              <div className="nl-prompt-bar">
                 <input
                   type="text"
-                  className="nl-hero-input"
+                  className="nl-prompt-input"
                   placeholder={formData.type === '수입' ? '예: 이번 달 월급 250만원' : '예: 스타벅스 아메리카노 5천원'}
                   value={nlText}
                   onChange={handleNlTextChange}
@@ -343,10 +343,11 @@ const ExpenseForm = () => {
                 />
                 <button
                   type="submit"
-                  className="nl-hero-btn"
+                  className="nl-prompt-send"
                   disabled={nlParsing || !nlText.trim()}
+                  aria-label="등록"
                 >
-                  {nlParsing ? '인식 중…' : '등록'}
+                  {nlParsing ? <span className="nl-prompt-spinner" /> : <IconArrowUp size={22} />}
                 </button>
               </div>
 
