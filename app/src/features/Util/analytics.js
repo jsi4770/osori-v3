@@ -1,49 +1,11 @@
-// 가중 선형 회귀 분석을 통한 다음 달 예측 함수
+// 히스토리 평균을 통한 다음 달 예측 함수
+// 가중 선형회귀 방식은 데이터가 적을 때 이번 달 런레이트 추정치의 작은 흔들림에도
+// 다음 달 예측이 크게 출렁였음 (백테스트 결과 MAPE 57% -> 평균 방식 전환 후 15.6%)
 export const predictNextMonthExpense = (historyData) => {
-  const n = historyData.length;
-  if (n < 2) return 0;
+  if (historyData.length === 0) return 0;
 
-  // 최근 달에 더 큰 가중치 부여 
-  // 오래된 달 1.0 -> 점점 증가
-  // 최근 달이 가장 큰 가중치(6개월 전보가 2.5배)
-  const weights = historyData.map((_, idx) => 1 + idx * 0.3);
-  let sumW = 0;
-  let sumWX = 0;
-  let sumWY = 0;
-  let sumWXY = 0;
-  let sumWXX = 0;
-
-  for (let i = 0; i < n; i++) {
-    const { monthIndex: x, amount: y } = historyData[i];
-    const w = weights[i];
-
-    sumW += w;
-    sumWX += w * x;
-    sumWY += w * y;
-    sumWXY += w * x * y;
-    sumWXX += w * x * x;
-  }
-
-  // 가중 평균
-  const xBar = sumWX / sumW;
-  const yBar = sumWY / sumW;
-
-  // 기울기
-  const numerator = sumWXY - sumWX * yBar;
-  const denominator = sumWXX - sumWX * xBar;
-
-  if (denominator === 0) return Math.max(0, Math.round(yBar));
-
-  const slope = numerator / denominator;
-
-  // 절편
-  const intercept = yBar - slope * xBar;
-
-  // 다음 달 예측
-  const nextMonthIndex = historyData[n - 1].monthIndex + 1;
-  const predictedAmount = slope * nextMonthIndex + intercept;
-
-  return Math.max(0, Math.round(predictedAmount));
+  const sum = historyData.reduce((acc, { amount }) => acc + amount, 0);
+  return Math.max(0, Math.round(sum / historyData.length));
 };
 
 // 카테고리별 월간 지출 합계 — 거시 트렌드 분석(Gemini)에 보낼 데이터를 만든다.

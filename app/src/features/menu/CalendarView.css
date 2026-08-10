@@ -15,6 +15,7 @@
   margin-bottom: 1px !important;
   font-size: 1.8rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--text-strong);
 }
 
@@ -37,6 +38,7 @@
 .calendar-nav-summary strong {
   color: var(--expense-color);
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .calendar-page-container {
@@ -107,6 +109,7 @@
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
+  box-shadow: var(--shadow-1);
 }
 
 .calendar-slide-wrap {
@@ -257,6 +260,7 @@
   font-size: 12px;
   font-weight: bold;
   font-family: inherit;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;      /* 축약 표기가 칸 안에서 줄바꿈/잘림 없이 한 줄로 */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -318,9 +322,10 @@
   color: #fff;
   background: var(--primary-color);
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .ledger-add-btn:hover { opacity: 0.85; }
+.ledger-add-btn:active { transform: scale(0.95); transition-duration: 0.08s; }
 
 .ledger-toggle {
   display: flex;
@@ -338,8 +343,10 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease,
+    transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
 }
+.ledger-toggle-btn:active { transform: scale(0.96); transition-duration: 0.08s; }
 .ledger-toggle-btn.active {
   background: var(--primary-color);
   border-color: var(--primary-color);
@@ -440,6 +447,7 @@
 .ledger-item-amt {
   font-weight: bold;
   font-size: 15px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -542,7 +550,7 @@
 }
 .item-category { font-size: 15px; color: var(--text-main); }
 .item-memo { font-size: 15px; color: var(--text-weak); }
-.item-amount { font-weight: bold; min-width: 85px; text-align: right; font-size: 15px; }
+.item-amount { font-weight: bold; min-width: 85px; text-align: right; font-size: 15px; font-variant-numeric: tabular-nums; }
 
 /* 공휴일 */
 /* 1. 공휴일 및 일요일: 빨간색 (우선순위를 위해 !important 사용 가능) */

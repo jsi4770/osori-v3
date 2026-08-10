@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react"; // useRef 추가
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../../../api/http"; 
+import { apiFetch } from "../../../api/http";
 import { useAuth } from "../../../context/AuthContext";
+import { useFeedback } from "../../../context/FeedbackContext";
 
 export default function KakaoCallback() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { toast } = useFeedback();
   const hasCalled = useRef(false); // 실행 여부 체크용
 
  useEffect(() => {
@@ -25,11 +27,11 @@ export default function KakaoCallback() {
             const status = res?.user?.status;
 
             if(status==="H")  {
-              alert(res.message);
+              toast(res.message, { type: "info" });
             } else if(status==="N"){
-              alert(res.message);
-              navigate("/login", { replace: true }); 
-              return;  
+              toast(res.message, { type: "error" });
+              navigate("/login", { replace: true });
+              return;
             }
             
             login(res); // 일반 로그인 마냥 감
@@ -37,7 +39,7 @@ export default function KakaoCallback() {
           }
         })
         .catch((err) => {
-          alert(err.message || "로그인 처리 중 오류가 발생했습니다.");
+          toast(err.message || "로그인 처리 중 오류가 발생했습니다.", { type: "error" });
           console.error(err);
           navigate("/login");
         });

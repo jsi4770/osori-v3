@@ -2,9 +2,11 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./RegisterPage.module.css";
 import { authApi } from "../../../api/authApi";
+import { useFeedback } from "../../../context/FeedbackContext";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { toast } = useFeedback();
 
   const RULES = {
     loginId: {
@@ -218,7 +220,7 @@ export default function RegisterPage() {
 
       await authApi.register(requestData); 
 
-      alert("회원가입 성공");
+      toast("회원가입 성공", { type: "success" });
       navigate("/login", { replace: true, state: { loginId: form.loginId.trim() }});
     } catch (e) {
       const msg = e?.data?.message || "회원가입 실패";

@@ -5,9 +5,11 @@ import transApi from '../../../api/transApi';
 import { useAuth } from '../../../context/AuthContext';
 import { IconReceipt } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
+import { useFeedback } from '../../../context/FeedbackContext';
 
 const ExpenseForm = () => {
   const { user } = useAuth();
+  const { toast } = useFeedback();
   const navigate = useNavigate();
 
   const [currentCategories, setCurrentCategories] = useState(EXPENSE_CATEGORIES);
@@ -53,7 +55,7 @@ const ExpenseForm = () => {
     const { name, value } = e.target;
 
     if (name === 'originalAmount' && value < 0) {
-      alert("금액은 음수를 입력할 수 없습니다.");
+      toast("금액은 음수를 입력할 수 없습니다.", { type: "error" });
       setFormData(prev => ({ ...prev, [name]: '' }));
       return;
     }
@@ -61,7 +63,7 @@ const ExpenseForm = () => {
     if (name === 'transDate' && value) {
       const today = getToday();
       if (value > today) {
-        alert("미래 날짜는 입력할 수 없습니다.");
+        toast("미래 날짜는 입력할 수 없습니다.", { type: "error" });
         setFormData(prev => ({ ...prev, [name]: today }));
         return;
       }
@@ -116,7 +118,7 @@ const ExpenseForm = () => {
         let finalDate = formattedDate;
 
         if (formattedDate && formattedDate > today) {
-          alert("미래 날짜는 등록할 수 없어 오늘 날짜로 변경되었습니다.");
+          toast("미래 날짜는 등록할 수 없어 오늘 날짜로 변경되었습니다.", { type: "info" });
           finalDate = today;
         }
         setFormData(prev => ({
@@ -126,11 +128,11 @@ const ExpenseForm = () => {
           originalAmount: originalAmount || '',
           category: EXPENSE_CATEGORIES.includes(category) ? category : '기타',
         }));
-        setTimeout(() => alert("입력된 정보가 맞는지 확인해주세요"), 100);
+        toast("입력된 정보가 맞는지 확인해주세요", { type: "info" });
       }
     } catch (error) {
       const message = error?.response?.data?.message || "영수증 분석 실패";
-      alert(message + "\n직접 입력해주세요.");
+      toast(`${message}\n직접 입력해주세요.`, { type: "error" });
     } finally { setIsLoading(false); }
   };
 
@@ -139,7 +141,7 @@ const ExpenseForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.transDate || !formData.originalAmount || Number(formData.originalAmount) <= 0 || !formData.title) {
-      alert("필수 입력 항목을 확인해주세요.");
+      toast("필수 입력 항목을 확인해주세요.", { type: "error" });
       return;
     }
 
@@ -147,7 +149,7 @@ const ExpenseForm = () => {
     const todayDate = new Date(getToday());
 
     if (inputDate > todayDate) {
-      alert("[저장 실패] 미래 날짜는 저장할 수 없습니다.");
+      toast("[저장 실패] 미래 날짜는 저장할 수 없습니다.", { type: "error" });
       return;
     }
 
@@ -156,9 +158,9 @@ const ExpenseForm = () => {
       const transType = isIncome ? 'IN' : 'OUT';
 
       await transApi.myTransSave({ ...formData, userId: user?.userId, type: transType });
-      alert("저장되었습니다!");
+      toast("저장되었습니다!", { type: "success" });
       navigate('/mypage/calendarView');
-    } catch (error) { alert("저장 중 오류 발생"); }
+    } catch (error) { toast("저장 중 오류 발생", { type: "error" }); }
   };
 
   return (
@@ -203,7 +205,7 @@ const ExpenseForm = () => {
               const val = e.target.value;
               if (!val) return;
               if (val > today) {
-                alert("미래 날짜는 등록할 수 없습니다.");
+                toast("미래 날짜는 등록할 수 없습니다.", { type: "error" });
                 setFormData(prev => ({ ...prev, transDate: today }));
               }
             }} required /></div>

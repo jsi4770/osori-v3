@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../../../api/authApi";
-import styles from "./RegisterPage.module.css"; 
+import styles from "./RegisterPage.module.css";
+import { useFeedback } from "../../../context/FeedbackContext";
 
 export default function SocialRegisterPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useFeedback();
 
   
   const RULES = {
@@ -60,7 +62,7 @@ export default function SocialRegisterPage() {
   // 데이터 없으면 입구컷 (이메일 동의항목 권한이 없어 kakaoEmail은 항상 비어있을 수 있으므로 providerUserId로 확인)
   useEffect(() => {
     if (!providerUserId) {
-      alert("카카오 인증 정보가 없습니다. 다시 로그인해주세요.");
+      toast("카카오 인증 정보가 없습니다. 다시 로그인해주세요.", { type: "error" });
       navigate("/login");
     }
   }, [providerUserId, navigate]);
@@ -178,7 +180,7 @@ export default function SocialRegisterPage() {
     setIsLoading(true);
     try {
       await authApi.register(payload);
-      alert("카카오 계정 가입 완료!");
+      toast("카카오 계정 가입 완료!", { type: "success" });
       navigate("/login", { replace: true });
     } catch (err) {
       const msg = err?.data?.message || "가입 실패";

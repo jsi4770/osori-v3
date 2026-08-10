@@ -5,6 +5,7 @@ import SplashScreen from "./components/SplashScreen.jsx";
 import { AppReadyProvider } from "./context/AppReadyContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { FeedbackProvider } from "./context/FeedbackContext.jsx";
 
 // 노트북 등 넓은 화면에서 열어도 실제 폰 화면 비율로 보이도록, 이 폭 이상이면
 // 앱을 직접 렌더링하는 대신 폰 크기 iframe(DesktopFrame) 안에 같은 페이지를 띄운다.
@@ -40,9 +41,11 @@ function Root() {
     <AppReadyProvider>
       <SplashScreen />
       <ThemeProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <FeedbackProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </FeedbackProvider>
       </ThemeProvider>
     </AppReadyProvider>
   );

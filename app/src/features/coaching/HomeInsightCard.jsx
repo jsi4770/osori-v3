@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { zScore } from '../Util/zScore';
 import { requestCompositeNudge } from '../../api/coachingApi';
+import { useFeedback } from '../../context/FeedbackContext';
 import './HomeInsightCard.css';
 
 // 이상치가 없을 때 보여주는 클라이언트 전용 격려 메시지 (API 호출 없음).
@@ -22,6 +23,7 @@ const splitMessage = (text) => {
 // → "AI와 대화하며 계획 세우기"를 눌러야만 실제 Gemini 호출(Tier 2)이 일어난다.
 const HomeInsightCard = ({ transactions = [], currentDate, isLoading = false }) => {
   const { user } = useAuth();
+  const { toast } = useFeedback();
   const navigate = useNavigate();
   const userId = user?.userId;
 
@@ -65,7 +67,7 @@ const HomeInsightCard = ({ transactions = [], currentDate, isLoading = false }) 
       });
       navigate(`/mypage/coaching/chat/${nudge.threadId}`);
     } catch (error) {
-      alert(error?.response?.data?.message || 'AI 진단을 잠시 사용할 수 없어요.');
+      toast(error?.response?.data?.message || 'AI 진단을 잠시 사용할 수 없어요.', { type: "error" });
     } finally {
       setDiagnosing(false);
     }

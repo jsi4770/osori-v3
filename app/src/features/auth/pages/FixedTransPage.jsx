@@ -5,9 +5,11 @@ import { fixedTransApi } from "../../../api/fixedTransApi";
 import FixedTransModal from "./FixedTransModal";
 import { IconReceipt } from "../../../components/icons";
 import "./FixedTransPage.css";
+import { useFeedback } from "../../../context/FeedbackContext";
 
 export default function FixedTransPage() {
   const { user } = useAuth();
+  const { toast, confirm } = useFeedback();
   const userId = user?.userId;
 
   const displayName = useMemo(() => {
@@ -28,7 +30,7 @@ export default function FixedTransPage() {
       setList(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
-      alert("고정지출 목록 조회 실패");
+      toast("고정지출 목록 조회 실패", { type: "error" });
       setList([]);
     } finally {
       setIsLoading(false);
@@ -50,16 +52,16 @@ export default function FixedTransPage() {
   };
 
   const removeOne = async (fixedId) => {
-    const ok = window.confirm("삭제되면 되돌릴 수 없습니다. 정말 삭제하시겠습니까?");
+    const ok = await confirm("삭제되면 되돌릴 수 없습니다. 정말 삭제하시겠습니까?", { danger: true });
     if (!ok) return;
 
     try {
       await fixedTransApi.remove(fixedId);
-      alert("삭제가 완료되었습니다.");
+      toast("삭제가 완료되었습니다.", { type: "success" });
       fetchList();
     } catch (err) {
       console.error(err);
-      alert("삭제에 실패하였습니다.");
+      toast("삭제에 실패하였습니다.", { type: "error" });
     }
   };
 

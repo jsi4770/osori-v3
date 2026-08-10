@@ -1,4 +1,5 @@
 .growth-report-page {
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -40,6 +41,8 @@
 }
 
 .grp-item {
+  width: 100%;
+  box-sizing: border-box;
   background: var(--surface);
   border-radius: var(--radius-lg);
   padding: 20px;

@@ -9,6 +9,7 @@ import { fixedTransApi } from '../../api/fixedTransApi';
 import { fetchHolidays } from '../../api/holidayApi';
 import TransactionModal from '../auth/pages/TransactionModal';
 import { FIXED_AUTO_MEMO } from '../Util/zScore';
+import { useFeedback } from '../../context/FeedbackContext';
 
 // 달력 칸은 폭이 좁아 십만 단위 이상이면 잘리므로 만/억 단위로 축약해 표기한다.
 // (우측 가계부 패널은 전체 금액을 그대로 보여준다)
@@ -28,6 +29,7 @@ const fmtCompact = (n) => {
 
 function CalendarView({ currentDate, setCurrentDate }) {
   const { user } = useAuth();
+  const { toast } = useFeedback();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [fixedTrans, setFixedTrans] = useState([]);
@@ -193,7 +195,7 @@ function CalendarView({ currentDate, setCurrentDate }) {
   const openDelete = (e, item) => { e.stopPropagation(); setSelectedItem(item); setModalType('delete'); setIsModalOpen(true); };
 
   const handleSave = async (updated) => {
-    if (!userId) { alert("로그인 정보가 없습니다."); return; }
+    if (!userId) { toast("로그인 정보가 없습니다.", { type: "error" }); return; }
     try {
       await transApi.updateTrans({
         transId: updated.id,
@@ -207,24 +209,24 @@ function CalendarView({ currentDate, setCurrentDate }) {
         isShared: 'N',
         excludeAnalysis: updated.excludeAnalysis === 'Y' ? 'Y' : 'N',
       });
-      alert("수정되었습니다.");
+      toast("수정되었습니다.", { type: "success" });
       setIsModalOpen(false);
       fetchTransactions();
     } catch (err) {
       console.error(err);
-      alert("수정 중 오류가 발생했습니다.");
+      toast("수정 중 오류가 발생했습니다.", { type: "error" });
     }
   };
 
   const handleDelete = async (id) => {
     try {
       await transApi.deleteTrans(id);
-      alert("삭제되었습니다.");
+      toast("삭제되었습니다.", { type: "success" });
       setIsModalOpen(false);
       fetchTransactions();
     } catch (err) {
       console.error(err);
-      alert("삭제 중 오류가 발생했습니다.");
+      toast("삭제 중 오류가 발생했습니다.", { type: "error" });
     }
   };
 

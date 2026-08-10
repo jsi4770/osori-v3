@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import styles from "./FindIdPage.module.css";
 // [ADDED] 아이디 찾기 API 호출
 import { authApi } from "../../../api/authApi";
+import { useFeedback } from "../../../context/FeedbackContext";
 
 export default function FindIdPage() {
   const navigate = useNavigate();
+  const { toast } = useFeedback();
 
   // [BEFORE]
   // const [nickName, setNickName] = useState("");
@@ -47,9 +49,9 @@ export default function FindIdPage() {
         const msg = data?.message || "요청이 완료되었습니다.";
         setServerMessage(msg);
 
-        // 아이디를 같이 내려주면(정책에 따라) alert로 보여줌
+        // 아이디를 같이 내려주면(정책에 따라) 토스트로 보여줌
         if (data?.loginId) {
-          alert(`회원님의 아이디는 ${data.loginId}입니다.`);
+          toast(`회원님의 아이디는 ${data.loginId}입니다.`, { type: "success" });
         }
       } catch (err) {
         const msg = err?.data?.message || err?.data || "아이디 찾기 요청에 실패했습니다.";

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { fixedTransApi } from "../../../api/fixedTransApi";
 import { EXPENSE_CATEGORIES } from "../../../constants/categories";
 import "./FixedTransModal.css";
+import { useFeedback } from "../../../context/FeedbackContext";
 const CATEGORY_OPTIONS = EXPENSE_CATEGORIES;
 
 export default function FixedTransModal({
@@ -11,6 +12,7 @@ export default function FixedTransModal({
   onClose,
   onSuccess,
 }) {
+  const { toast } = useFeedback();
   const isEdit = mode === "edit";
 
   const today = useMemo(() => {
@@ -83,7 +85,7 @@ export default function FixedTransModal({
     e.preventDefault();
 
     const msg = validate();
-    if (msg) return alert(msg);
+    if (msg) return toast(msg, { type: "error" });
 
     setIsLoading(true);
     try {
@@ -99,17 +101,17 @@ export default function FixedTransModal({
       if (isEdit) {
         //await fixedTransApi.update(initialValue.fixedId, payload);
         await fixedTransApi.update({...payload, fixedId: initialValue.fixedId});
-        alert("수정이 완료되었습니다.");
+        toast("수정이 완료되었습니다.", { type: "success" });
       } else {
         await fixedTransApi.create(payload);
-        alert("고정지출이 등록되었습니다.");
+        toast("고정지출이 등록되었습니다.", { type: "success" });
       }
 
       onSuccess?.();
       onClose?.();
     } catch (err) {
       console.error(err);
-      alert("고정지출 오류가 발생했습니다.");
+      toast("고정지출 오류가 발생했습니다.", { type: "error" });
     } finally {
       setIsLoading(false);
     }

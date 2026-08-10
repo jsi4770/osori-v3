@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { IconReceipt, IconTrendingUp, IconCalendar, IconCheck } from "../../components/icons";
 import { useAppReady } from "../../context/AppReadyContext";
 import { useAuth } from "../../context/AuthContext";
+import { useFeedback } from "../../context/FeedbackContext";
 import { authApi } from "../../api/authApi";
 import "./OnboardingPage.css";
 
@@ -191,6 +192,7 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const { markReady } = useAppReady();
   const { login } = useAuth();
+  const { toast } = useFeedback();
   const [currentStep, setCurrentStep] = useState(0);
   const [guestLoading, setGuestLoading] = useState(false);
   const touchStartX = useRef(null);
@@ -221,7 +223,7 @@ export default function OnboardingPage() {
       localStorage.setItem("osori_onboarded", "true");
       navigate("/mypage/assets", { replace: true });
     } catch (error) {
-      alert("게스트 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      toast("게스트 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.", { type: "error" });
     } finally {
       setGuestLoading(false);
     }

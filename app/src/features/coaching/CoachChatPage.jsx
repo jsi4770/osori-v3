@@ -4,12 +4,14 @@ import { useAuth } from '../../context/AuthContext';
 import { getGrowthReport, sendChatMessage } from '../../api/coachingApi';
 import { extractChallenge, createChallenge } from '../../api/challengeApi';
 import { IconArrowUp } from '../../components/icons';
+import { useFeedback } from '../../context/FeedbackContext';
 import './CoachChatPage.css';
 
 const CoachChatPage = () => {
   const { threadId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useFeedback();
   const userId = user?.userId;
 
   const [messages, setMessages] = useState([]); // {id, role, content}
@@ -90,12 +92,12 @@ const CoachChatPage = () => {
         const message = result.reason === 'LLM_DISABLED'
           ? '지금은 AI 코칭이 꺼져 있어 챌린지 추출을 사용할 수 없어요.'
           : '대화에서 아직 구체적인 목표를 찾지 못했어요. 조금 더 얘기해볼까요?';
-        alert(message);
+        toast(message, { type: "info" });
         return;
       }
       setProposedChallenge(result);
     } catch (error) {
-      alert(error?.response?.data?.message || '챌린지 추출에 실패했어요.');
+      toast(error?.response?.data?.message || '챌린지 추출에 실패했어요.', { type: "error" });
     } finally {
       setExtracting(false);
     }
@@ -115,10 +117,10 @@ const CoachChatPage = () => {
         periodDays: proposedChallenge.periodDays,
       });
       setProposedChallenge(null);
-      alert('챌린지가 생성됐어요! 홈 화면에서 진행률을 확인할 수 있어요.');
+      toast('챌린지가 생성됐어요! 홈 화면에서 진행률을 확인할 수 있어요.', { type: "success" });
       navigate('/mypage/assets');
     } catch (error) {
-      alert(error?.response?.data?.message || '챌린지 저장에 실패했어요.');
+      toast(error?.response?.data?.message || '챌린지 저장에 실패했어요.', { type: "error" });
     } finally {
       setSavingChallenge(false);
     }
@@ -128,9 +130,9 @@ const CoachChatPage = () => {
     <main className="coach-chat-page fade-in">
       <header className="ccp-header">
         <button className="ccp-back" onClick={() => navigate(-1)}>←</button>
-        <h2>💬 AI 재무 코치</h2>
+        <h2>AI 재무 코치</h2>
         <button className="ccp-challenge-btn" onClick={handleExtractChallenge} disabled={extracting}>
-          {extracting ? '분석 중...' : '🎯 챌린지'}
+          {extracting ? '분석 중...' : '챌린지'}
         </button>
       </header>
 
@@ -175,7 +177,7 @@ const CoachChatPage = () => {
       {proposedChallenge && (
         <div className="ccp-challenge-overlay" onClick={() => setProposedChallenge(null)}>
           <div className="ccp-challenge-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>🎯 이 챌린지로 시작할까요?</h3>
+            <h3>이 챌린지로 시작할까요?</h3>
             <p className="ccp-challenge-title">{proposedChallenge.title}</p>
             <p className="ccp-challenge-detail">
               {proposedChallenge.category && `${proposedChallenge.category} · `}

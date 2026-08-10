@@ -6,10 +6,9 @@
      입력창까지 뷰포트 안에 딱 들어오게 함(별도 스크롤 없이 카톡처럼 하단 고정) */
   height: calc(100vh - 110px);
   height: calc(100dvh - 110px); /* 모바일 브라우저 주소창 유무로 100vh가 흔들리는 것 보정 */
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 12px;
-  padding-top: 0;
+  /* max-width로 좁혀놓지 않음 — 다른 화면들처럼 .mypage-content 폭을 그대로 채운다.
+     페이지 자체엔 좌우 padding을 두지 않음 — .ccp-messages/.ccp-input-area가 각자 여백을
+     가지므로, 여기서 또 감싸면 다른 화면보다 한 겹 더 좁아진다. */
   box-sizing: border-box;
 }
 
@@ -37,12 +36,18 @@
 }
 
 .ccp-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   border: none;
   background: var(--surface-subtle);
   border-radius: 50%;
   width: 36px;
   height: 36px;
+  padding: 0;
   font-size: 1.1rem;
+  line-height: 1;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
 }

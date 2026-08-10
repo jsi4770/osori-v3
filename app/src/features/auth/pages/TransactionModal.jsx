@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import styles from "./MyAccountBook.module.css";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../../../constants/categories";
+import { useFeedback } from "../../../context/FeedbackContext";
 
 // 가계부 내역 보기/수정/삭제 공용 모달 (가계부·캘린더뷰에서 공유)
 export default function TransactionModal({ isOpen, type, transaction, onClose, onSave, onDelete }) {
+  const { toast } = useFeedback();
   const [currentCategories, setCurrentCategories] = useState(EXPENSE_CATEGORIES);
   const today = new Date().toISOString().split("T")[0];
 
@@ -32,11 +34,11 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "amount" && value < 0) {
-      alert("금액은 0보다 커야 합니다.");
+      toast("금액은 0보다 커야 합니다.", { type: "error" });
       return;
     }
     if (name === "date" && value > today) {
-      alert("미래 날짜는 선택할 수 없습니다.");
+      toast("미래 날짜는 선택할 수 없습니다.", { type: "error" });
       setFormData((prev) => ({ ...prev, [name]: today }));
       return;
     }
@@ -80,7 +82,7 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
                   readOnly={isViewMode} disabled={isViewMode} max={today}
                   onBlur={(e) => {
                     if (e.target.value > today) {
-                      alert("미래 날짜는 입력할 수 없습니다.");
+                      toast("미래 날짜는 입력할 수 없습니다.", { type: "error" });
                       setFormData((prev) => ({ ...prev, date: today }));
                     }
                   }}

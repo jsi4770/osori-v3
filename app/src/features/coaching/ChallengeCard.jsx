@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getChallenges, deleteChallenge } from '../../api/challengeApi';
+import { useFeedback } from '../../context/FeedbackContext';
 import './ChallengeCard.css';
 
 const formatValue = (metricType, value) =>
@@ -35,6 +36,7 @@ const computeProgress = (challenge, transactions) => {
 
 const ChallengeCard = ({ transactions = [] }) => {
   const { user } = useAuth();
+  const { toast, confirm } = useFeedback();
   const userId = user?.userId;
 
   const [challenges, setChallenges] = useState([]);
@@ -61,12 +63,13 @@ const ChallengeCard = ({ transactions = [] }) => {
   }, [userId]);
 
   const handleDelete = async (challengeId) => {
-    if (!window.confirm('이 챌린지를 그만둘까요?')) return;
+    const ok = await confirm('이 챌린지를 그만둘까요?');
+    if (!ok) return;
     try {
       await deleteChallenge(challengeId, userId);
       setChallenges((prev) => prev.filter((c) => c.challengeId !== challengeId));
     } catch {
-      alert('챌린지 삭제에 실패했어요.');
+      toast('챌린지 삭제에 실패했어요.', { type: "error" });
     }
   };
 

@@ -4,12 +4,14 @@ import styles from "./LoginPage.module.css";
 import { authApi } from "../../../api/authApi";
 import { useAuth } from "../../../context/AuthContext";
 import { useAppReady } from "../../../context/AppReadyContext";
+import { useFeedback } from "../../../context/FeedbackContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
   const { markReady } = useAppReady();
+  const { toast } = useFeedback();
 
   // 로그인 화면은 기다릴 데이터가 없으므로 마운트 즉시 스플래시에 "준비됐다"고 알린다.
   useEffect(() => { markReady(); }, [markReady]);
@@ -47,7 +49,7 @@ export default function LoginPage() {
 
     const params = new URLSearchParams(location.search);
     if (params.get("auth") === "false") {
-      alert("로그인 후 이용 가능한 서비스입니다.");
+      toast("로그인 후 이용 가능한 서비스입니다.", { type: "info" });
       navigate("/login", { replace: true });
     }
   }, [location.state , location.search, navigate]);
@@ -64,7 +66,7 @@ export default function LoginPage() {
     const password = form.password;
 
     if (!loginId || !password) {
-      alert("아이디와 비밀번호를 입력하세요.");
+      toast("아이디와 비밀번호를 입력하세요.", { type: "error" });
       return;
     }
 
@@ -83,7 +85,7 @@ export default function LoginPage() {
 
       const status = res?.user?.status;
       if (status === "H") {
-        if (res?.message) alert(res.message);
+        if (res?.message) toast(res.message, { type: "info" });
         navigate("/mypage/profileSettings", { replace: true });
         return;
       }
@@ -92,7 +94,7 @@ export default function LoginPage() {
       navigate("/mypage/assets", { replace: true });
     } catch (e2) {
       const msg = e2?.data?.message || "로그인 실패";
-      alert(msg);
+      toast(msg, { type: "error" });
     }
   };
 

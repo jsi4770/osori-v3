@@ -1,4 +1,6 @@
 .spending-trend-card {
+  width: 100%;
+  box-sizing: border-box;
   background: var(--surface);
   border-radius: 16px;
   padding: 20px;

@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./ResetPasswordPage.module.css";
 import { authApi } from "../../../api/authApi";
+import { useFeedback } from "../../../context/FeedbackContext";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useFeedback();
 
   // /find-password 에서 넘겨준 loginId (필요 없으면 화면에서 숨겨도 됨)
   const loginId = location.state?.loginId || "";
@@ -51,8 +53,8 @@ export default function ResetPasswordPage() {
         const msg = data?.message || "비밀번호가 재설정되었습니다.";
         setServerMessage(msg);
 
-        // 서버 정책에 따라 성공 메시지를 alert로도 보여주고 싶으면 여기서 처리
-        alert(msg);
+        // 서버 정책에 따라 성공 메시지를 토스트로도 보여주고 싶으면 여기서 처리
+        toast(msg, { type: "success" });
 
         navigate("/login");
       } catch (err) {

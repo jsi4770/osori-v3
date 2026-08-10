@@ -97,6 +97,14 @@ html {
   /* iOS가 가로모드 등에서 글자를 임의로 키우지 않도록 고정 */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* 스크롤바 자리를 항상 미리 확보 — 페이지마다 세로 스크롤 유무가 달라 뷰포트 폭이
+     오락가락하면, position:fixed로 뷰포트 기준 너비를 계산하는 리퀴드 글래스 탭바/사이드바
+     같은 요소가 화면마다 미묘하게 다른 폭으로 보인다. 지원 브라우저에서만 적용되는
+     점진적 개선이라 미지원 브라우저는 기존 동작 그대로다.
+     both-edges(좌우 모두 예약)는 대칭은 맞지만 전체 폭을 2배로 깎아먹어 좁은 화면(예: 데스크톱
+     프레임 미리보기의 393px iframe)에서 체감이 커서, 한쪽만 예약하는 기본값으로 되돌림 —
+     대칭보다 폭을 우선. */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -134,15 +142,18 @@ button {
   font-size: 1em;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
 button:hover {
   border-color: var(--primary-color);
 }
 
+/* 눌림 피드백은 손을 뗄 때가 아니라 누르는 즉시 보여야 '반응하는' 느낌이 남 */
 button:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+  transition-duration: 0.08s;
 }
 
 button:focus-visible {
@@ -153,6 +164,21 @@ button:focus-visible {
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* 금액처럼 자릿수가 바뀌는 숫자는 고정폭으로 — 값이 바뀔 때 자리가 흔들리지 않게 */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .fade-in {

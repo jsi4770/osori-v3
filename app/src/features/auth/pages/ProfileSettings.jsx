@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useTheme } from "../../../context/ThemeContext";
+import { useFeedback } from "../../../context/FeedbackContext";
 import { userApi } from "../../../api/userApi";
 import "./MyPage.css";
 import "./ProfileSettings.css";
@@ -10,6 +11,7 @@ function ProfileSettings() {
   const navigate = useNavigate();
   const { user, setUser, logout } = useAuth();
   const { pref: themePref, setTheme } = useTheme();
+  const { toast, confirm } = useFeedback();
 
   const THEME_OPTIONS = [
     { key: "light", label: "라이트" },
@@ -191,18 +193,18 @@ function ProfileSettings() {
       if (msg.includes("닉네임")) setFieldErrors((prev) => ({ ...prev, nickName: msg }));
       if (msg.includes("이메일")) setFieldErrors((prev) => ({ ...prev, email: msg }));
       if (msg.includes("이름")) setFieldErrors((prev) => ({ ...prev, userName: msg }));
-      alert(msg);
+      toast(msg, { type: "error" });
       return;
     }
 
     if (hasFieldErrors) {
-      alert("중복/형식 오류를 먼저 해결해야 함");
+      toast("중복/형식 오류를 먼저 해결해야 함", { type: "error" });
       return;
     }
 
     const loginId = (user?.loginId || "").trim();
     if (!loginId) {
-      alert("로그인 정보가 없습니다. 로그인을 다시 하셔야 합니다.");
+      toast("로그인 정보가 없습니다. 로그인을 다시 하셔야 합니다.", { type: "error" });
       return;
     }
 
@@ -242,7 +244,7 @@ function ProfileSettings() {
       }
 
       //서버 메시지 우선
-      alert(serverMessage || "저장 완료");
+      toast(serverMessage || "저장 완료", { type: "success" });
 
       setIsPasswordEditing(false);
       setCurrentPassword("");
@@ -254,20 +256,21 @@ function ProfileSettings() {
         err?.data?.message ||
         (typeof err?.data === "string" ? err.data : "저장 중 오류가 발생했습니다.");
       setSaveError(message);
-      alert(message);
+      toast(message, { type: "error" });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleUnlinkKakao = async () => {
-    if (!window.confirm("카카오 연동을 해제하시겠습니까? 해제 후에는 아이디와 비밀번호로 로그인해야 합니다.")) return;
+    const ok = await confirm("카카오 연동을 해제하시겠습니까?\n해제 후에는 아이디와 비밀번호로 로그인해야 합니다.");
+    if (!ok) return;
 
     try {
       // 1. 서버에 연동 해제 요청 (userApi에 정의 필요)
-      await userApi.unlinkKakao(); 
-      
-      alert("카카오 연동이 해제되었습니다.");
+      await userApi.unlinkKakao();
+
+      toast("카카오 연동이 해제되었습니다.", { type: "success" });
 
       // 2. 중요: 현재 프론트엔드 user 상태에서 loginType을 제거
       // 그래야 화면에서 즉시 '연동 해제' 버튼이 사라집니다.
@@ -277,7 +280,7 @@ function ProfileSettings() {
 
     } catch (err) {
       console.error("연동 해제 실패:", err);
-      alert("연동 해제 중 오류가 발생했습니다.");
+      toast("연동 해제 중 오류가 발생했습니다.", { type: "error" });
     }
 };
 
@@ -289,7 +292,8 @@ function ProfileSettings() {
   // 설정 탭 로그아웃: AuthContext.logout()이 서버 로그아웃 + 로컬 토큰/유저 정리까지 처리한다.
   const handleLogout = async () => {
     if (isLoggingOut) return;
-    if (!window.confirm("로그아웃 하시겠습니까?")) return;
+    const ok = await confirm("로그아웃 하시겠습니까?");
+    if (!ok) return;
 
     setIsLoggingOut(true);
     try {
@@ -317,8 +321,8 @@ function ProfileSettings() {
 
   const handleWithdraw = async () => {
     // 체크박스 체크 + 비밀번호 입력 시에만 진행
-    if (!withdrawChecked) return alert("탈퇴 안내를 확인하고 체크해야 함");
-    if (!withdrawPassword.trim()) return alert("비밀번호를 입력해야 함");
+    if (!withdrawChecked) return toast("탈퇴 안내를 확인하고 체크해야 함", { type: "error" });
+    if (!withdrawPassword.trim()) return toast("비밀번호를 입력해야 함", { type: "error" });
 
     if (isWithdrawing) return;
     setIsWithdrawing(true);
@@ -328,7 +332,7 @@ function ProfileSettings() {
       const res = await userApi.withdraw({ password: withdrawPassword });
       const serverMessage =
         res?.message || (typeof res === "string" ? res : "회원탈퇴 완료");
-      alert(serverMessage);
+      toast(serverMessage, { type: "success" });
 
       await logout();
       navigate("/", { replace: true });
@@ -336,7 +340,7 @@ function ProfileSettings() {
       const message =
         err?.data?.message ||
         (typeof err?.data === "string" ? err.data : "회원탈퇴 중 오류가 발생했음");
-      alert(message);
+      toast(message, { type: "error" });
     } finally {
       setIsWithdrawing(false);
       closeWithdraw();

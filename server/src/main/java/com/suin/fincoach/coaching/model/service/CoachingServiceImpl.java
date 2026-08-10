@@ -57,14 +57,15 @@ public class CoachingServiceImpl implements CoachingService {
 			+ "실용적으로, 2~3문장, 한국어로만 답하세요.";
 
 	private static final String TREND_SYSTEM_PROMPT =
-			"당신은 이제 막 취업한 사회초년생을 위한 개인 재무 코치입니다. 사용자의 여러 달치 카테고리별 지출 데이터를 보고 "
-			+ "전체적인 소비 흐름을 분석합니다. 눈에 띄게 늘고 있거나 줄고 있는 카테고리를 짚어주고, 그 흐름에 대한 코멘트와 함께 "
-			+ "다음 달에 실천할 수 있는 작은 조언을 하나 제안하세요. 잔소리하지 말고 다정하게, 3~5문장, 한국어로만 답하세요.";
+			"당신은 이제 막 취업한 사회초년생을 위한 개인 재무 코치입니다. 사용자의 여러 달치 카테고리별 지출 데이터에서 "
+			+ "가장 눈에 띄는 흐름 하나만 골라, 그에 대한 짧은 조언과 함께 답하세요. 데이터에 '눈에 띄게 달라진 카테고리 총 N개'라는 "
+			+ "안내가 있으면, 그 개수만 짧게 한 문장으로 덧붙이세요(다른 카테고리 이름은 언급하지 마세요). 그런 안내가 없으면 "
+			+ "언급하지 마세요. 잔소리하지 말고 다정하게, 군더더기 없이 핵심만 담아 최대 3문장, 한국어로만 답하세요.";
 
 	private static final String COMPOSITION_SYSTEM_PROMPT =
 			"당신은 이제 막 취업한 사회초년생을 위한 개인 재무 코치입니다. 사용자는 아직 이번 한 달치 지출 데이터만 있습니다. "
-			+ "여러 달 흐름을 비교하지 말고, 이번 달 지출이 어떤 카테고리에 집중돼 있는지 짚어주고 다음 달을 위한 "
-			+ "작은 실천 조언을 하나 제안하세요. 다정하게, 2~4문장, 한국어로만 답하세요.";
+			+ "이번 달 지출이 가장 집중된 카테고리 하나만 짚어 짧은 조언과 함께 답하세요. 다정하게, "
+			+ "군더더기 없이 핵심만 담아 최대 2문장, 한국어로만 답하세요.";
 
 	@Override
 	public CoachingMessage generateNudge(int userId, String category, int amount, int avgAmount) {
@@ -248,8 +249,41 @@ public class CoachingServiceImpl implements CoachingService {
 			}
 			sb.append("\n");
 		}
+
+		// 이상 지출이 2개 이상이어도 본문엔 1개만 짚되, "그 외 N개"로 존재는 알 수 있게 —
+		// 실제 개수는 여기서 미리 계산해 사실로 못박아 LLM이 지어내지 않게 한다.
+		if (monthlyTotals.size() >= 2) {
+			Map<String, Object> latest = monthlyTotals.get(monthlyTotals.size() - 1);
+			Map<String, Object> previous = monthlyTotals.get(monthlyTotals.size() - 2);
+			@SuppressWarnings("unchecked")
+			Map<String, Object> latestCats = (Map<String, Object>) latest.get("categories");
+			@SuppressWarnings("unchecked")
+			Map<String, Object> prevCats = (Map<String, Object>) previous.get("categories");
+			int notableCount = countNotableChanges(latestCats, prevCats);
+			if (notableCount >= 2) {
+				sb.append("참고: 지난달 대비 지출이 눈에 띄게 달라진(20% 이상 변화) 카테고리는 총 ")
+						.append(notableCount).append("개입니다.\n");
+			}
+		}
+
 		sb.append("이 데이터를 바탕으로 분석과 조언을 해주세요.");
 		return sb.toString();
+	}
+
+	// 지난달 대비 20% 이상 + 최소 1만원 이상 달라진(늘거나 준) 카테고리 개수 — 노이즈성 소액 변화는 제외
+	private int countNotableChanges(Map<String, Object> latestCats, Map<String, Object> prevCats) {
+		if (latestCats == null) return 0;
+		int count = 0;
+		for (Map.Entry<String, Object> entry : latestCats.entrySet()) {
+			long latestAmount = toLong(entry.getValue());
+			long prevAmount = prevCats == null ? 0 : toLong(prevCats.get(entry.getKey()));
+			long diff = Math.abs(latestAmount - prevAmount);
+			if (diff < 10_000) continue;
+			boolean pctNotable = prevAmount > 0 && diff * 100.0 / prevAmount >= 20.0;
+			boolean newCategoryNotable = prevAmount == 0 && latestAmount >= 10_000;
+			if (pctNotable || newCategoryNotable) count++;
+		}
+		return count;
 	}
 
 	private String formatAmount(Object amount) {
@@ -340,9 +374,15 @@ public class CoachingServiceImpl implements CoachingService {
 			return "지난달 대비 지출 패턴이 안정적으로 유지되고 있어요. 이 흐름을 계속 이어가 볼까요?";
 		}
 
-		return String.format(
+		String base = String.format(
 				"지난달 대비 '%s' 지출이 %,d원 늘었어요. 다음 달엔 이 카테고리부터 한 번 점검해보는 건 어떨까요?",
 				biggestIncreaseCat, biggestIncrease);
+
+		int notableCount = countNotableChanges(latestCats, prevCats);
+		if (notableCount >= 2) {
+			base += String.format(" 그 외 %d개 카테고리도 변화가 있었어요.", notableCount - 1);
+		}
+		return base;
 	}
 
 	private long toLong(Object value) {

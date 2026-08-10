@@ -1,10 +1,12 @@
 import { createContext, useContext, useMemo, useState } from "react";
 import { authApi } from "../api/authApi"; // [CHANGED] 로그아웃 API 호출하려고 추가
 import React from "react"
+import { useFeedback } from "./FeedbackContext";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const { toast } = useFeedback();
   const [token, setToken] = useState(() => localStorage.getItem("token") || "");
   const [user, setUser] = useState(() => {
     const raw = localStorage.getItem("user");
@@ -44,9 +46,9 @@ export function AuthProvider({ children }) {
           ? data
           : data?.message || "로그아웃 되었습니다.";
 
-      alert(message);
+      toast(message, { type: "success" });
     } catch (error) {
-      alert("로그아웃 처리 중 오류가 발생했음 (그래도 로그아웃 처리함)");
+      toast("로그아웃 처리 중 오류가 발생했음 (그래도 로그아웃 처리함)", { type: "error" });
     } finally {
       // 여기서 로그아웃 완료(토큰/유저 제거)
       localStorage.removeItem("token");
