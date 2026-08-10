@@ -67,47 +67,135 @@
 .type-btn.active.income { color: var(--primary-color); }
 .type-btn.active.expense { color: var(--expense-color); }
 
-.nl-quick-entry {
-  margin-bottom: 24px;
-  padding: 18px 20px;
-  border-radius: var(--radius-lg);
-  background: var(--surface-accent);
-  border: 1px solid color-mix(in srgb, var(--primary-color) 18%, transparent);
+/* ===== 지출 등록의 메인 화면 — AI 문장 입력 ===== */
+.nl-hero {
+  margin-bottom: 8px;
+  padding: 40px 32px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, var(--surface-accent), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--primary-color) 16%, transparent);
+  text-align: center;
 }
 
-.nl-quick-entry-row {
+.nl-hero-title {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+}
+
+.nl-hero-subtitle {
+  margin: 0 0 24px;
+  font-size: 0.95rem;
+  color: var(--text-weak);
+}
+
+.nl-hero-input-row {
   display: flex;
   gap: 10px;
+  max-width: 520px;
+  margin: 0 auto;
 }
 
-.nl-quick-entry-input {
+.nl-hero-input {
   flex: 1;
-  height: 52px;
+  height: 64px;
+  padding: 0 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  font-size: 1.1rem;
+  font-family: inherit;
+  color: var(--text-main);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.nl-quick-entry-btn {
+.nl-hero-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.12);
+}
+
+.nl-hero-btn {
   flex-shrink: 0;
-  padding: 0 22px;
+  padding: 0 30px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--primary-color);
   color: #fff;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 800;
+  font-size: 1.05rem;
   cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 102, 255, 0.2);
   transition: background 0.15s ease, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
 }
 
-.nl-quick-entry-btn:hover:not(:disabled) { background: var(--primary-hover); }
-.nl-quick-entry-btn:active:not(:disabled) { transform: scale(0.96); transition-duration: 0.08s; }
-.nl-quick-entry-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.nl-hero-btn:hover:not(:disabled) { background: var(--primary-hover); }
+.nl-hero-btn:active:not(:disabled) { transform: scale(0.96); transition-duration: 0.08s; }
+.nl-hero-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
-.nl-quick-entry-preview {
-  margin-top: 10px;
-  padding-left: 5px;
+.nl-hero-preview {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.nl-hero-examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.nl-hero-example-chip {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-sub);
   font-size: 0.85rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nl-hero-example-chip:hover:not(:disabled) {
+  background: var(--surface-accent);
+  border-color: var(--primary-color);
   color: var(--primary-color);
+}
+
+.nl-hero-example-chip:active:not(:disabled) { transform: scale(0.96); }
+
+.nl-manual-link {
+  display: block;
+  margin: 20px auto 0;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--text-weak);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.nl-manual-link:hover { color: var(--primary-color); }
+
+.nl-back-link {
+  margin: 0 0 16px;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .nl-hero { padding: 32px 20px; }
+  .nl-hero-input-row { flex-direction: column; }
+  .nl-hero-btn { padding: 16px; }
 }
 
 .ocr-upload-area {

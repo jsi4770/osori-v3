@@ -8,6 +8,9 @@ import { IconReceipt } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
 import { useFeedback } from '../../../context/FeedbackContext';
 
+// 문장 입력이 감이 안 잡히는 사용자를 위한 예시 — 탭하면 그대로 입력창에 채워진다.
+const NL_EXAMPLES = ['스타벅스 아메리카노 5천원', '어제 친구랑 밥 3만원', '택시 12000원'];
+
 const ExpenseForm = () => {
   const { user } = useAuth();
   const { toast, confirm } = useFeedback();
@@ -20,6 +23,8 @@ const ExpenseForm = () => {
   const [nlText, setNlText] = useState('');
   const [nlPreviewAmount, setNlPreviewAmount] = useState(null);
   const [nlParsing, setNlParsing] = useState(false);
+  // 지출 등록의 기본 화면은 AI 빠른 입력 — 영수증/직접 입력은 필요할 때만 펼친다.
+  const [showManualEntry, setShowManualEntry] = useState(false);
   const fileInputRef = useRef(null);
 
   const getToday = () => {
@@ -52,7 +57,12 @@ const ExpenseForm = () => {
       originalAmount: '',
       memo: ''
     });
-    if (type === '수입') setPreviewUrl(null);
+    if (type === '수입') {
+      setPreviewUrl(null);
+    } else {
+      // 지출로 돌아오면 AI 빠른 입력 화면부터 다시 보여준다.
+      setShowManualEntry(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -166,6 +176,11 @@ const ExpenseForm = () => {
     setNlPreviewAmount(value.trim() ? previewAmountFromText(value) : null);
   };
 
+  const applyExample = (example) => {
+    setNlText(example);
+    setNlPreviewAmount(previewAmountFromText(example));
+  };
+
   // 파싱 결과를 그대로 저장(자동 저장 또는 원탭 확인 "저장" 선택 시)
   const saveParsedExpense = async (parsed) => {
     try {
@@ -204,6 +219,7 @@ const ExpenseForm = () => {
       category: EXPENSE_CATEGORIES.includes(parsed.category) ? parsed.category : '기타',
       memo: parsed.memo || nlText,
     }));
+    setShowManualEntry(true);
   };
 
   const handleNlSubmit = async (e) => {
@@ -282,88 +298,121 @@ const ExpenseForm = () => {
           </div>
         </div>
 
-        {formData.type === '지출' && (
-          <form className="nl-quick-entry" onSubmit={handleNlSubmit}>
-            <label className="input-label" htmlFor="nlText">AI로 빠르게 입력</label>
-            <div className="nl-quick-entry-row">
-              <input
-                id="nlText"
-                type="text"
-                className="input-field nl-quick-entry-input"
-                placeholder="예: 스타벅스 아메리카노 5천원"
-                value={nlText}
-                onChange={handleNlTextChange}
-                disabled={nlParsing}
-              />
-              <button
-                type="submit"
-                className="nl-quick-entry-btn"
-                disabled={nlParsing || !nlText.trim()}
-              >
-                {nlParsing ? '인식 중…' : '입력'}
+        {formData.type === '지출' && !showManualEntry && (
+          <div className="nl-hero">
+            <form className="nl-hero-form" onSubmit={handleNlSubmit}>
+              <h3 className="nl-hero-title">이번 지출, 문장으로 말해보세요</h3>
+              <p className="nl-hero-subtitle">금액·카테고리·날짜까지 AI가 알아서 채워드려요</p>
+
+              <div className="nl-hero-input-row">
+                <input
+                  type="text"
+                  className="nl-hero-input"
+                  placeholder="예: 스타벅스 아메리카노 5천원"
+                  value={nlText}
+                  onChange={handleNlTextChange}
+                  disabled={nlParsing}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="nl-hero-btn"
+                  disabled={nlParsing || !nlText.trim()}
+                >
+                  {nlParsing ? '인식 중…' : '등록'}
+                </button>
+              </div>
+
+              {nlPreviewAmount != null && (
+                <div className="nl-hero-preview">{nlPreviewAmount.toLocaleString()}원 정도로 보여요…</div>
+              )}
+
+              <div className="nl-hero-examples">
+                {NL_EXAMPLES.map((example) => (
+                  <button
+                    key={example}
+                    type="button"
+                    className="nl-hero-example-chip"
+                    onClick={() => applyExample(example)}
+                    disabled={nlParsing}
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </form>
+
+            <button type="button" className="nl-manual-link" onClick={() => setShowManualEntry(true)}>
+              영수증으로 등록하거나 직접 입력할게요
+            </button>
+          </div>
+        )}
+
+        {(formData.type === '수입' || showManualEntry) && (
+          <>
+            {formData.type === '지출' && (
+              <button type="button" className="nl-manual-link nl-back-link" onClick={() => setShowManualEntry(false)}>
+                ← AI로 빠르게 입력하기
               </button>
-            </div>
-            {nlPreviewAmount != null && (
-              <div className="nl-quick-entry-preview">{nlPreviewAmount.toLocaleString()}원 정도로 보여요…</div>
             )}
-          </form>
-        )}
 
-        {formData.type === '지출' && (
-          <div
-            className="ocr-upload-area"
-            style={isLoading ? { pointerEvents: 'none', opacity: 0.6 } : undefined}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            onClick={() => !isLoading && fileInputRef.current.click()}
-          >
-            {previewUrl ? (
-              <>
-                <img src={previewUrl} alt="Receipt Preview" className="preview-image" />
-                <div className="re-upload-overlay"><span>다시 올리기</span></div>
-              </>
-            ) : (
-              <><div className="ocr-icon"><IconReceipt size={48} /></div><p className="ocr-text">영수증을 여기로 끌어오거나 클릭하세요</p></>
+            {formData.type === '지출' && (
+              <div
+                className="ocr-upload-area"
+                style={isLoading ? { pointerEvents: 'none', opacity: 0.6 } : undefined}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+                onClick={() => !isLoading && fileInputRef.current.click()}
+              >
+                {previewUrl ? (
+                  <>
+                    <img src={previewUrl} alt="Receipt Preview" className="preview-image" />
+                    <div className="re-upload-overlay"><span>다시 올리기</span></div>
+                  </>
+                ) : (
+                  <><div className="ocr-icon"><IconReceipt size={48} /></div><p className="ocr-text">영수증을 여기로 끌어오거나 클릭하세요</p></>
+                )}
+                <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={onFileInput} />
+              </div>
             )}
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={onFileInput} />
-          </div>
+
+            <form onSubmit={handleSubmit}>
+              <div className="input-group"><label className="input-label">날짜</label><input type="date" name="transDate" className="input-field" value={formData.transDate} onChange={handleChange} max={today}
+                onBlur={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  if (val > today) {
+                    toast("미래 날짜는 등록할 수 없습니다.", { type: "error" });
+                    setFormData(prev => ({ ...prev, transDate: today }));
+                  }
+                }} required /></div>
+              <div className="input-group"><label className="input-label">{formData.type === '수입' ? '입금처 / 내용' : '거래처 / 가게명'}</label><input type="text" name="title" className="input-field" placeholder={formData.type === '수입' ? "예: 회사, 부모님" : "예: 스타벅스, 식당"} value={formData.title} onChange={handleChange} required /></div>
+              <div className="input-group"><label className="input-label">금액</label><div className="amount-wrapper"><input type="number" name="originalAmount" className="input-field" placeholder="0" value={formData.originalAmount} onChange={handleChange} min="0" required /><span className="currency-unit">원</span></div></div>
+              <div className="input-group"><label className="input-label">카테고리</label><select name="category" className="input-field" value={formData.category} onChange={handleChange}>{currentCategories.map((cat, index) => <option key={index} value={cat}>{cat}</option>)}</select></div>
+              <div className="input-group"><label className="input-label">메모</label><textarea name="memo" className="input-field" placeholder="내용을 입력하세요 (선택)" value={formData.memo} onChange={handleChange}></textarea></div>
+
+              <div className="input-group exclude-toggle-row">
+                <div className="exclude-toggle-label">
+                  <span className="exclude-toggle-title">분석에서 제외</span>
+                  <span className="exclude-toggle-desc">홈 그래프·AI 코칭 분석에 이 내역을 포함하지 않아요</span>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={formData.excludeAnalysis === 'Y'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, excludeAnalysis: e.target.checked ? 'Y' : 'N' }))}
+                  />
+                  <span className="toggle-slider" />
+                </label>
+              </div>
+
+              <button type="submit" className={`submit-btn ${formData.type === '지출' ? 'expense-mode' : ''}`}>
+                {formData.type === '수입' ? '수입 등록하기' : '지출 등록하기'}
+              </button>
+            </form>
+          </>
         )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="input-group"><label className="input-label">날짜</label><input type="date" name="transDate" className="input-field" value={formData.transDate} onChange={handleChange} max={today}
-            onBlur={(e) => {
-              const val = e.target.value;
-              if (!val) return;
-              if (val > today) {
-                toast("미래 날짜는 등록할 수 없습니다.", { type: "error" });
-                setFormData(prev => ({ ...prev, transDate: today }));
-              }
-            }} required /></div>
-          <div className="input-group"><label className="input-label">{formData.type === '수입' ? '입금처 / 내용' : '거래처 / 가게명'}</label><input type="text" name="title" className="input-field" placeholder={formData.type === '수입' ? "예: 회사, 부모님" : "예: 스타벅스, 식당"} value={formData.title} onChange={handleChange} required /></div>
-          <div className="input-group"><label className="input-label">금액</label><div className="amount-wrapper"><input type="number" name="originalAmount" className="input-field" placeholder="0" value={formData.originalAmount} onChange={handleChange} min="0" required /><span className="currency-unit">원</span></div></div>
-          <div className="input-group"><label className="input-label">카테고리</label><select name="category" className="input-field" value={formData.category} onChange={handleChange}>{currentCategories.map((cat, index) => <option key={index} value={cat}>{cat}</option>)}</select></div>
-          <div className="input-group"><label className="input-label">메모</label><textarea name="memo" className="input-field" placeholder="내용을 입력하세요 (선택)" value={formData.memo} onChange={handleChange}></textarea></div>
-
-          <div className="input-group exclude-toggle-row">
-            <div className="exclude-toggle-label">
-              <span className="exclude-toggle-title">분석에서 제외</span>
-              <span className="exclude-toggle-desc">홈 그래프·AI 코칭 분석에 이 내역을 포함하지 않아요</span>
-            </div>
-            <label className="toggle-switch">
-              <input
-                type="checkbox"
-                checked={formData.excludeAnalysis === 'Y'}
-                onChange={(e) => setFormData(prev => ({ ...prev, excludeAnalysis: e.target.checked ? 'Y' : 'N' }))}
-              />
-              <span className="toggle-slider" />
-            </label>
-          </div>
-
-          <button type="submit" className={`submit-btn ${formData.type === '지출' ? 'expense-mode' : ''}`}>
-            {formData.type === '수입' ? '수입 등록하기' : '지출 등록하기'}
-          </button>
-        </form>
       </div>
     </div>
   );
