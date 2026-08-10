@@ -121,7 +121,7 @@
     position: fixed;
     left: 14px;
     right: 14px;
-    bottom: calc(12px + env(safe-area-inset-bottom, 0));
+    bottom: calc(6px + env(safe-area-inset-bottom, 0));
     padding: 6px;
     gap: 2px;
     border-radius: var(--radius-pill);
