@@ -265,7 +265,7 @@
   margin-top: 10px;
 }
 
-form {
+.expense-manual-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 32px;
@@ -457,7 +457,7 @@ textarea.input-field {
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 @media (max-width: 768px) {
-  form { grid-template-columns: 1fr; }
+  .expense-manual-form { grid-template-columns: 1fr; }
   .expense-card { padding: 30px 20px; }
   .section-title { font-size: 1.8rem; }
 }

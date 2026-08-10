@@ -377,7 +377,7 @@ const ExpenseForm = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form className="expense-manual-form" onSubmit={handleSubmit}>
               <div className="input-group"><label className="input-label">날짜</label><input type="date" name="transDate" className="input-field" value={formData.transDate} onChange={handleChange} max={today}
                 onBlur={(e) => {
                   const val = e.target.value;
