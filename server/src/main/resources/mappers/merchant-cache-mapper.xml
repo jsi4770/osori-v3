@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="merchantCacheMapper">
+
+	<select id="selectByUserAndMerchant" resultType="MerchantCategoryCache">
+		SELECT
+			CACHE_ID,
+			USER_ID,
+			MERCHANT,
+			CATEGORY,
+			HIT_COUNT
+		FROM MERCHANT_CATEGORY_CACHE
+		WHERE USER_ID = #{userId}
+		  AND MERCHANT = #{merchant}
+		FETCH FIRST 1 ROWS ONLY
+	</select>
+
+	<insert id="upsert" parameterType="MerchantCategoryCache">
+		INSERT INTO MERCHANT_CATEGORY_CACHE (
+			CACHE_ID,
+			USER_ID,
+			MERCHANT,
+			CATEGORY,
+			HIT_COUNT,
+			UPDATED_AT
+		) VALUES (
+			nextval('SEQ_MERCHANT_CACHE'),
+			#{userId},
+			#{merchant},
+			#{category},
+			1,
+			CURRENT_TIMESTAMP
+		)
+		ON CONFLICT (USER_ID, MERCHANT) DO UPDATE SET
+			CATEGORY = EXCLUDED.CATEGORY,
+			HIT_COUNT = MERCHANT_CATEGORY_CACHE.HIT_COUNT + 1,
+			UPDATED_AT = CURRENT_TIMESTAMP
+	</insert>
+
+</mapper>

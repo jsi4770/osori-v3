@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ExpenseForm.css';
 import transApi from '../../../api/transApi';
+import nlParseApi from '../../../api/nlParseApi';
 import { useAuth } from '../../../context/AuthContext';
 import { IconReceipt } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
@@ -9,13 +10,16 @@ import { useFeedback } from '../../../context/FeedbackContext';
 
 const ExpenseForm = () => {
   const { user } = useAuth();
-  const { toast } = useFeedback();
+  const { toast, confirm } = useFeedback();
   const navigate = useNavigate();
 
   const [currentCategories, setCurrentCategories] = useState(EXPENSE_CATEGORIES);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [nlText, setNlText] = useState('');
+  const [nlPreviewAmount, setNlPreviewAmount] = useState(null);
+  const [nlParsing, setNlParsing] = useState(false);
   const fileInputRef = useRef(null);
 
   const getToday = () => {
@@ -138,6 +142,106 @@ const ExpenseForm = () => {
 
   const today = getToday();
 
+  // 서버 왕복 전에 로컬에서 즉시 보여주는 낙관적 금액 미리보기 — 정식 파싱 결과가 아니라
+  // "이 정도 금액으로 인식되고 있어요"라는 느낌만 먼저 준다(체감 지연 최소화 목적).
+  const previewAmountFromText = (text) => {
+    const manMatch = text.match(/(\d+(?:\.\d+)?)\s*만\s*(?:(\d+)\s*천)?\s*원?/);
+    if (manMatch) {
+      const man = parseFloat(manMatch[1]) * 10000;
+      const cheon = manMatch[2] ? Number(manMatch[2]) * 1000 : 0;
+      return Math.round(man + cheon);
+    }
+    const cheonMatch = text.match(/(\d+)\s*천\s*원?/);
+    if (cheonMatch) return Number(cheonMatch[1]) * 1000;
+    const wonMatch = text.match(/([\d,]+)\s*원/);
+    if (wonMatch) return Number(wonMatch[1].replace(/,/g, ''));
+    const bareMatch = text.match(/\d{1,3}(?:,\d{3})+/);
+    if (bareMatch) return Number(bareMatch[0].replace(/,/g, ''));
+    return null;
+  };
+
+  const handleNlTextChange = (e) => {
+    const value = e.target.value;
+    setNlText(value);
+    setNlPreviewAmount(value.trim() ? previewAmountFromText(value) : null);
+  };
+
+  // 파싱 결과를 그대로 저장(자동 저장 또는 원탭 확인 "저장" 선택 시)
+  const saveParsedExpense = async (parsed) => {
+    try {
+      await transApi.myTransSave({
+        type: 'OUT',
+        transDate: parsed.date,
+        title: parsed.merchant || parsed.memo || nlText,
+        originalAmount: parsed.amount,
+        category: parsed.category,
+        memo: parsed.memo || nlText,
+        excludeAnalysis: 'N',
+        userId: user?.userId,
+      });
+      if (parsed.merchant) {
+        // 학습은 저장 성공을 막지 않도록 실패해도 조용히 무시
+        nlParseApi.learn({ userId: user?.userId, merchant: parsed.merchant, category: parsed.category }).catch(() => {});
+      }
+      toast('저장되었습니다!', { type: 'success' });
+      setNlText('');
+      setNlPreviewAmount(null);
+      navigate('/mypage/calendarView');
+    } catch (error) {
+      toast('저장 중 오류 발생', { type: 'error' });
+    }
+  };
+
+  // 확신이 낮을 때 "수정" 선택 시 — 자동 저장하지 않고 아래 수동 폼에 미리 채워 사용자가 직접 확인/수정하게 함
+  const applyParsedToManualForm = (parsed) => {
+    setCurrentCategories(EXPENSE_CATEGORIES);
+    setFormData(prev => ({
+      ...prev,
+      type: '지출',
+      transDate: parsed.date || today,
+      title: parsed.merchant || parsed.memo || nlText,
+      originalAmount: parsed.amount || '',
+      category: EXPENSE_CATEGORIES.includes(parsed.category) ? parsed.category : '기타',
+      memo: parsed.memo || nlText,
+    }));
+  };
+
+  const handleNlSubmit = async (e) => {
+    e.preventDefault();
+    const text = nlText.trim();
+    if (!text || nlParsing) return;
+
+    setNlParsing(true);
+    try {
+      const result = await nlParseApi.parse({ userId: user?.userId, text });
+
+      if (!result.ok) {
+        toast(result.message || '금액을 찾지 못했어요. 다시 입력해주세요.', { type: 'error' });
+        return;
+      }
+
+      if (result.needsConfirmation) {
+        const merchantPart = result.merchant ? `${result.merchant} · ` : '';
+        const summary =
+          `${merchantPart}${result.category} · ${Number(result.amount).toLocaleString()}원\n` +
+          `${result.date}로 저장할까요?`;
+        const ok = await confirm(summary, { confirmLabel: '저장', cancelLabel: '수정' });
+        if (ok) {
+          await saveParsedExpense(result);
+        } else {
+          applyParsedToManualForm(result);
+          toast('아래에서 확인하고 저장해주세요.', { type: 'info' });
+        }
+      } else {
+        await saveParsedExpense(result);
+      }
+    } catch (error) {
+      toast(error?.response?.data?.message || '인식에 실패했어요. 직접 입력해주세요.', { type: 'error' });
+    } finally {
+      setNlParsing(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.transDate || !formData.originalAmount || Number(formData.originalAmount) <= 0 || !formData.title) {
@@ -177,6 +281,33 @@ const ExpenseForm = () => {
             <button type="button" className={`type-btn ${formData.type === '지출' ? 'active expense' : ''}`} onClick={() => handleTypeToggle('지출')}>지출</button>
           </div>
         </div>
+
+        {formData.type === '지출' && (
+          <form className="nl-quick-entry" onSubmit={handleNlSubmit}>
+            <label className="input-label" htmlFor="nlText">AI로 빠르게 입력</label>
+            <div className="nl-quick-entry-row">
+              <input
+                id="nlText"
+                type="text"
+                className="input-field nl-quick-entry-input"
+                placeholder="예: 스타벅스 아메리카노 5천원"
+                value={nlText}
+                onChange={handleNlTextChange}
+                disabled={nlParsing}
+              />
+              <button
+                type="submit"
+                className="nl-quick-entry-btn"
+                disabled={nlParsing || !nlText.trim()}
+              >
+                {nlParsing ? '인식 중…' : '입력'}
+              </button>
+            </div>
+            {nlPreviewAmount != null && (
+              <div className="nl-quick-entry-preview">{nlPreviewAmount.toLocaleString()}원 정도로 보여요…</div>
+            )}
+          </form>
+        )}
 
         {formData.type === '지출' && (
           <div

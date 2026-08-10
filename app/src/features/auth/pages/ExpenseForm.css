@@ -67,6 +67,49 @@
 .type-btn.active.income { color: var(--primary-color); }
 .type-btn.active.expense { color: var(--expense-color); }
 
+.nl-quick-entry {
+  margin-bottom: 24px;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-accent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 18%, transparent);
+}
+
+.nl-quick-entry-row {
+  display: flex;
+  gap: 10px;
+}
+
+.nl-quick-entry-input {
+  flex: 1;
+  height: 52px;
+}
+
+.nl-quick-entry-btn {
+  flex-shrink: 0;
+  padding: 0 22px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
+}
+
+.nl-quick-entry-btn:hover:not(:disabled) { background: var(--primary-hover); }
+.nl-quick-entry-btn:active:not(:disabled) { transform: scale(0.96); transition-duration: 0.08s; }
+.nl-quick-entry-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.nl-quick-entry-preview {
+  margin-top: 10px;
+  padding-left: 5px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
 .ocr-upload-area {
   width: 100%;
   height: 220px;
