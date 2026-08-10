@@ -30,17 +30,6 @@ const ExpenseForm = () => {
   const [personalExamples, setPersonalExamples] = useState([]);
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    if (!user?.userId) return;
-    const apiType = formData.type === '수입' ? 'IN' : 'OUT';
-    let cancelled = false;
-    nlParseApi.getExamples({ userId: user.userId, type: apiType })
-      .then((data) => { if (!cancelled) setPersonalExamples(data?.examples || []); })
-      .catch(() => { if (!cancelled) setPersonalExamples([]); });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.userId, formData.type]);
-
   const getToday = () => {
     const date = new Date();
     const year = date.getFullYear();
@@ -58,6 +47,17 @@ const ExpenseForm = () => {
     memo: '',
     excludeAnalysis: 'N'
   });
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    const apiType = formData.type === '수입' ? 'IN' : 'OUT';
+    let cancelled = false;
+    nlParseApi.getExamples({ userId: user.userId, type: apiType })
+      .then((data) => { if (!cancelled) setPersonalExamples(data?.examples || []); })
+      .catch(() => { if (!cancelled) setPersonalExamples([]); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId, formData.type]);
 
   const handleTypeToggle = (type) => {
     const newCategories = type === '수입' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
