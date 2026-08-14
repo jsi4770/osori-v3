@@ -298,7 +298,11 @@ export default function OnboardingPage() {
             <button type="button" className="ob-btn ob-btn-next" onClick={goNext}>
               다음
             </button>
-            <button type="button" className="ob-skip ob-skip-footer" onClick={() => finish("/login")}>
+            <button
+              type="button"
+              className="ob-skip ob-skip-footer"
+              onClick={() => setCurrentStep(SLIDES_DATA.length - 1)}
+            >
               건너뛰기
             </button>
           </>
