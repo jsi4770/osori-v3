@@ -116,18 +116,22 @@ public class UserServiceImpl implements UserService {
 	
 
 	@Override
-	public Map<String, Object> processKakaoLogin(String code) {
-		
+	public Map<String, Object> processKakaoLogin(String code, String redirectUri) {
+
 		// 카카오 토큰 받기
 	    RestTemplate rt = new RestTemplate();
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
-	    
+	    // 프론트가 인가 요청 때 실제로 쓴 redirect_uri를 그대로 돌려줘야 카카오가 토큰 교환을 승인한다
+	    // (둘이 다르면 실패). beta/v3처럼 배포 도메인이 여러 개일 수 있어 서버 고정값 대신 요청값을 우선 사용하고,
+	    // 값이 없을 때만(구버전 프론트 등) application.properties의 기본값으로 폴백한다.
+	    String effectiveRedirectUri = (redirectUri != null && !redirectUri.isBlank()) ? redirectUri : kakaoRedirectUri;
+
 	    MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 	    params.add("grant_type", "authorization_code");
 	    params.add("client_id", kakaoClientId);
-	    params.add("redirect_uri", kakaoRedirectUri);
+	    params.add("redirect_uri", effectiveRedirectUri);
 	    params.add("code", code);
 	    params.add("client_secret", kakaoClientSecret);
 

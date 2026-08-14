@@ -465,9 +465,11 @@ public class UserController {
 
 	
 	//2월 2일 15시 4분부터 작업 (카카오 연동)
+	// redirectUri: 프론트가 인가 요청 때 실제로 쓴 콜백 URL. 배포 도메인이 여러 개(beta/v3 등)일 수 있어서
+	// 프론트가 자기 window.location.origin 기준으로 만든 값을 그대로 보내주면 그걸 토큰 교환에 그대로 사용한다.
 	@GetMapping("/kakao/callback")
-    public ResponseEntity<?> kakaoLogin(@RequestParam String code) {
-        Map<String, Object> result = service.processKakaoLogin(code); // 인가 코드를 받기 
+    public ResponseEntity<?> kakaoLogin(@RequestParam String code, @RequestParam(required = false) String redirectUri) {
+        Map<String, Object> result = service.processKakaoLogin(code, redirectUri); // 인가 코드를 받기
         
         Object messageObj = result.get("message");
         

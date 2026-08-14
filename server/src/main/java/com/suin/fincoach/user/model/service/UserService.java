@@ -22,7 +22,8 @@ public interface UserService {
 	int resetPassword(Map<String, String> userMap); 
 	
 	// 카카오 로그인 처리 메소드 , 기존에 연동 했던 사람이 연동 해제 후 다시 연동 하려고 할때 연동 가능한 메소드
-	Map<String, Object> processKakaoLogin(String code);
+	// redirectUri: 프론트가 인가 요청 때 실제로 쓴 콜백 URL(배포 도메인이 여러 개일 수 있어 필요) — 없으면 서버 기본값 사용
+	Map<String, Object> processKakaoLogin(String code, String redirectUri);
 	
 	//카카오 연동 해제 메소드 
 	boolean unlinkKakao(int userId);

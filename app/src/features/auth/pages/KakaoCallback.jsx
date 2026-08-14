@@ -17,7 +17,11 @@ export default function KakaoCallback() {
     if (code && !hasCalled.current) {
       hasCalled.current = true; // 실행됨으로 표시
 
-      apiFetch(`/user/kakao/callback?code=${code}`)
+      // 인가 요청 때 쓴 것과 똑같은 콜백 URL(현재 창의 origin 기준 — beta/v3 등 배포 도메인이
+      // 여러 개여도 항상 지금 접속한 도메인과 일치)을 그대로 서버에 넘겨야 카카오 토큰 교환이 통과한다.
+      const redirectUri = `${window.location.origin}/auth/kakao/callback`;
+
+      apiFetch(`/user/kakao/callback?code=${code}&redirectUri=${encodeURIComponent(redirectUri)}`)
         .then((res) => {
           const status = res?.user?.status;
 
