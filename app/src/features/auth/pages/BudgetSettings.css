@@ -1,0 +1,34 @@
+.bs-card {
+  padding: 28px;
+  gap: 6px;
+}
+
+.bs-field {
+  margin-top: 10px;
+}
+
+.bs-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.bs-amount-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.bs-amount-wrapper .ps-input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.bs-unit {
+  position: absolute;
+  right: 14px;
+  color: var(--text-weak);
+  font-weight: 700;
+  font-size: 0.9rem;
+  pointer-events: none;
+}

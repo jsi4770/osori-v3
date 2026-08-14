@@ -50,10 +50,16 @@
 .ps-profile-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 16px;
+}
+
+.ps-toggle-details-btn {
+  flex-shrink: 0;
+  font-size: 0.9rem;
 }
 
 .ps-profile-meta {

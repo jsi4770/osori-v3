@@ -44,9 +44,14 @@ public class UserDao {
 			return sqlSession.update("userMapper.updateDate",loginUser); 
 		}
 
-		//정보 수정 (휴면 계정이면 status도 바꿔주자. 근데 사실 휴면계정이든 아니든 status Y로 고정 시켜도 문제없다. N은 탈퇴 한사람으로 가정) 
+		//정보 수정 (휴면 계정이면 status도 바꿔주자. 근데 사실 휴면계정이든 아니든 status Y로 고정 시켜도 문제없다. N은 탈퇴 한사람으로 가정)
 		public int updateUser(SqlSessionTemplate sqlSession, User loginUser) {
-			return sqlSession.update("userMapper.updateUser",loginUser); 
+			return sqlSession.update("userMapper.updateUser",loginUser);
+		}
+
+		// 월 예산(B_AMOUNT) + 저축 목표 수정
+		public int updateBudget(SqlSessionTemplate sqlSession, User loginUser) {
+			return sqlSession.update("userMapper.updateBudget", loginUser);
 		}
 		
 		//회원 삭제(DB에서 아예 삭제가 아닌 STATUS='N'으로)

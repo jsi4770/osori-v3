@@ -13,7 +13,8 @@ public interface UserService {
 	int nickNameCheck(String nickName); // 닉네임 중복 체크 메소드
 	int emailCheck(String email); // 이메일 중복 체크 메소드
 	User selectUser(User user); // 회원 조회, 마지막 로그인 날짜 갱신 및 휴면 계정 처리 메소드 
-	int updateUser(User loginUser); // 정보 수정 
+	int updateUser(User loginUser); // 정보 수정
+	int updateBudget(User loginUser); // 월 예산 + 저축 목표 수정
 	int deleteUser(User loginUser); // 회원 탈퇴 메소드
 	int changeUserPwd(User loginUser); // 비밀번호 변경 메소드
 	User selectByLoginId(String loginId); // 아이디로 회원 정보 조회하는 메소드 

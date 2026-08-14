@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="categoryMapper">
+
+	<insert id="insert" parameterType="UserCategory" useGeneratedKeys="true" keyProperty="categoryId" keyColumn="category_id">
+		INSERT INTO USER_CATEGORY (CATEGORY_ID, USER_ID, TYPE, NAME, SOURCE)
+		VALUES (nextval('SEQ_USER_CATEGORY'), #{userId}, #{type}, #{name}, #{source})
+	</insert>
+
+	<select id="selectByUser" parameterType="Map" resultType="UserCategory">
+		SELECT
+			CATEGORY_ID AS "categoryId",
+			USER_ID     AS "userId",
+			TYPE        AS "type",
+			NAME        AS "name",
+			SOURCE      AS "source",
+			CREATED_AT  AS "createdAt"
+		FROM USER_CATEGORY
+		WHERE USER_ID = #{userId} AND TYPE = #{type}
+	</select>
+
+	<delete id="deleteById" parameterType="int">
+		DELETE FROM USER_CATEGORY WHERE CATEGORY_ID = #{categoryId}
+	</delete>
+
+	<delete id="deleteBySource" parameterType="Map">
+		DELETE FROM USER_CATEGORY
+		WHERE USER_ID = #{userId} AND TYPE = #{type} AND NAME = #{name} AND SOURCE = #{source}
+	</delete>
+
+	<!-- 카테고리별 사용 빈도 — 개인화(자주 쓰는 카테고리 우선 정렬 + Gemini 프롬프트 힌트)에 사용 -->
+	<select id="selectCategoryFrequency" parameterType="Map" resultType="Map">
+		SELECT
+			CATEGORY AS "category",
+			COUNT(*) AS "cnt"
+		FROM MYTRANS
+		WHERE USER_ID = #{userId} AND TYPE = #{type} AND CATEGORY IS NOT NULL
+		GROUP BY CATEGORY
+		ORDER BY COUNT(*) DESC
+	</select>
+
+</mapper>

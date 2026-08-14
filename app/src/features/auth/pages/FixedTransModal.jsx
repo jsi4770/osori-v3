@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { fixedTransApi } from "../../../api/fixedTransApi";
-import { EXPENSE_CATEGORIES } from "../../../constants/categories";
 import "./FixedTransModal.css";
 import { useFeedback } from "../../../context/FeedbackContext";
-const CATEGORY_OPTIONS = EXPENSE_CATEGORIES;
+import useCategories from "../../../hooks/useCategories";
 
 export default function FixedTransModal({
   userId,
@@ -14,6 +13,8 @@ export default function FixedTransModal({
 }) {
   const { toast } = useFeedback();
   const isEdit = mode === "edit";
+  // 고정지출은 항상 지출(OUT)이라 수입 카테고리 개념이 없음
+  const [CATEGORY_OPTIONS] = useCategories(userId, "OUT");
 
   const today = useMemo(() => {
     const d = new Date();

@@ -1,0 +1,64 @@
+.bp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 4px 0;
+}
+
+.bp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bp-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bp-row-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-weak);
+}
+
+.bp-row-value {
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-sub);
+}
+
+.bp-row-value.bp-over {
+  color: var(--error-color);
+}
+
+.bp-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  overflow: hidden;
+}
+
+.bp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary-color);
+  transition: width 0.3s ease;
+}
+
+.bp-bar-fill.bp-over {
+  background: var(--error-color);
+}
+
+.bp-bar-fill.bp-savings {
+  background: var(--income-color);
+}
+
+.bp-warning {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--error-color);
+}

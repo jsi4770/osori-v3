@@ -327,11 +327,16 @@ public class UserServiceImpl implements UserService {
 		
 	}
 	
-	@Override // 회원 정보 업데이트 
+	@Override // 회원 정보 업데이트
 	public int updateUser(User loginUser) {
 		int result = dao.updateUser(sqlSession,loginUser);
-		
-		return result; 
+
+		return result;
+	}
+
+	@Override // 월 예산 + 저축 목표 업데이트
+	public int updateBudget(User loginUser) {
+		return dao.updateBudget(sqlSession, loginUser);
 	}
 	
 	//회원 상태 N으로 바꾸기 (로그인 불가능 하게) 

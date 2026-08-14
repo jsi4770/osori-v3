@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.suin.fincoach.category.model.service.CategoryService;
 import com.suin.fincoach.coaching.model.service.GeminiClient;
 import com.suin.fincoach.nlparse.model.dao.MerchantCacheDao;
 import com.suin.fincoach.nlparse.model.dao.NlInputHistoryDao;
@@ -39,6 +40,9 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 	private NlInputHistoryDao nlInputHistoryDao;
 
 	@Autowired
+	private CategoryService categoryService;
+
+	@Autowired
 	private SqlSessionTemplate sqlSession;
 
 	@Value("${coaching.llm.enabled:false}")
@@ -55,18 +59,14 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 	// 명시적으로 지정해 이 클래스만 봐도 의도가 분명하도록 한다.
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
-	// app/src/constants/categories.js의 EXPENSE_CATEGORIES/INCOME_CATEGORIES와 동일하게 유지해야 함.
-	private static final List<String> EXPENSE_CATEGORIES = List.of(
-			"식비", "생활/마트", "쇼핑", "의료/건강", "교통", "문화/여가", "교육",
-			"주거/월세", "통신비", "보험", "구독서비스", "기타");
-
-	private static final List<String> INCOME_CATEGORIES = List.of(
-			"월급", "용돈", "금융소득", "상여금", "기타");
+	// 카테고리 힌트로 프롬프트에 넣을 "자주 쓰는 카테고리" 최대 개수.
+	private static final int TOP_CATEGORY_HINT_LIMIT = 5;
 
 	@Override
 	public Map<String, Object> parse(int userId, String text, String type) {
 		String txType = normalizeType(type);
-		List<String> categories = categoriesFor(txType);
+		List<String> categories = categoriesFor(userId, txType);
+		List<String> topUsedCategories = categoryService.getTopUsedCategories(userId, txType, TOP_CATEGORY_HINT_LIMIT);
 		LocalDate today = LocalDate.now(KST);
 		Integer regexAmount = RegexExpenseParser.parseAmount(text);
 
@@ -74,7 +74,9 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		String source = "regex-fallback";
 		if (llmEnabled) {
 			llm = geminiClient.generateStructured(
-					buildSystemPrompt(today, txType, categories), buildContents(text), responseSchema(categories));
+					buildSystemPrompt(today, txType, categories, topUsedCategories),
+					buildContents(text),
+					responseSchema(categories));
 			if (llm != null) {
 				source = "llm";
 			}
@@ -195,14 +197,19 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		return "IN".equalsIgnoreCase(type) ? "IN" : "OUT";
 	}
 
-	private List<String> categoriesFor(String txType) {
-		return "IN".equals(txType) ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+	// 기본 카테고리(숨김 제외) + 이 사용자가 직접 추가한 커스텀 카테고리를 사용 빈도순으로 병합한 목록.
+	// CategoryService가 유저별 개인화(추가/숨김/빈도)를 전부 처리하므로 여기서는 정적 목록을 직접 두지 않는다.
+	private List<String> categoriesFor(int userId, String txType) {
+		return categoryService.getMergedCategories(userId, txType);
 	}
 
-	private String buildSystemPrompt(LocalDate today, String txType, List<String> categories) {
+	private String buildSystemPrompt(LocalDate today, String txType, List<String> categories, List<String> topUsedCategories) {
 		boolean isIncome = "IN".equals(txType);
 		String subject = isIncome ? "수입" : "지출";
 		String categoriesStr = String.join(", ", categories);
+		String topUsedHint = topUsedCategories.isEmpty() ? "" :
+				(" 참고로 이 사용자가 최근 자주 사용한 카테고리 순서는 " + String.join(", ", topUsedCategories)
+						+ "입니다 — 애매하면 이 중에서 우선 고려하세요.");
 		return "당신은 사용자가 프롬프트처럼 자유롭게 입력한 " + subject + " 내역을 구조화된 데이터로 추출하는 도우미입니다. "
 				+ "오늘 날짜는 " + today + "입니다. '어제', '그제', '3일 전'처럼 상대적인 날짜 표현은 반드시 이 날짜를 "
 				+ "기준으로 계산해 yyyy-MM-dd 형식으로 답하세요(모델 자체 학습 시점 기준으로 착각하지 마세요). "
@@ -217,7 +224,8 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 				+ (isIncome ? "" : (" installmentMonths는 '3개월 할부', '할부 3개월'처럼 명시적으로 할부라고 말하지 않아도, "
 						+ "'5만원 2개월'처럼 금액 바로 뒤에 개월수만 붙은 구어체 표현도 할부로 간주해 그 숫자를 정수로 답하세요. "
 						+ "단 '2개월 동안', '지난 2개월'처럼 기간·과거를 뜻하는 표현은 할부가 아니므로 0으로 답하고, "
-						+ "할부 언급이 전혀 없거나 '일시불'이면 0으로 답하세요."));
+						+ "할부 언급이 전혀 없거나 '일시불'이면 0으로 답하세요."))
+				+ topUsedHint;
 	}
 
 	private JSONArray buildContents(String text) {

@@ -25,6 +25,15 @@ const CATEGORY_COLORS = (() => {
   return map;
 })();
 
+// 사용자가 설정 탭에서 추가한 커스텀 카테고리는 이 정적 맵에 없으므로, 이름 기반 해시로 색을
+// 안정적으로(렌더할 때마다 같은 색으로) 배정한다.
+const colorFor = (cat) => {
+  if (CATEGORY_COLORS[cat]) return CATEGORY_COLORS[cat];
+  let hash = 0;
+  for (let i = 0; i < cat.length; i += 1) hash = (hash * 31 + cat.charCodeAt(i)) >>> 0;
+  return VARIABLE_COLORS[hash % VARIABLE_COLORS.length];
+};
+
 function ExpenseChart({ transactions = [], currentDate }) {
   if (!currentDate || !(currentDate instanceof Date)) return null;
   const targetYear = currentDate.getFullYear();
@@ -38,13 +47,15 @@ function ExpenseChart({ transactions = [], currentDate }) {
   );
 
   const analysisData = expenses.reduce((acc, curr) => {
-    const category = EXPENSE_CATEGORIES.includes(curr.category) ? curr.category : '기타';
+    // 커스텀 카테고리도(기본 목록에 없더라도) 그대로 자기 이름으로 집계한다 — 여기서 '기타'로
+    // 뭉개버리면 사용자가 새로 만든 카테고리가 항상 '기타'에 섞여 보이는 문제가 생긴다.
+    const category = curr.category || '기타';
 
     acc[category] = (acc[category] || 0) + Math.abs(curr.amount);
     return acc;
   }, {});
 
-  const labels = EXPENSE_CATEGORIES.filter(cat => analysisData[cat] > 0);
+  const labels = Object.keys(analysisData).filter(cat => analysisData[cat] > 0);
   const dataValues = labels.map(cat => analysisData[cat]);
 
   const totalExpenditure = dataValues.reduce((sum, val) => sum + val, 0);
@@ -56,7 +67,7 @@ function ExpenseChart({ transactions = [], currentDate }) {
     datasets: [
       {
         data: dataValues,
-        backgroundColor: labels.map(cat => CATEGORY_COLORS[cat]),
+        backgroundColor: labels.map(cat => colorFor(cat)),
         borderWidth: 1,
       },
     ],

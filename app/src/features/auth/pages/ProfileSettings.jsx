@@ -4,6 +4,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { useTheme } from "../../../context/ThemeContext";
 import { useFeedback } from "../../../context/FeedbackContext";
 import { userApi } from "../../../api/userApi";
+import CategoryManager from "./CategoryManager";
+import BudgetSettings from "./BudgetSettings";
 import "./MyPage.css";
 import "./ProfileSettings.css";
 
@@ -75,6 +77,9 @@ function ProfileSettings() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  // 계정 정보(닉네임/이름/이메일/비밀번호)는 기본적으로 접어두고, "내 정보 보기"를 눌러야 펼쳐진다.
+  const [showAccountDetails, setShowAccountDetails] = useState(false);
 
   const hasProfileChanges = nickName !== initial.displayName || userName !== initial.name;
   const hasEmailChanges = email !== initial.email;
@@ -351,6 +356,9 @@ function ProfileSettings() {
   const displayName = (initial.displayName || "회원").trim();
   const displayEmail = (initial.email || "").trim();
 
+  // 휴면 계정은 해제 CTA를 놓치지 않도록 접힘 상태와 무관하게 항상 펼쳐서 보여준다.
+  const accountDetailsVisible = showAccountDetails || isDormant;
+
   // 탈퇴 버튼 활성화 조건
   const canWithdraw = withdrawChecked && withdrawPassword.trim().length > 0 && !isWithdrawing;
 
@@ -367,8 +375,19 @@ function ProfileSettings() {
                 <div className="ps-meta-name">{displayName}</div>
                 <div className="ps-meta-email">{displayEmail}</div>
               </div>
+              {!isDormant && (
+                <button
+                  type="button"
+                  className="ps-link-btn ps-toggle-details-btn"
+                  onClick={() => setShowAccountDetails((v) => !v)}
+                >
+                  {accountDetailsVisible ? "접기" : "내 정보 보기"}
+                </button>
+              )}
             </div>
 
+            {accountDetailsVisible && (
+              <>
             <div className="ps-form ps-form-2col">
               <div className="ps-field">
                 <label className="ps-label">닉네임</label>
@@ -409,7 +428,7 @@ function ProfileSettings() {
 
             <div className="ps-form">
               <div className="ps-field">
-                <label className="ps-label">이메일 (읽기만 가능)</label>
+                <label className="ps-label">이메일</label>
                 <input
                   className="ps-input"
                   value={email}
@@ -545,6 +564,8 @@ function ProfileSettings() {
                   : "저장"}
               </button>
             </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -573,6 +594,18 @@ function ProfileSettings() {
               ))}
             </div>
           </div>
+        </section>
+
+        {/* 예산/저축 목표: 월 예산 + 저축 목표 금액/날짜/현재 저축액 */}
+        <section className="ps-section">
+          <h2 className="ps-section-title">예산 · 저축 목표</h2>
+          <BudgetSettings />
+        </section>
+
+        {/* 카테고리 관리: 기본 카테고리 숨김/표시 + 커스텀 카테고리 추가/삭제 */}
+        <section className="ps-section">
+          <h2 className="ps-section-title">카테고리</h2>
+          <CategoryManager />
         </section>
 
         {/* 계정 관리: 별도 카드/설명 없이 작은 텍스트 링크로만 노출 */}

@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { IconReceipt, IconArrowUp } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
 import { useFeedback } from '../../../context/FeedbackContext';
+import useCategories from '../../../hooks/useCategories';
 
 // 문장 입력이 감이 안 잡히는 사용자를 위한 예시 — 탭하면 그대로 입력창에 채워진다.
 const NL_EXPENSE_EXAMPLES = ['스타벅스 아메리카노 5천원', '어제 친구랑 밥 3만원', '택시 12000원'];
@@ -18,7 +19,6 @@ const ExpenseForm = () => {
   const { toast, confirm } = useFeedback();
   const navigate = useNavigate();
 
-  const [currentCategories, setCurrentCategories] = useState(EXPENSE_CATEGORIES);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,9 +50,11 @@ const ExpenseForm = () => {
     installmentMonths: '' // 지출에서만 사용 — 2 이상이면 할부로 등록
   });
 
+  const apiType = formData.type === '수입' ? 'IN' : 'OUT';
+  const [currentCategories] = useCategories(user?.userId, apiType);
+
   useEffect(() => {
     if (!user?.userId) return;
-    const apiType = formData.type === '수입' ? 'IN' : 'OUT';
     let cancelled = false;
     nlParseApi.getExamples({ userId: user.userId, type: apiType })
       .then((data) => { if (!cancelled) setPersonalExamples(data?.examples || []); })
@@ -63,7 +65,6 @@ const ExpenseForm = () => {
 
   const handleTypeToggle = (type) => {
     const newCategories = type === '수입' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-    setCurrentCategories(newCategories);
     setFormData({
       ...formData,
       type: type,
@@ -245,7 +246,6 @@ const ExpenseForm = () => {
   const applyParsedToManualForm = (parsed, apiType) => {
     const isIncome = apiType === 'IN';
     const categories = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-    setCurrentCategories(categories);
     setFormData(prev => ({
       ...prev,
       type: isIncome ? '수입' : '지출',

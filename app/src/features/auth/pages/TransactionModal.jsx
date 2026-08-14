@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from "react";
 import styles from "./MyAccountBook.module.css";
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../../../constants/categories";
+import { useAuth } from "../../../context/AuthContext";
 import { useFeedback } from "../../../context/FeedbackContext";
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../../../constants/categories";
+import useCategories from "../../../hooks/useCategories";
 
 // 가계부 내역 보기/수정/삭제 공용 모달 (가계부·캘린더뷰에서 공유)
 export default function TransactionModal({ isOpen, type, transaction, onClose, onSave, onDelete }) {
+  const { user } = useAuth();
   const { toast } = useFeedback();
-  const [currentCategories, setCurrentCategories] = useState(EXPENSE_CATEGORIES);
   const today = new Date().toISOString().split("T")[0];
 
   const [formData, setFormData] = useState({
     text: "", amount: 0, date: "", category: "기타", memo: "", type: "OUT", excludeAnalysis: "N",
   });
 
+  const [currentCategories] = useCategories(user?.userId, formData.type);
+
   useEffect(() => {
     if (transaction) {
       const transType = transaction.type || "OUT";
-      setCurrentCategories(transType === "IN" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES);
       setFormData({
         text: transaction.text,
         amount: Math.abs(transaction.amount),
@@ -48,7 +51,6 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
   const handleTypeChange = (e) => {
     const newType = e.target.value;
     const newCategories = newType === "IN" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-    setCurrentCategories(newCategories);
     setFormData((prev) => ({ ...prev, type: newType, category: newCategories[0] }));
   };
 

@@ -4,6 +4,7 @@ import "./MyPage.css";
 import { useAuth } from "../../../context/AuthContext";
 import { useAppReady } from "../../../context/AppReadyContext";
 import HomeInsightCard from "../../coaching/HomeInsightCard";
+import BudgetProgressCard from "./BudgetProgressCard";
 import ChallengeCard from "../../coaching/ChallengeCard";
 import transApi from "../../../api/transApi";
 import ExpenseChart from "./ExpenseChart";
@@ -137,6 +138,8 @@ const MyPage = () => {
           <span className="expense-summary-label">이번 달 지출</span>
           <span className="expense-summary-amount">{totalMonthlyExpenditure.toLocaleString()}원</span>
         </div>
+
+        <BudgetProgressCard user={user} monthlySpent={totalMonthlyExpenditure} />
 
         <HomeInsightCard transactions={transactions} currentDate={currentDate} isLoading={isLoading} />
 

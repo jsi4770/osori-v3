@@ -239,6 +239,23 @@ public class UserController {
 	}
 
 	// 정보 수정 메소드
+	// 월 예산(기존 B_AMOUNT 컬럼 재사용) + 저축 목표(금액/날짜/현재 저축액) 저장.
+	// 프론트는 항상 전체 값을 함께 보내야 한다 — 일부만 보내면 나머지가 0/null로 덮어써진다.
+	@PatchMapping("/budget")
+	public ResponseEntity<?> updateBudget(@RequestBody User loginUser) {
+
+		int result = service.updateBudget(loginUser);
+
+		if (result <= 0) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "저장에 실패했습니다."));
+		}
+
+		User updated = service.selectByLoginId(loginUser.getLoginId());
+		updated.setPassword(null);
+
+		return ResponseEntity.ok(Map.of("user", updated, "message", "저장했습니다."));
+	}
+
 	@PatchMapping("/update")
 	public ResponseEntity<?> updateUser(@ModelAttribute User loginUser) {
 

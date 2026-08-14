@@ -162,3 +162,27 @@ CREATE TABLE IF NOT EXISTS GEMINI_CALL_BUDGET (
     CALL_DATE  DATE PRIMARY KEY,
     CALL_COUNT INT NOT NULL DEFAULT 0
 );
+
+-- 저축 목표. B_AMOUNT(기존 컬럼, 예전부터 있었지만 어디서도 안 쓰이고 있었음)를 "월 예산"으로 재사용한다.
+-- 저축은 이 앱이 잔액을 추적하지 않아 지출입에서 자동 계산할 수 없으므로, 목표 금액/날짜와 함께
+-- 사용자가 직접 입력·갱신하는 SAVINGS_CURRENT_AMOUNT로 진행률을 계산한다.
+ALTER TABLE USERS ADD COLUMN IF NOT EXISTS SAVINGS_GOAL_AMOUNT INT;
+ALTER TABLE USERS ADD COLUMN IF NOT EXISTS SAVINGS_GOAL_DATE DATE;
+ALTER TABLE USERS ADD COLUMN IF NOT EXISTS SAVINGS_CURRENT_AMOUNT INT DEFAULT 0;
+
+CREATE SEQUENCE IF NOT EXISTS SEQ_USER_CATEGORY START WITH 1 INCREMENT BY 1;
+
+-- 카테고리 개인화: 기본 카테고리 목록(app/src/constants/categories.js와 NlExpenseParseServiceImpl에
+-- 동일하게 하드코딩됨)은 그대로 두고, 사용자별로 "추가한 커스텀 카테고리"와 "숨긴 기본 카테고리"만
+-- 이 테이블에 기록한다. SOURCE='CUSTOM'이면 NAME이 새로 추가된 카테고리, SOURCE='HIDDEN_DEFAULT'면
+-- NAME이 이 사용자에게는 숨겨야 할 기본 카테고리 이름이다. MYTRANS.CATEGORY는 이미 자유 텍스트라서
+-- 커스텀 카테고리를 삭제해도 기존 거래 내역의 카테고리 값은 그대로 남는다(선택 목록에서만 빠짐).
+CREATE TABLE IF NOT EXISTS USER_CATEGORY (
+    CATEGORY_ID INT PRIMARY KEY,
+    USER_ID     INT REFERENCES USERS(USER_ID),
+    TYPE        VARCHAR(3) NOT NULL,
+    NAME        VARCHAR(50) NOT NULL,
+    SOURCE      VARCHAR(20) NOT NULL,
+    CREATED_AT  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (USER_ID, TYPE, NAME)
+);
