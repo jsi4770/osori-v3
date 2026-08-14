@@ -153,3 +153,12 @@ CREATE TABLE IF NOT EXISTS INSTALLMENT_PLAN (
 
 -- MYTRANS 행이 할부 계획에서 생성됐다면 그 계획을 가리킨다 (FIXED_ID와 동일한 패턴, FK 제약 없음).
 ALTER TABLE MYTRANS ADD COLUMN IF NOT EXISTS INSTALLMENT_ID INT;
+
+-- 실제 Gemini 호출이 일어나는 모든 엔드포인트(nlparse/coaching/challenge)가 공유하는 일일 호출 한도 카운터.
+-- 예전엔 서버 메모리(AtomicInteger)에만 있어서 배포/헬스체크 재시작마다 한도가 리셋됐다 — DB에 저장해
+-- 재시작과 무관하게 유지되도록 한다. CALL_DATE가 PK라 날짜당 한 행만 존재하고, 증가는 항상
+-- INSERT ... ON CONFLICT ... DO UPDATE ... RETURNING으로 원자적으로 처리한다(동시 요청에도 안전).
+CREATE TABLE IF NOT EXISTS GEMINI_CALL_BUDGET (
+    CALL_DATE  DATE PRIMARY KEY,
+    CALL_COUNT INT NOT NULL DEFAULT 0
+);

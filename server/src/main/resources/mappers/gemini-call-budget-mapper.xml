@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="geminiCallBudgetMapper">
+
+	<!--
+	 오늘 날짜 행을 없으면 CALL_COUNT=1로 만들고, 있으면 +1 해서 결과 카운트를 그대로 돌려준다.
+	 <select>로 선언했지만 본문은 INSERT다 — RETURNING 절이 있는 DML은 executeQuery()로 실행해야
+	 결과를 받아올 수 있어서, MyBatis에도 select 문으로 등록해야 한다(insert로 등록하면 RETURNING 값을 못 읽음).
+	 -->
+	<select id="incrementAndGetTodayCalls" parameterType="java.time.LocalDate" resultType="int">
+		INSERT INTO GEMINI_CALL_BUDGET (CALL_DATE, CALL_COUNT)
+		VALUES (#{callDate}, 1)
+		ON CONFLICT (CALL_DATE) DO UPDATE SET CALL_COUNT = GEMINI_CALL_BUDGET.CALL_COUNT + 1
+		RETURNING CALL_COUNT
+	</select>
+
+</mapper>
