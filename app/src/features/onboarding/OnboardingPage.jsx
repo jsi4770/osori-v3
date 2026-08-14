@@ -101,11 +101,11 @@ function QuickInputVisual() {
     <div className="ob-visual">
       <div className="ob-phone">
         <div className="ob-input-mock">
-          <span className="ob-input-mock-text">다이소에서 생활용품 8500원</span>
+          <span className="ob-input-mock-text">다이소에서 생활용품 8000원</span>
         </div>
         <div className="ob-parse-arrow">↓</div>
         <div className="ob-parse-fields">
-          <div className="ob-chip"><span>금액</span><b>8,500원</b></div>
+          <div className="ob-chip"><span>금액</span><b>8,000원</b></div>
           <div className="ob-chip"><span>카테고리</span><b>생활/마트 ✓</b></div>
           <div className="ob-chip ob-chip-full"><span>추천</span><b>자주 쓰는 카테고리로 자동 분류</b></div>
         </div>
