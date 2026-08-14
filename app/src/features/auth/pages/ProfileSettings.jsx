@@ -66,11 +66,19 @@ function ProfileSettings() {
   const [pwMatchMsg, setPwMatchMsg] = useState("");
   const [pwMatchOk, setPwMatchOk] = useState(null); // null | true | false
 
-  //원래 회원탈퇴 디자인(카드 + 모달)
+  //회원탈퇴 디자인(카드 + 모달) — 비밀번호 재확인 대신 탈퇴 사유 선택
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
-  const [withdrawPassword, setWithdrawPassword] = useState("");
-  const [withdrawConfirmText, setWithdrawConfirmText] = useState("");
+  const [withdrawReason, setWithdrawReason] = useState("");
   const [withdrawChecked, setWithdrawChecked] = useState(false);
+
+  const WITHDRAW_REASONS = [
+    "자주 사용하지 않아서",
+    "원하는 기능이 없어서",
+    "오류/버그가 많아서",
+    "사용법이 어려워서",
+    "개인정보 보호가 걱정돼서",
+    "기타",
+  ];
 
   // 탈퇴 중 중복 클릭 방지(디자인 영향 없음)
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -267,30 +275,6 @@ function ProfileSettings() {
     }
   };
 
-  const handleUnlinkKakao = async () => {
-    const ok = await confirm("카카오 연동을 해제하시겠습니까?\n해제 후에는 아이디와 비밀번호로 로그인해야 합니다.");
-    if (!ok) return;
-
-    try {
-      // 1. 서버에 연동 해제 요청 (userApi에 정의 필요)
-      await userApi.unlinkKakao();
-
-      toast("카카오 연동이 해제되었습니다.", { type: "success" });
-
-      // 2. 중요: 현재 프론트엔드 user 상태에서 loginType을 제거
-      // 그래야 화면에서 즉시 '연동 해제' 버튼이 사라집니다.
-      const updatedUser = { ...user, loginType: null };
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-
-    } catch (err) {
-      console.error("연동 해제 실패:", err);
-      toast("연동 해제 중 오류가 발생했습니다.", { type: "error" });
-    }
-};
-
-
-
   // 로그아웃 진행 중 중복 클릭 방지
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -310,10 +294,9 @@ function ProfileSettings() {
     }
   };
 
-  // ✅ 원래 회원탈퇴 UX: 위험 카드 클릭 → 모달 열기
+  // 회원탈퇴 UX: 위험 카드 클릭 → 모달 열기
   const openWithdraw = () => {
-    setWithdrawPassword("");
-    setWithdrawConfirmText("");
+    setWithdrawReason("");
     setWithdrawChecked(false);
 
     // 모달 열릴 때 탈퇴 진행 상태 초기화(디자인 영향 없음)
@@ -325,16 +308,16 @@ function ProfileSettings() {
   const closeWithdraw = () => setIsWithdrawOpen(false);
 
   const handleWithdraw = async () => {
-    // 체크박스 체크 + 비밀번호 입력 시에만 진행
+    // 체크박스 체크 + 탈퇴 사유 선택 시에만 진행
     if (!withdrawChecked) return toast("탈퇴 안내를 확인하고 체크해야 함", { type: "error" });
-    if (!withdrawPassword.trim()) return toast("비밀번호를 입력해야 함", { type: "error" });
+    if (!withdrawReason) return toast("탈퇴 사유를 선택해야 함", { type: "error" });
 
     if (isWithdrawing) return;
     setIsWithdrawing(true);
 
     try {
       // 서버 ResponseEntity message 표시
-      const res = await userApi.withdraw({ password: withdrawPassword });
+      const res = await userApi.withdraw({ reason: withdrawReason });
       const serverMessage =
         res?.message || (typeof res === "string" ? res : "회원탈퇴 완료");
       toast(serverMessage, { type: "success" });
@@ -360,7 +343,7 @@ function ProfileSettings() {
   const accountDetailsVisible = showAccountDetails || isDormant;
 
   // 탈퇴 버튼 활성화 조건
-  const canWithdraw = withdrawChecked && withdrawPassword.trim().length > 0 && !isWithdrawing;
+  const canWithdraw = withdrawChecked && Boolean(withdrawReason) && !isWithdrawing;
 
   return (
     <main className="fade-in">
@@ -447,17 +430,7 @@ function ProfileSettings() {
                 <div className="ps-field">
                   <div className="ps-row-between">
                     <label className="ps-label">계정 연동</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--text-sub)' }}>카카오 계정 연동 중</span>
-                      <button
-                        type="button"
-                        className="ps-link-btn"
-                        style={{ color: '#ff4d4f', fontWeight: 'bold' }}
-                        onClick={handleUnlinkKakao}
-                      >
-                        연동 해제
-                      </button>
-                    </div>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-sub)' }}>카카오 계정 연동 중</span>
                   </div>
                 </div>
               )}
@@ -630,7 +603,23 @@ function ProfileSettings() {
           <div className="ps-modal">
             <div className="ps-modal-title">정말 탈퇴하시겠습니까?</div>
             <div className="ps-modal-text">
-              아래 내용을 확인하시고, 체크 처리 및 비밀번호를 입력하시면 탈퇴가 진행됩니다.
+              탈퇴 시 계정 복구가 불가능합니다.
+            </div>
+
+            <div className="ps-field">
+              <label className="ps-label">탈퇴 사유를 선택해주세요</label>
+              <div className="ps-reason-grid">
+                {WITHDRAW_REASONS.map((reason) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    className={`ps-reason-btn ${withdrawReason === reason ? "active" : ""}`}
+                    onClick={() => setWithdrawReason(reason)}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <label className="ps-check">
@@ -639,19 +628,8 @@ function ProfileSettings() {
                 checked={withdrawChecked}
                 onChange={(e) => setWithdrawChecked(e.target.checked)}
               />
-              <span>탈퇴 시 계정 복구가 불가능합니다.</span>
+              <span>내용을 확인했습니다.</span>
             </label>
-
-            <div className="ps-field">
-              <label className="ps-label">비밀번호</label>
-              <input
-                className="ps-input"
-                type="password"
-                value={withdrawPassword}
-                onChange={(e) => setWithdrawPassword(e.target.value)}
-                placeholder="비밀번호 입력"
-              />
-            </div>
 
             <div className="ps-modal-actions">
               <button type="button" className="ps-btn" onClick={closeWithdraw}>

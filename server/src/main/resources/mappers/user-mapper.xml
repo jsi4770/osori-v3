@@ -115,8 +115,9 @@
 
   	<update id="deleteUser" parameterType="User">
   		UPDATE USERS
-  		SET STATUS = 'N'
-  		WHERE LOGIN_ID = #{loginId} 
+  		SET STATUS = 'N',
+  			WITHDRAW_REASON = #{withdrawReason}
+  		WHERE LOGIN_ID = #{loginId}
   	</update>
   	
   	<update id="changeUserPwd" parameterType="User">

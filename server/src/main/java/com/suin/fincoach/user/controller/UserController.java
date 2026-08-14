@@ -294,27 +294,17 @@ public class UserController {
 	}
 
 	// 회원 탈퇴 메소드
+	// 회원 탈퇴: 비밀번호 재확인 대신 탈퇴 사유 선택으로 대체(카카오 가입 계정은 비밀번호를 모르므로도 필요했던 변경).
+	// 신원 확인은 이미 로그인된 상태의 JWT로 충분하다고 보고 별도 비밀번호 확인은 하지 않는다.
 	@DeleteMapping("/delete")
 	public ResponseEntity<?> deleteUser(@RequestHeader(value = "Authorization", required = false) String authorization,
-			@RequestBody Map<String, String> passwordMap) {
+			@RequestBody Map<String, String> body) {
 
-		// 비밀번호는 그대로 가지고 오기가 힘들다. (보안 상 문제가 생길 수 있음 -> 토큰으로 DB에서 데이터를 갖고 오기 (암호화 된 비밀번호)
+		HashMap<String, String> res = new HashMap<>();
 
-		HashMap<String, String> res = new HashMap<>(); // 정보를 담기 위한 맵.
-
-		int result = 0; // delete 구문이 제대로 수행 됐는지 보기 위한 변수
-
-		// 토큰 및 입력한 비밀번호 갖고오기
-
-		String password = passwordMap.get("password");
+		String reason = body.get("reason");
 
 		String token = authorization.substring("Bearer ".length()).trim();
-
-		System.out.println(authorization.substring("Bearer ".length())); // 확인용
-
-		System.out.println(token); // 확인용
-
-		// 갖고 온 토큰이 유효한지 검증을 해야 한다. (토큰에도 유효 시간이 있음.)
 
 		if (!jwtUtil.validateToken(token)) { // 토큰이 유효하지 않으면
 
@@ -327,30 +317,21 @@ public class UserController {
 		String loginId = jwtUtil.getloginIdFromToken(token); // 토큰에서 아이디를 갖고 오기
 
 		User loginUser = service.selectByLoginId(loginId); // 로그인 아이디를 바탕으로 유저 정보 갖고 오기
+		loginUser.setWithdrawReason(reason);
 
-		if (bcrypt.matches(password, loginUser.getPassword())) {
+		int result = service.deleteUser(loginUser);
 
-			result = service.deleteUser(loginUser);
+		if (result > 0) {
 
-			if (result > 0) {
+			res.put("message", "회원 탈퇴 처리했습니다.");
 
-				res.put("message", "회원 탈퇴 처리했습니다.");
+			return ResponseEntity.ok(res);
 
-				return ResponseEntity.ok(res);
+		} else {
 
-			} else { // 비밀번호는 일치 하나 서버에 오류가 생겼을 경우
+			res.put("message", "회원 탈퇴 처리 중 서버 오류가 발생했습니다.");
 
-				res.put("message", "회원 탈퇴 처리 중 서버 오류가 발생했습니다.");
-
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
-			}
-
-		} else { // 평문과 암호화 된 비밀번호랑 일치하지 않는 경우
-
-			res.put("message", "비밀번호가 일치하지 않습니다. 다시 입력해주세요.");
-
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
-
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
 		}
 
 	}
@@ -482,25 +463,14 @@ public class UserController {
         return ResponseEntity.ok(result);
     }
 	
-	//카카오 연동 해제
+	// 카카오 연동 해제는 더 이상 지원하지 않는다 — 해제 후 재로그인 시 LOGIN_ID(kakao_{providerUserId})가
+	// 이미 존재하는 상태로 남아있어 재가입을 시도하다 충돌(500)이 나는 문제가 있었다. 프론트에서도
+	// 버튼을 없앴지만, 과거 클라이언트가 남아있을 수 있어 서버에서도 명시적으로 막는다.
 	@PostMapping("/kakao/unlink")
 	public ResponseEntity<?> unlinkKaKao(@RequestHeader String authorization) {
-		
-		//1. 토큰 추출
-		String token = authorization.substring(7);
-		
-		String loginId = jwtUtil.getloginIdFromToken(token);
-		
-		User user = service.selectByLoginId(loginId);
-		
-		boolean isSuccess = service.unlinkKakao(user.getUserId());
-		
-		if(isSuccess) {
-			return ResponseEntity.ok("연동 해제 됐습니다.");
-		} else {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버에 문제가 생겨서 연동 해제를 못했습니다.");
-		}
-	
+		HashMap<String, String> res = new HashMap<>();
+		res.put("message", "카카오로 가입한 계정은 연동 해제를 지원하지 않습니다.");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
 	}
 	
 	

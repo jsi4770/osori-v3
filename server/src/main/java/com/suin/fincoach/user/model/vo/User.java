@@ -29,6 +29,7 @@ public class User {
 	private int savingsGoalAmount; // 저축 목표 금액
 	private Date savingsGoalDate; // 저축 목표 날짜
 	private int savingsCurrentAmount; // 현재 저축액 (사용자가 직접 입력/갱신)
+	private String withdrawReason; // 탈퇴 사유 (탈퇴 시에만 세팅)
 	private int loginCount; // (추가) 로그인 횟수
 	private Timestamp lockUntil; // (추가) (잠금 시간 언제까지인지) 
 	

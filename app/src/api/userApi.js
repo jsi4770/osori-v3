@@ -17,20 +17,12 @@ export const userApi = {
       body: { currentPassword, newPassword },
     }),
 
-  // 회원탈퇴
-  // 예시: POST /osori/user/delete 
-  // (DELETE + body는 서버에서 막는 경우가 많아서 POST로 잡아둠)
-  withdraw: ({ password }) =>
+  // 회원탈퇴 — 비밀번호 재확인 대신 탈퇴 사유를 함께 보낸다(로그인 상태의 JWT로 신원 확인은 충분하다고 판단).
+  withdraw: ({ reason }) =>
     apiFetch("/user/delete", {
       method: "DELETE",
-      body: { password },
+      body: { reason },
     }),
-
-  unlinkKakao: () => {
-    return apiFetch("/user/kakao/unlink", {
-      method: "POST", // 연동 해제는 데이터를 변경하므로 POST 방식이 적합합니다.
-    });
-  },  
 };
 
 

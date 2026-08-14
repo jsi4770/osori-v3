@@ -306,6 +306,35 @@
   margin-bottom: 12px;
 }
 
+.ps-reason-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ps-reason-btn {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-sub);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.ps-reason-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.ps-reason-btn.active {
+  border-color: var(--primary-color);
+  background: var(--primary-tint);
+  color: var(--primary-color);
+}
+
 .ps-check {
   display: flex;
   align-items: center;

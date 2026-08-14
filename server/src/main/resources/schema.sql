@@ -163,6 +163,9 @@ CREATE TABLE IF NOT EXISTS GEMINI_CALL_BUDGET (
     CALL_COUNT INT NOT NULL DEFAULT 0
 );
 
+-- 회원탈퇴 사유(비밀번호 재확인 대신 선택형 사유로 대체하며 추가) — 분석 목적, NULL 허용.
+ALTER TABLE USERS ADD COLUMN IF NOT EXISTS WITHDRAW_REASON VARCHAR(200);
+
 -- 저축 목표. B_AMOUNT(기존 컬럼, 예전부터 있었지만 어디서도 안 쓰이고 있었음)를 "월 예산"으로 재사용한다.
 -- 저축은 이 앱이 잔액을 추적하지 않아 지출입에서 자동 계산할 수 없으므로, 목표 금액/날짜와 함께
 -- 사용자가 직접 입력·갱신하는 SAVINGS_CURRENT_AMOUNT로 진행률을 계산한다.
