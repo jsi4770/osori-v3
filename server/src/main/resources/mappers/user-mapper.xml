@@ -96,6 +96,14 @@
 		    WHERE LOGIN_ID = #{loginId}
 		</update>		 	
   	
+  	<!-- 카카오 로그인마다 이름/이메일을 최신값으로 동기화. 새로 받아온 값이 없으면(동의 철회 등) 기존 값 유지 -->
+  	<update id="syncKakaoProfile" parameterType="Map">
+  		UPDATE USERS
+  		SET USER_NAME = COALESCE(#{userName}, USER_NAME),
+  			EMAIL = COALESCE(#{email}, EMAIL)
+  		WHERE USER_ID = #{userId}
+  	</update>
+
   	<update id="updateBudget" parameterType="User">
   		UPDATE USERS
   		SET B_AMOUNT = #{bAmount},

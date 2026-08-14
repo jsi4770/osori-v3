@@ -151,7 +151,10 @@ public class UserServiceImpl implements UserService {
 	    
 	    String email = (String) kakaoAccount.get("email"); //에서 권한을 얻어야 null이 안 나옵니다.
 	    String nickName = (String) profile.get("nickname"); //
-	    
+	    String realName = (String) kakaoAccount.get("name"); // 카카오 "이름"(실명) 동의항목 — 콘솔에서 켜야 값이 옴
+	    // 이름 필드는 실명을 우선하고, 동의항목이 꺼져있어 못 받아오면 닉네임으로 대체한다.
+	    String displayName = (realName != null && !realName.isBlank()) ? realName : nickName;
+
 	    String providerUserId = String.valueOf(body.get("id")); // 고유 토큰 아이디
 	    String loginType = "KAKAO"; // 로그인 타입
 
@@ -168,7 +171,7 @@ public class UserServiceImpl implements UserService {
 
 	    		User newUser = User.builder()
 	    				.loginId(generatedLoginId)
-	    				.userName(nickName)
+	    				.userName(displayName)
 	    				.nickName(uniqueNickName)
 	    				.email(email)
 	    				.password(bcrypt.encode(rawPassword))
@@ -203,8 +206,12 @@ public class UserServiceImpl implements UserService {
 	    			}
 	    		}
 	    		// providerUserId로 이미 회원을 찾았으므로(=이미 카카오로 연동된 계정) 별도의 재연동 처리는 불필요
+
+	    		// 카카오 쪽 이름/이메일이 가입 이후 바뀌었을 수 있으니 로그인할 때마다 최신값으로 동기화한다.
+	    		// 이메일은 새로 받아온 값이 없을 때(동의 철회 등) 기존 값을 지우지 않도록 COALESCE로 보존.
+	    		dao.syncKakaoProfile(sqlSession, user.getUserId(), displayName, email);
 	    }
-	    
+
 	    int rowUpdate = dao.updateDate(sqlSession,user); // 업데이트 된 행이 있는지 판별
 
 	    if(rowUpdate > 0) { // lastLogin 날짜 갱신 됐는가 ?

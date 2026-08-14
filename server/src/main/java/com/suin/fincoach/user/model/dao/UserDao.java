@@ -53,6 +53,15 @@ public class UserDao {
 		public int updateBudget(SqlSessionTemplate sqlSession, User loginUser) {
 			return sqlSession.update("userMapper.updateBudget", loginUser);
 		}
+
+		// 카카오 로그인할 때마다 이름/이메일을 최신값으로 동기화 (값이 없으면 기존 값 유지)
+		public int syncKakaoProfile(SqlSessionTemplate sqlSession, int userId, String userName, String email) {
+			Map<String, Object> params = new HashMap<>();
+			params.put("userId", userId);
+			params.put("userName", userName);
+			params.put("email", email);
+			return sqlSession.update("userMapper.syncKakaoProfile", params);
+		}
 		
 		//회원 삭제(DB에서 아예 삭제가 아닌 STATUS='N'으로)
 		public int deleteUser(SqlSessionTemplate sqlSession, User loginUser) {
