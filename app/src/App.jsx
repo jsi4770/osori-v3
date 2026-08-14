@@ -15,7 +15,6 @@ import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage";
 import ExpensePage from './features/auth/pages/ExpensePage';
 import FixedTransPage from "./features/auth/pages/FixedTransPage";
 import KakaoCallback from "./features/auth/pages/KakaoCallback";
-import SocialRegisterPage from "./features/auth/pages/SocialRegisterPage";
 import CoachChatPage from "./features/coaching/CoachChatPage";
 import GrowthReportPage from "./features/coaching/GrowthReportPage";
 import OnboardingPage from "./features/onboarding/OnboardingPage";
@@ -57,7 +56,6 @@ function App() {
           <Route path="/find-password" element={<FindPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/kakao/callback" element={<KakaoCallback />} />
-          <Route path="/social-register" element={<SocialRegisterPage />} />
         </Route>
 
         {/* 로그인 필요 */}

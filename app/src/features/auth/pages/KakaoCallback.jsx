@@ -19,24 +19,23 @@ export default function KakaoCallback() {
 
       apiFetch(`/user/kakao/callback?code=${code}`)
         .then((res) => {
-          if (res.isNewMember) {
-            navigate("/social-register", { 
-              state: { kakaoEmail: res.email, kakaoNickname: res.nickName, providerUserId: res.providerUserId } 
-            });
-          } else {
-            const status = res?.user?.status;
+          const status = res?.user?.status;
 
-            if(status==="H")  {
-              toast(res.message, { type: "info" });
-            } else if(status==="N"){
-              toast(res.message, { type: "error" });
-              navigate("/login", { replace: true });
-              return;
-            }
-            
-            login(res); // 일반 로그인 마냥 감
-            navigate("/mypage", { replace: true });
+          if (status === "H") {
+            toast(res.message, { type: "info" });
+          } else if (status === "N") {
+            toast(res.message, { type: "error" });
+            navigate("/login", { replace: true });
+            return;
           }
+
+          login(res); // 일반 로그인 마냥 감
+
+          if (res.isNewMember) {
+            toast("회원가입이 완료되었습니다. 환영합니다!", { type: "success" });
+          }
+
+          navigate("/mypage", { replace: true });
         })
         .catch((err) => {
           toast(err.message || "로그인 처리 중 오류가 발생했습니다.", { type: "error" });

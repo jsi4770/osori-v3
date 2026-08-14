@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
@@ -34,6 +35,9 @@ public class UserServiceImpl implements UserService {
 	
 	@Autowired
 	private JwtUtil jwtUtil; // 토큰 발급용
+
+	@Autowired
+	private BCryptPasswordEncoder bcrypt; // 카카오 자동가입용 임시 비밀번호 암호화
 
 	@Value("${kakao.client-id}")
 	private String kakaoClientId;
@@ -152,14 +156,37 @@ public class UserServiceImpl implements UserService {
 	    
 	    Map<String, Object> result = new HashMap<>();
 	    
-	    if (user == null) { // 신규 회원이면 
+	    if (user == null) { // 신규 회원이면 별도 가입 폼 없이 바로 자동 가입 후 로그인 처리
 
-	    		result.put("isNewMember", true); // 추가
-	    		result.put("email",email);
-	    		result.put("nickName", nickName);
-	    		result.put("providerUserId", providerUserId); // 토큰 고유 아이디
-	    		result.put("loginType","KAKAO");
-	    		
+	    		String generatedLoginId = "kakao_" + providerUserId; // 카카오 고유 ID 기반이라 충돌 없음
+	    		String uniqueNickName = generateUniqueNickName(nickName); // NICKNAME UNIQUE 제약 대비 충돌 시 랜덤 숫자 suffix 부여
+	    		String rawPassword = java.util.UUID.randomUUID().toString(); // 카카오로만 로그인하는 계정이라 실사용되지 않음
+
+	    		User newUser = User.builder()
+	    				.loginId(generatedLoginId)
+	    				.userName(nickName)
+	    				.nickName(uniqueNickName)
+	    				.email(email)
+	    				.password(bcrypt.encode(rawPassword))
+	    				.build();
+
+	    		UserRegisterRequest registerRequest = UserRegisterRequest.builder()
+	    				.user(newUser)
+	    				.loginType(loginType)
+	    				.providerUserId(providerUserId)
+	    				.build();
+
+	    		insertUser(registerRequest); // USERS + AUTH_ACCOUNT 동시 insert (기존 회원가입 로직 재사용)
+
+	    		user = dao.findLoginIdByProviderUserId(sqlSession, providerUserId); // 방금 생성된 회원 재조회
+
+	    		String token = jwtUtil.generateToken(user.getLoginId());
+	    		user.setPassword(null);
+
+	    		result.put("token", token);
+	    		result.put("user", user);
+	    		result.put("isNewMember", true); // 프론트에서 "가입 완료" 안내 토스트용
+
 	    		return result;
 	    } else {
 	    	
@@ -202,6 +229,27 @@ public class UserServiceImpl implements UserService {
 	    
 	}
 	
+	// 카카오 닉네임이 NICKNAME UNIQUE 제약과 충돌할 경우 랜덤 숫자 suffix를 붙여 유일한 닉네임을 생성
+	private String generateUniqueNickName(String baseNickName) {
+
+		String base = (baseNickName == null || baseNickName.isBlank()) ? "오소리" : baseNickName;
+
+		if (dao.nickNameCheck(sqlSession, base) == 0) {
+			return base;
+		}
+
+		java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
+
+		for (int i = 0; i < 5; i++) {
+			String candidate = base + random.nextInt(10, 100); // 두 자리 랜덤 숫자
+			if (dao.nickNameCheck(sqlSession, candidate) == 0) {
+				return candidate;
+			}
+		}
+
+		return base + (System.currentTimeMillis() % 100000); // 극단적 충돌 시 타임스탬프 기반 fallback
+	}
+
 	//카카오 연동 해제
 	@Override
 	@Transactional
