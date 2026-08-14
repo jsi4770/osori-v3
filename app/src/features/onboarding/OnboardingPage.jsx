@@ -31,17 +31,6 @@ const SLIDES_DATA = [
     visual: "intro",
   },
   {
-    key: "ocr",
-    badge: "간편 입력",
-    title: (
-      <>
-        영수증 찍으면 <b>끝!</b>
-      </>
-    ),
-    copy: "더 이상 귀찮게 직접 적지 마세요.\nOCR 카메라로 영수증을 찍으면\n날짜·금액·품목까지 알아서 쏙 들어가요.",
-    visual: "ocr",
-  },
-  {
     key: "ai",
     badge: "Gemini AI 분석",
     title: (
@@ -53,6 +42,19 @@ const SLIDES_DATA = [
     ),
     copy: "단순 통계는 그만!\n구글 Gemini가 소비 패턴을 분석해\n잔소리와 꿀팁이 담긴 '오늘의 한 줄 평'을 배달해요.",
     visual: "ai",
+  },
+  {
+    key: "quickInput",
+    badge: "AI 빠른 입력",
+    title: (
+      <>
+        카테고리 고민은 그만,
+        <br />
+        <b>말하듯 입력</b>하세요
+      </>
+    ),
+    copy: "이걸 뭐라고 분류해야 하지? 그 고민은 이제 끝.\n문장 한 줄이면 AI가 금액·카테고리를 알아서 채워주고,\n쓰면 쓸수록 내 소비 습관에 맞게 더 똑똑해져요.",
+    visual: "quickInput",
   },
   {
     key: "fixed",
@@ -94,22 +96,18 @@ function IntroVisual() {
   );
 }
 
-function OcrVisual() {
+function QuickInputVisual() {
   return (
     <div className="ob-visual">
       <div className="ob-phone">
-        <div className="ob-receipt">
-          <div className="ob-receipt-top">🧾 영수증</div>
-          <div className="ob-receipt-line" style={{ width: "70%" }} />
-          <div className="ob-receipt-line" style={{ width: "90%" }} />
-          <div className="ob-receipt-line" style={{ width: "55%" }} />
-          <div className="ob-scan-line" />
+        <div className="ob-input-mock">
+          <span className="ob-input-mock-text">스타벅스 아메리카노 5천원</span>
         </div>
-        <div className="ob-ocr-arrow">↓</div>
-        <div className="ob-ocr-fields">
-          <div className="ob-chip"><span>날짜</span><b>07.17</b></div>
-          <div className="ob-chip"><span>금액</span><b>12,800원</b></div>
-          <div className="ob-chip ob-chip-full"><span>품목</span><b>교보문고 · 생활</b></div>
+        <div className="ob-parse-arrow">↓</div>
+        <div className="ob-parse-fields">
+          <div className="ob-chip"><span>금액</span><b>5,000원</b></div>
+          <div className="ob-chip"><span>카테고리</span><b>식비 ✓</b></div>
+          <div className="ob-chip ob-chip-full"><span>추천</span><b>자주 쓰는 카테고리로 자동 분류</b></div>
         </div>
       </div>
     </div>
@@ -178,7 +176,7 @@ function StartVisual() {
 function SlideVisual({ type }) {
   switch (type) {
     case "intro": return <IntroVisual />;
-    case "ocr": return <OcrVisual />;
+    case "quickInput": return <QuickInputVisual />;
     case "ai": return <AiVisual />;
     case "fixed": return <FixedVisual />;
     case "start": return <StartVisual />;

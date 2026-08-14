@@ -244,7 +244,7 @@
 .ob-spark-1 { top: 16%; right: 18%; }
 .ob-spark-2 { bottom: 20%; left: 18%; animation-delay: 0.7s; }
 
-/* 2. OCR — 폰/영수증/필드 */
+/* 3. AI 빠른 입력 — 문장 입력창/파싱 결과 필드 */
 .ob-phone {
   width: 100%;
   max-width: 300px;
@@ -253,34 +253,38 @@
   align-items: center;
   gap: 6px;
 }
-.ob-receipt {
-  position: relative;
-  width: 190px;
+.ob-input-mock {
+  width: 100%;
+  max-width: 260px;
   background: var(--surface);
-  border-radius: var(--radius-md);
-  padding: 16px 18px 20px;
+  border: 1.5px solid var(--primary-color);
+  border-radius: 999px;
+  padding: 14px 18px;
   box-shadow: 0 10px 26px var(--shadow-color);
-  border: 1px solid var(--border-subtle);
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.ob-receipt-top { font-weight: 800; font-size: 14px; margin-bottom: 12px; color: var(--text-main); }
-.ob-receipt-line { height: 9px; border-radius: 5px; background: var(--surface-subtle); margin: 8px 0; }
-.ob-scan-line {
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 26px;
-  background: linear-gradient(180deg, rgba(0,102,255,0.28), rgba(0,102,255,0));
-  border-bottom: 2px solid var(--primary-color);
-  animation: obScan 2.2s ease-in-out infinite;
+.ob-input-mock-text {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
 }
-@keyframes obScan {
-  0% { top: 0; opacity: 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
+.ob-input-mock-text::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  margin-left: 3px;
+  vertical-align: middle;
+  background: var(--primary-color);
+  animation: obCaretBlink 1s step-end infinite;
 }
-.ob-ocr-arrow { color: var(--primary-color); font-size: 22px; font-weight: 900; line-height: 1; }
-.ob-ocr-fields {
+@keyframes obCaretBlink {
+  50% { opacity: 0; }
+}
+.ob-parse-arrow { color: var(--primary-color); font-size: 22px; font-weight: 900; line-height: 1; }
+.ob-parse-fields {
   width: 100%;
   display: flex;
   flex-wrap: wrap;
@@ -301,7 +305,7 @@
 .ob-chip b { font-size: 13px; color: var(--text-main); }
 .ob-chip-full { width: 100%; justify-content: center; }
 
-/* 3. AI — 말풍선 */
+/* 2. Gemini AI — 말풍선 */
 .ob-ai {
   flex-direction: column;
   gap: 10px;
