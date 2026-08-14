@@ -76,6 +76,7 @@ function CalendarView({ currentDate, setCurrentDate }) {
           amount: Number(t.originalAmount || t.ORIGINAL_AMOUNT || t.amount || 0),
           memo: t.memo || t.MEMO || '',
           excludeAnalysis: (t.excludeAnalysis || t.EXCLUDE_ANALYSIS) === 'Y' ? 'Y' : 'N',
+          installmentId: t.installmentId ?? t.INSTALLMENT_ID ?? null,
         }));
         setTransactions(mapped);
       })
@@ -157,13 +158,25 @@ function CalendarView({ currentDate, setCurrentDate }) {
     return map;
   }, [fixedTrans, currentDate]);
 
+  // 할부로 미리 생성된 미래 회차인지 판별(실제 MYTRANS 행이지만 아직 지출 시점이 오지 않음).
+  // FixedTrans의 가상 미리보기와 달리 이미 DB에 있는 실제 행이라 삭제/수정은 정상적으로 가능하지만,
+  // 실제 지출 집계와 캘린더 타일 색상에서는 FixedTrans 미리보기와 동일하게 "예정"(회색)으로 취급한다.
+  const isUpcomingInstallment = (item, todayStr) => item.installmentId != null && item.date > todayStr;
+
   const monthlyTotalExpense = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
+    const todayStr = new Date().toLocaleDateString('en-CA');
     return transactions
       .filter(item => {
         const itemDate = new Date(item.date);
-        return item.type === 'OUT' && item.excludeAnalysis !== 'Y' && itemDate.getFullYear() === year && itemDate.getMonth() === month;
+        return (
+          item.type === 'OUT' &&
+          item.excludeAnalysis !== 'Y' &&
+          itemDate.getFullYear() === year &&
+          itemDate.getMonth() === month &&
+          !isUpcomingInstallment(item, todayStr)
+        );
       })
       .reduce((sum, item) => sum + item.amount, 0);
   }, [transactions, currentDate]);
@@ -171,12 +184,17 @@ function CalendarView({ currentDate, setCurrentDate }) {
   const renderTileContent = ({ date, view }) => {
     if (view === 'month' && date instanceof Date) {
       const dateStr = date.toLocaleDateString('en-CA');
+      const todayStr = new Date().toLocaleDateString('en-CA');
       const dayData = transactions.filter(item => item.date === dateStr);
+      const actualData = dayData.filter(item => !isUpcomingInstallment(item, todayStr));
+      const upcomingInstallments = dayData.filter(item => isUpcomingInstallment(item, todayStr));
       const upcoming = upcomingFixedByDate[dateStr];
       if (dayData.length > 0 || upcoming) {
-        const income = dayData.filter(i => i.type === 'IN').reduce((s, i) => s + i.amount, 0);
-        const expense = dayData.filter(i => i.type === 'OUT').reduce((s, i) => s + i.amount, 0);
-        const upcomingTotal = upcoming ? upcoming.reduce((s, u) => s + u.amount, 0) : 0;
+        const income = actualData.filter(i => i.type === 'IN').reduce((s, i) => s + i.amount, 0);
+        const expense = actualData.filter(i => i.type === 'OUT').reduce((s, i) => s + i.amount, 0);
+        const upcomingFixedTotal = upcoming ? upcoming.reduce((s, u) => s + u.amount, 0) : 0;
+        const upcomingInstallmentTotal = upcomingInstallments.reduce((s, i) => s + i.amount, 0);
+        const upcomingTotal = upcomingFixedTotal + upcomingInstallmentTotal;
         return (
           <div className="amount-container">
             {income > 0 && <div className="income-tag">+{fmtCompact(income)}</div>}
@@ -334,6 +352,9 @@ function CalendarView({ currentDate, setCurrentDate }) {
                         <span className="ledger-item-title-text">{item.text}</span>
                         {item.memo === FIXED_AUTO_MEMO && (
                           <span className="ledger-fixed-badge">고정지출</span>
+                        )}
+                        {item.installmentId != null && (
+                          <span className="ledger-fixed-badge">할부</span>
                         )}
                         {item.excludeAnalysis === 'Y' && (
                           <span className="ledger-exclude-badge">분석 제외</span>

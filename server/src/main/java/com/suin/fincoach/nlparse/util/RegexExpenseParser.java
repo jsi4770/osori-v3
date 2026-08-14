@@ -20,6 +20,14 @@ public class RegexExpenseParser {
 			Pattern.compile("(20\\d{2})[.\\-/년]\\s*(\\d{1,2})[.\\-/월]\\s*(\\d{1,2})");
 	private static final Pattern MONTH_DAY_PATTERN = Pattern.compile("(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일");
 
+	private static final Pattern INSTALLMENT_PATTERN_A = Pattern.compile("(\\d+)\\s*개월\\s*할부");
+	private static final Pattern INSTALLMENT_PATTERN_B = Pattern.compile("할부\\s*(\\d+)\\s*개월");
+	// "할부"라는 단어 없이 "50000원 2개월"처럼 금액 바로 뒤에 개월수만 오는 구어체 표현도 할부로 인식한다.
+	// "원" 바로 뒤(공백만 허용)에 와야 하므로 "...30000원, 지난 2개월간"처럼 다른 말이 끼어 있으면 매칭되지 않고,
+	// "2개월치"/"2개월간"처럼 기간을 뜻하는 조사가 바로 붙으면(negative lookahead) 할부로 오인하지 않는다.
+	private static final Pattern INSTALLMENT_PATTERN_C =
+			Pattern.compile("원\\s*(\\d+)\\s*개월(?!\\s*(?:동안|간|치|전|후|째|만))");
+
 	private RegexExpenseParser() {}
 
 	// 텍스트에서 원 단위 금액을 추출. 못 찾으면 null.
@@ -50,6 +58,28 @@ public class RegexExpenseParser {
 		Matcher bare = BARE_COMMA_PATTERN.matcher(text);
 		if (bare.find()) {
 			return Integer.parseInt(bare.group().replace(",", ""));
+		}
+
+		return null;
+	}
+
+	// 텍스트에서 "3개월 할부"/"할부 3개월" 같은 할부 개월수를 추출. 없으면(=일시불) null.
+	public static Integer parseInstallmentMonths(String text) {
+		if (text == null || text.isBlank()) return null;
+
+		Matcher a = INSTALLMENT_PATTERN_A.matcher(text);
+		if (a.find()) {
+			return Integer.parseInt(a.group(1));
+		}
+
+		Matcher b = INSTALLMENT_PATTERN_B.matcher(text);
+		if (b.find()) {
+			return Integer.parseInt(b.group(1));
+		}
+
+		Matcher c = INSTALLMENT_PATTERN_C.matcher(text);
+		if (c.find()) {
+			return Integer.parseInt(c.group(1));
 		}
 
 		return null;

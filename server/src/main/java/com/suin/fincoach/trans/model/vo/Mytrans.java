@@ -29,5 +29,6 @@ public class Mytrans {
 	private String memo; //메모
 	private int userId; //사용자id
 	private String excludeAnalysis; //분석(이상치 탐지/그래프/코칭)에서 제외 여부 - Y/N
+	private Integer installmentId; //할부 계획 ID (할부로 생성된 회차가 아니면 null)
 
 }

@@ -87,6 +87,9 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		String memo;
 		double confidence;
 		LocalDate date;
+		Integer installmentMonths;
+
+		Integer regexInstallmentMonths = RegexExpenseParser.parseInstallmentMonths(text);
 
 		if (llm != null) {
 			Integer llmAmount = toInteger(llm.get("amount"));
@@ -100,6 +103,13 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 			memo = (llmMemo == null || llmMemo.isBlank()) ? text : llmMemo;
 			confidence = toDouble(llm.get("confidence"), 0.5);
 			date = resolveLlmDate(str(llm.get("date")), today);
+
+			Integer llmInstallmentMonths = toInteger(llm.get("installmentMonths"));
+			// 할부 개월수도 금액과 동일하게: 정규식과 LLM 결과가 다르면 정규식 쪽을 신뢰한다.
+			installmentMonths =
+					(regexInstallmentMonths != null && !regexInstallmentMonths.equals(llmInstallmentMonths))
+							? regexInstallmentMonths
+							: llmInstallmentMonths;
 		} else {
 			amount = regexAmount;
 			category = "기타";
@@ -108,6 +118,12 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 			memo = text;
 			confidence = 0.3; // LLM 없이 뽑은 값은 항상 확인 UI를 거치도록 낮게 고정
 			date = RegexExpenseParser.parseDate(text, today);
+			installmentMonths = regexInstallmentMonths;
+		}
+
+		// 할부는 지출에만 있는 개념이고, 1개월은 할부가 아니라 일시불과 같다 — 둘 다 "할부 아님"으로 정규화.
+		if (!"OUT".equals(txType) || installmentMonths == null || installmentMonths < 2) {
+			installmentMonths = null;
 		}
 
 		if (amount == null || amount <= 0) {
@@ -137,8 +153,10 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		result.put("date", date.toString());
 		result.put("memo", memo);
 		result.put("confidence", confidence);
-		result.put("needsConfirmation", confidence < CONFIDENCE_THRESHOLD);
+		// 할부가 인식되면(예: "3개월 할부") 확신도와 무관하게 항상 확인 UI를 거치게 한다 — 회차별 분할 등록이라 되돌리기 번거로움.
+		result.put("needsConfirmation", confidence < CONFIDENCE_THRESHOLD || installmentMonths != null);
 		result.put("source", source);
+		result.put("installmentMonths", installmentMonths);
 		return result;
 	}
 
@@ -195,7 +213,11 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 				+ "숫자로 답하되, " + (isIncome
 						? "수입 출처가 불분명하면"
 						: "'쿠팡에서 3만원'처럼 무엇을 샀는지 알 수 없어 카테고리를 특정하기 어려우면")
-				+ " 낮게(0.5 이하로) 답하세요.";
+				+ " 낮게(0.5 이하로) 답하세요."
+				+ (isIncome ? "" : (" installmentMonths는 '3개월 할부', '할부 3개월'처럼 명시적으로 할부라고 말하지 않아도, "
+						+ "'5만원 2개월'처럼 금액 바로 뒤에 개월수만 붙은 구어체 표현도 할부로 간주해 그 숫자를 정수로 답하세요. "
+						+ "단 '2개월 동안', '지난 2개월'처럼 기간·과거를 뜻하는 표현은 할부가 아니므로 0으로 답하고, "
+						+ "할부 언급이 전혀 없거나 '일시불'이면 0으로 답하세요."));
 	}
 
 	private JSONArray buildContents(String text) {
@@ -229,6 +251,9 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		JSONObject confidence = new JSONObject();
 		confidence.put("type", "NUMBER");
 
+		JSONObject installmentMonths = new JSONObject();
+		installmentMonths.put("type", "INTEGER");
+
 		JSONObject properties = new JSONObject();
 		properties.put("amount", amount);
 		properties.put("category", category);
@@ -237,6 +262,7 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		properties.put("date", date);
 		properties.put("memo", memo);
 		properties.put("confidence", confidence);
+		properties.put("installmentMonths", installmentMonths);
 
 		JSONObject schema = new JSONObject();
 		schema.put("type", "OBJECT");

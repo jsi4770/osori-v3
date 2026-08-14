@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './ExpenseForm.css';
 import transApi from '../../../api/transApi';
 import nlParseApi from '../../../api/nlParseApi';
+import installmentApi from '../../../api/installmentApi';
 import { useAuth } from '../../../context/AuthContext';
 import { IconReceipt, IconArrowUp } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
@@ -45,7 +46,8 @@ const ExpenseForm = () => {
     originalAmount: '',
     category: EXPENSE_CATEGORIES[0],
     memo: '',
-    excludeAnalysis: 'N'
+    excludeAnalysis: 'N',
+    installmentMonths: '' // 지출에서만 사용 — 2 이상이면 할부로 등록
   });
 
   useEffect(() => {
@@ -69,7 +71,8 @@ const ExpenseForm = () => {
       category: newCategories[0],
       title: '',
       originalAmount: '',
-      memo: ''
+      memo: '',
+      installmentMonths: ''
     });
     if (type === '수입') setPreviewUrl(null);
     // 탭을 바꾸면 항상 AI 빠른 입력 화면부터 다시 보여준다(수입/지출 둘 다 지원).
@@ -197,16 +200,30 @@ const ExpenseForm = () => {
   // 파싱 결과를 그대로 저장(자동 저장 또는 원탭 확인 "저장" 선택 시). apiType: "IN" | "OUT"
   const saveParsedExpense = async (parsed, apiType) => {
     try {
-      await transApi.myTransSave({
-        type: apiType,
-        transDate: parsed.date,
-        title: parsed.merchant || parsed.memo || nlText,
-        originalAmount: parsed.amount,
-        category: parsed.category,
-        memo: parsed.memo || nlText,
-        excludeAnalysis: 'N',
-        userId: user?.userId,
-      });
+      const title = parsed.merchant || parsed.memo || nlText;
+      if (parsed.installmentMonths > 1) {
+        // "3개월 할부"처럼 인식되면 단건 저장 대신 N개월치 회차를 한 번에 등록
+        await installmentApi.register({
+          userId: user?.userId,
+          title,
+          totalAmount: parsed.amount,
+          installmentMonths: parsed.installmentMonths,
+          startDate: parsed.date,
+          category: parsed.category,
+          memo: parsed.memo || nlText,
+        });
+      } else {
+        await transApi.myTransSave({
+          type: apiType,
+          transDate: parsed.date,
+          title,
+          originalAmount: parsed.amount,
+          category: parsed.category,
+          memo: parsed.memo || nlText,
+          excludeAnalysis: 'N',
+          userId: user?.userId,
+        });
+      }
       // merchant -> category 학습 + 예시 칩 개인화용 원문 기록. 저장 성공을 막지 않도록 실패해도 조용히 무시.
       nlParseApi.learn({
         userId: user?.userId,
@@ -237,6 +254,7 @@ const ExpenseForm = () => {
       originalAmount: parsed.amount || '',
       category: categories.includes(parsed.category) ? parsed.category : '기타',
       memo: parsed.memo || nlText,
+      installmentMonths: parsed.installmentMonths || '',
     }));
     setShowManualEntry(true);
   };
@@ -259,9 +277,11 @@ const ExpenseForm = () => {
 
       if (result.needsConfirmation) {
         const merchantPart = result.merchant ? `${result.merchant} · ` : '';
-        const summary =
-          `${merchantPart}${result.category} · ${Number(result.amount).toLocaleString()}원\n` +
-          `${result.date}로 저장할까요?`;
+        const summary = result.installmentMonths > 1
+          ? `${merchantPart}${result.category} · ${Number(result.amount).toLocaleString()}원 · ${result.installmentMonths}개월 할부\n` +
+            `${result.date}부터 매달 나눠서 ${result.installmentMonths}건으로 저장할까요?`
+          : `${merchantPart}${result.category} · ${Number(result.amount).toLocaleString()}원\n` +
+            `${result.date}로 저장할까요?`;
         const ok = await confirm(summary, { confirmLabel: '저장', cancelLabel: '수정' });
         if (ok) {
           await saveParsedExpense(result, apiType);
@@ -294,14 +314,42 @@ const ExpenseForm = () => {
       return;
     }
 
+    const installmentMonths = Number(formData.installmentMonths);
+    const isInstallment = formData.type === '지출' && Number.isInteger(installmentMonths) && installmentMonths > 1;
+    if (isInstallment) {
+      try {
+        await installmentApi.register({
+          userId: user?.userId,
+          title: formData.title,
+          totalAmount: Number(formData.originalAmount),
+          installmentMonths,
+          startDate: formData.transDate,
+          category: formData.category,
+          memo: formData.memo,
+        });
+        toast("할부로 등록되었습니다!", { type: "success" });
+        navigate('/mypage/calendarView');
+      } catch { toast("저장 중 오류 발생", { type: "error" }); }
+      return;
+    }
+
     try {
       const isIncome = formData.type === '수입';
       const transType = isIncome ? 'IN' : 'OUT';
 
-      await transApi.myTransSave({ ...formData, userId: user?.userId, type: transType });
+      await transApi.myTransSave({
+        transDate: formData.transDate,
+        title: formData.title,
+        originalAmount: formData.originalAmount,
+        category: formData.category,
+        memo: formData.memo,
+        excludeAnalysis: formData.excludeAnalysis,
+        userId: user?.userId,
+        type: transType,
+      });
       toast("저장되었습니다!", { type: "success" });
       navigate('/mypage/calendarView');
-    } catch (error) { toast("저장 중 오류 발생", { type: "error" }); }
+    } catch { toast("저장 중 오류 발생", { type: "error" }); }
   };
 
   return (
@@ -418,6 +466,20 @@ const ExpenseForm = () => {
                 }} required /></div>
               <div className="input-group"><label className="input-label">{formData.type === '수입' ? '입금처 / 내용' : '거래처 / 가게명'}</label><input type="text" name="title" className="input-field" placeholder={formData.type === '수입' ? "예: 회사, 부모님" : "예: 스타벅스, 식당"} value={formData.title} onChange={handleChange} required /></div>
               <div className="input-group"><label className="input-label">금액</label><div className="amount-wrapper"><input type="number" name="originalAmount" className="input-field" placeholder="0" value={formData.originalAmount} onChange={handleChange} min="0" required /><span className="currency-unit">원</span></div></div>
+              {formData.type === '지출' && (
+                <div className="input-group">
+                  <label className="input-label">할부 개월수</label>
+                  <input
+                    type="number"
+                    name="installmentMonths"
+                    className="input-field"
+                    placeholder="일시불이면 비워두세요"
+                    value={formData.installmentMonths}
+                    onChange={handleChange}
+                    min="2"
+                  />
+                </div>
+              )}
               <div className="input-group"><label className="input-label">카테고리</label><select name="category" className="input-field" value={formData.category} onChange={handleChange}>{currentCategories.map((cat, index) => <option key={index} value={cat}>{cat}</option>)}</select></div>
               <div className="input-group"><label className="input-label">메모</label><textarea name="memo" className="input-field" placeholder="내용을 입력하세요 (선택)" value={formData.memo} onChange={handleChange}></textarea></div>
 

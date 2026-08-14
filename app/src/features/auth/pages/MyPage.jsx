@@ -70,7 +70,12 @@ const MyPage = () => {
             excludeAnalysis: (item.excludeAnalysis || item.EXCLUDE_ANALYSIS) === "Y" ? "Y" : "N",
           };
         });
-        setTransactions(mappedData);
+        // 할부로 미리 생성된 미래 회차는 아직 실제로 지출된 게 아니므로, 홈 화면의 모든 지출 통계
+        // (이번 달 지출, 이상치 탐지, 챌린지 진행률, 차트)에서 제외한다. 미래 회차 미리보기는
+        // CalendarView에서만 별도로(회색 "예정" 표시) 다룬다.
+        const todayStr = new Date().toLocaleDateString("en-CA");
+        const actualData = mappedData.filter((t) => !t.date || t.date <= todayStr);
+        setTransactions(actualData);
       }
     } catch (error) {
       console.error('데이터 로딩 실패:', error);

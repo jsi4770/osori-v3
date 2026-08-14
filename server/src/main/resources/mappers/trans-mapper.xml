@@ -16,7 +16,8 @@
         MEMO,
         USER_ID,
         GROUPB_ID,
-        EXCLUDE_ANALYSIS)
+        EXCLUDE_ANALYSIS,
+        INSTALLMENT_ID)
         VALUES (
         nextval('SEQ_MYTRANS'),
         #{title},
@@ -28,7 +29,8 @@
         #{memo},
         #{userId},
         #{groupBId},
-        #{excludeAnalysis} )
+        #{excludeAnalysis},
+        #{installmentId} )
 </insert>
 
 	<select id="selectMyTrans" resultType="mytrans">
@@ -43,7 +45,8 @@
 		    USER_ID        AS "userId",
 		    IS_SHARED      AS "isShared",
 		    GROUPB_ID  	   AS "groupBId",
-		    EXCLUDE_ANALYSIS AS "excludeAnalysis"
+		    EXCLUDE_ANALYSIS AS "excludeAnalysis",
+		    INSTALLMENT_ID AS "installmentId"
 		FROM MYTRANS
 		WHERE USER_ID = #{userId}
 		ORDER BY TRAN_ID DESC

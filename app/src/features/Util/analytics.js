@@ -16,8 +16,13 @@ export const getCategoryMonthlyTotals = (transactions, currentDate) => {
   const targetYear = currentDate.getFullYear();
   const targetMonth = currentDate.getMonth();
 
+  // 할부로 미리 생성된 미래 회차(아직 실제로 지출되지 않음)는 월간 합계 및 Gemini 트렌드 분석 입력에서 제외한다.
+  const todayStr = new Date().toLocaleDateString('en-CA');
   const expenseTransactions = transactions.filter(
-    (t) => (t.type?.toUpperCase() === 'OUT' || t.type?.toUpperCase() === 'EXPENSE') && t.excludeAnalysis !== 'Y'
+    (t) =>
+      (t.type?.toUpperCase() === 'OUT' || t.type?.toUpperCase() === 'EXPENSE') &&
+      t.excludeAnalysis !== 'Y' &&
+      (!t.date || t.date <= todayStr)
   );
   if (expenseTransactions.length === 0) return [];
 
