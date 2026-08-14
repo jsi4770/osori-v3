@@ -1,8 +1,9 @@
 import { apiFetch } from "./http";
 
 export const authApi = {
-  login: (loginId, password) =>
-    apiFetch("/user/login", { method: "POST", body: { loginId, password }, auth: false }),
+  // "아이디" 개념 없이 닉네임+비밀번호로 로그인 (로컬/카카오 가입 모두 동일)
+  login: (nickName, password) =>
+    apiFetch("/user/login", { method: "POST", body: { nickName, password }, auth: false }),
 
   // 게스트 로그인 — 리뷰어 데모용, 자격증명 없이 미리 만들어둔 osori100 계정으로 즉시 로그인
   guestLogin: () =>
@@ -15,10 +16,6 @@ export const authApi = {
       auth: false,
     }),
 
-  // API(/user/checkid?loginId=)
-  checkId: (loginId) =>
-    apiFetch(`/user/checkId?loginId=${encodeURIComponent(loginId)}`, { auth: false }),
-
   //닉네임 중복 체크
   checkNickName: (nickName) =>
     apiFetch(`/user/checkNickName?nickName=${encodeURIComponent(nickName)}`, { auth: false }),
@@ -27,36 +24,26 @@ export const authApi = {
   checkEmail: (email) =>
     apiFetch(`/user/checkEmail?email=${encodeURIComponent(email)}`, { auth: false }),
 
-  // =============================
-  // [ADDED] 아이디/비밀번호 찾기 관련 API
-  // - 매핑 주소는 백엔드 구현에 맞춰 여기만 바꾸면 됨.
-  // - 로그인 없이 호출하는 흐름이라 auth:false 로 둠.
-  // - response 예시(가정): { message: "...", loginId: "xxx" }
-  // =============================
+  // 비밀번호 찾기 1단계: 닉네임 존재 여부 확인(있으면 다음 단계로 이동)
+  checkNicknameForReset: (nickName) =>
+    apiFetch("/user/findPassword", { method: "POST", body: { nickName }, auth: false }),
 
-  // 아이디 찾기: 이메일을 보내면 서버가 message/loginId 등을 내려주는 형태
-  findLoginIdByEmail: (email) =>
-    apiFetch("/user/findId", { method: "POST", body: { email }, auth: false }),
-
-  // 비밀번호 찾기 1단계: 아이디 존재 여부 확인(있으면 다음 단계로 이동)
-  checkLoginIdForReset: (loginId) =>
-    apiFetch("/user/findPassword", { method: "POST", body: { loginId }, auth: false }),
-
-  // 비밀번호 재설정 2단계: loginId + newPassword 전달
-  resetPassword: ({ loginId, newPassword }) =>
+  // 비밀번호 재설정 2단계: nickName + newPassword 전달
+  resetPassword: ({ nickName, newPassword }) =>
     apiFetch("/user/resetPassword", {
       method: "PATCH",
-      body: { loginId, newPassword },
+      body: { nickName, newPassword },
       auth: false,
     }),
 
   logout: () => apiFetch("/user/logout", { method: "POST" }), // 로그아웃
 
-  //추가
-  kakaoLogin: (code) =>
-    apiFetch(`/user/kakao/callback?code=${code}`, { 
-      method: "GET", 
-      auth: false 
+  // 카카오 신규가입 마무리 — 닉네임 확정 화면에서 제출
+  completeKakaoRegistration: ({ providerUserId, email, userName, nickName }) =>
+    apiFetch("/user/kakao/complete-registration", {
+      method: "POST",
+      body: { providerUserId, email, userName, nickName },
+      auth: false,
     }),
 };
 

@@ -21,16 +21,16 @@ export default function LoginPage() {
   const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code&prompt=login`;
 
   const [form, setForm] = useState({
-    loginId: "",
+    nickName: "",
     password: "",
     remember: false,
   });
 
   const pwRef = useRef(null);
 
-  // 아이디 입력창에서 Enter → 곧바로 로그인하지 않고 비밀번호 입력창으로 포커스 이동.
+  // 닉네임 입력창에서 Enter → 곧바로 로그인하지 않고 비밀번호 입력창으로 포커스 이동.
   // 비밀번호 입력창의 Enter는 폼 기본 동작(submit)이 그대로 로그인 실행.
-  const onLoginIdKeyDown = (e) => {
+  const onNickNameKeyDown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
       pwRef.current?.focus();
@@ -38,13 +38,13 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const fromRegisterLoginId = location.state?.loginId;
-    const savedLoginId = localStorage.getItem("savedLoginId");
+    const fromRegisterNickName = location.state?.nickName;
+    const savedNickname = localStorage.getItem("savedNickname");
 
-    if (fromRegisterLoginId) {
-      setForm((p) => ({ ...p, loginId: fromRegisterLoginId }));
-    } else if (savedLoginId) {
-      setForm((p) => ({ ...p, loginId: savedLoginId, remember: true }));
+    if (fromRegisterNickName) {
+      setForm((p) => ({ ...p, nickName: fromRegisterNickName }));
+    } else if (savedNickname) {
+      setForm((p) => ({ ...p, nickName: savedNickname, remember: true }));
     }
 
     const params = new URLSearchParams(location.search);
@@ -62,26 +62,26 @@ export default function LoginPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    const loginId = form.loginId.trim();
+    const nickName = form.nickName.trim();
     const password = form.password;
 
-    if (!loginId || !password) {
-      toast("아이디와 비밀번호를 입력하세요.", { type: "error" });
+    if (!nickName || !password) {
+      toast("닉네임과 비밀번호를 입력하세요.", { type: "error" });
       return;
     }
 
     try {
-      const res = await authApi.login(loginId, password);
+      const res = await authApi.login(nickName, password);
 
       //로그인 성공이면 token/user 저장부터 해야 PrivateRoute 통과가 안정적임
       login(res);
 
       if (res.token) {
-        localStorage.setItem("token", res.token); 
+        localStorage.setItem("token", res.token);
       }
-      
-      if (form.remember) localStorage.setItem("savedLoginId", loginId);
-      else localStorage.removeItem("savedLoginId");
+
+      if (form.remember) localStorage.setItem("savedNickname", nickName);
+      else localStorage.removeItem("savedNickname");
 
       const status = res?.user?.status;
       if (status === "H") {
@@ -110,14 +110,14 @@ export default function LoginPage() {
 
       <form className={styles.form} onSubmit={onSubmit}>
         <div className={styles.field}>
-          <div className={styles.label}>아이디</div>
+          <div className={styles.label}>닉네임</div>
           <input
             className={styles.input}
-            name="loginId"
-            value={form.loginId}
+            name="nickName"
+            value={form.nickName}
             onChange={onChange}
-            onKeyDown={onLoginIdKeyDown}
-            placeholder="ID"
+            onKeyDown={onNickNameKeyDown}
+            placeholder="닉네임"
             autoComplete="username"
           />
         </div>
@@ -157,9 +157,6 @@ export default function LoginPage() {
       </div>
 
       <div className={styles.bottomRow}>
-        <button className={styles.subBtn} type="button" onClick={() => navigate("/find-id")}>
-          아이디 찾기
-        </button>
         <button
           className={styles.subBtn}
           type="button"

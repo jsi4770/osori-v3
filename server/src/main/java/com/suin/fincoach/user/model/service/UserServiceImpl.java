@@ -110,10 +110,35 @@ public class UserServiceImpl implements UserService {
 			} 
 		}
 		
-		return null; // 이 경우는 loginMember가 null이든 아니든 마지막 로그인 날짜 시점을 처리하지 못하면 실패로 처리. 
-		 
+		return null; // 이 경우는 loginMember가 null이든 아니든 마지막 로그인 날짜 시점을 처리하지 못하면 실패로 처리.
+
 	}
-	
+
+	@Transactional
+	@Override // 로그인 전용 — 닉네임으로 회원 조회(로컬/카카오 가입 모두 "아이디" 없이 닉네임으로 로그인).
+	public User selectUserByNickname(User user) {
+
+		User loginUser = dao.selectUserByNickname(sqlSession, user);
+
+		if (loginUser != null) {
+
+			if (loginUser.getStatus().equals("N")) {
+				return loginUser;
+			}
+
+			int result = dao.updateDate(sqlSession, loginUser); // 내부 LOGIN_ID 기준이라 그대로 동작
+
+			loginUser = dao.selectUserByNickname(sqlSession, user); // 같은 닉네임으로 갱신된 정보 재조회
+
+			if (result > 0) {
+				return loginUser;
+			}
+		}
+
+		return null;
+
+	}
+
 
 	@Override
 	public Map<String, Object> processKakaoLogin(String code, String redirectUri) {
@@ -163,36 +188,16 @@ public class UserServiceImpl implements UserService {
 	    
 	    Map<String, Object> result = new HashMap<>();
 	    
-	    if (user == null) { // 신규 회원이면 별도 가입 폼 없이 바로 자동 가입 후 로그인 처리
+	    if (user == null) { // 신규 회원이면 바로 가입시키지 않고, 닉네임을 직접 정하게 한 뒤 완료시킨다
+	    		// (completeKakaoRegistration에서 마무리) — 여기서는 아무것도 insert하지 않는다.
 
-	    		String generatedLoginId = "kakao_" + providerUserId; // 카카오 고유 ID 기반이라 충돌 없음
-	    		String uniqueNickName = generateUniqueNickName(nickName); // NICKNAME UNIQUE 제약 대비 충돌 시 랜덤 숫자 suffix 부여
-	    		String rawPassword = java.util.UUID.randomUUID().toString(); // 카카오로만 로그인하는 계정이라 실사용되지 않음
+	    		String suggestedNickName = generateUniqueNickName(nickName); // 미리보기용 제안값(최종 확정은 가입 완료 시점에 다시 검증)
 
-	    		User newUser = User.builder()
-	    				.loginId(generatedLoginId)
-	    				.userName(displayName)
-	    				.nickName(uniqueNickName)
-	    				.email(email)
-	    				.password(bcrypt.encode(rawPassword))
-	    				.build();
-
-	    		UserRegisterRequest registerRequest = UserRegisterRequest.builder()
-	    				.user(newUser)
-	    				.loginType(loginType)
-	    				.providerUserId(providerUserId)
-	    				.build();
-
-	    		insertUser(registerRequest); // USERS + AUTH_ACCOUNT 동시 insert (기존 회원가입 로직 재사용)
-
-	    		user = dao.findLoginIdByProviderUserId(sqlSession, providerUserId); // 방금 생성된 회원 재조회
-
-	    		String token = jwtUtil.generateToken(user.getLoginId());
-	    		user.setPassword(null);
-
-	    		result.put("token", token);
-	    		result.put("user", user);
-	    		result.put("isNewMember", true); // 프론트에서 "가입 완료" 안내 토스트용
+	    		result.put("isNewMember", true);
+	    		result.put("providerUserId", providerUserId);
+	    		result.put("email", email);
+	    		result.put("suggestedNickName", suggestedNickName);
+	    		result.put("userName", displayName); // 카카오 실명/닉네임 — USER_NAME(이름) 필드용, 로그인 식별자인 NICKNAME과는 별개
 
 	    		return result;
 	    } else {
@@ -235,11 +240,66 @@ public class UserServiceImpl implements UserService {
 
 	    	
 	    }
-	    return null; // 날짜가 갱신이 안되면 바로 로그인 실패 처리 
-	    
-	    
+	    return null; // 날짜가 갱신이 안되면 바로 로그인 실패 처리
+
+
 	}
-	
+
+	// 카카오 신규가입 마무리 — 사용자가 닉네임 확정 화면에서 직접 정한 닉네임으로 계정을 만든다.
+	// providerUserId로 이미 가입이 완료돼 있으면(중복 제출 등) 새로 만들지 않고 기존 계정으로 로그인만 시킨다.
+	@Transactional
+	@Override
+	public Map<String, Object> completeKakaoRegistration(String providerUserId, String email, String userName, String nickName) {
+
+		Map<String, Object> result = new HashMap<>();
+
+		String trimmedNickName = nickName == null ? "" : nickName.trim();
+		if (trimmedNickName.isEmpty()) {
+			result.put("message", "닉네임을 입력해주세요.");
+			return result;
+		}
+
+		User user = dao.findLoginIdByProviderUserId(sqlSession, providerUserId);
+
+		if (user == null) {
+
+			if (dao.nickNameCheck(sqlSession, trimmedNickName) > 0) {
+				result.put("message", "이미 사용중인 닉네임입니다.");
+				return result;
+			}
+
+			String generatedLoginId = "kakao_" + providerUserId; // 카카오 고유 ID 기반이라 충돌 없음
+			String rawPassword = java.util.UUID.randomUUID().toString(); // 카카오로만 로그인하는 계정이라 실사용되지 않음
+
+			User newUser = User.builder()
+					.loginId(generatedLoginId)
+					.userName(userName)
+					.nickName(trimmedNickName)
+					.email(email)
+					.password(bcrypt.encode(rawPassword))
+					.build();
+
+			UserRegisterRequest registerRequest = UserRegisterRequest.builder()
+					.user(newUser)
+					.loginType("KAKAO")
+					.providerUserId(providerUserId)
+					.build();
+
+			insertUser(registerRequest); // USERS + AUTH_ACCOUNT 동시 insert (기존 회원가입 로직 재사용)
+
+			user = dao.findLoginIdByProviderUserId(sqlSession, providerUserId);
+		}
+
+		String token = jwtUtil.generateToken(user.getLoginId());
+		user.setPassword(null);
+
+		result.put("token", token);
+		result.put("user", user);
+		result.put("isNewMember", true); // 프론트에서 "가입 완료" 안내 토스트용
+
+		return result;
+	}
+
 	// 카카오 닉네임이 NICKNAME UNIQUE 제약과 충돌할 경우 랜덤 숫자 suffix를 붙여 유일한 닉네임을 생성
 	private String generateUniqueNickName(String baseNickName) {
 
@@ -370,15 +430,6 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public User selectByLoginId(String loginId) {
 		User loginUser = dao.selectByLoginId(sqlSession, loginId);
-		
-		return loginUser; 
-	}
-	
-	//이메일을 기반으로 loginId 찾는 메소드 
-	@Override
-	public User findLoginIdByEmail(String email) {
-		
-		User loginUser = dao.findLoginIdByEmail(sqlSession, email);
 		
 		return loginUser; 
 	}

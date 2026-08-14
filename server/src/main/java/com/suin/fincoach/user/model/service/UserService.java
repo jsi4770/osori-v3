@@ -12,19 +12,23 @@ public interface UserService {
 	int idCheck(String inputId); // 아이디 중복 체크 메소드 
 	int nickNameCheck(String nickName); // 닉네임 중복 체크 메소드
 	int emailCheck(String email); // 이메일 중복 체크 메소드
-	User selectUser(User user); // 회원 조회, 마지막 로그인 날짜 갱신 및 휴면 계정 처리 메소드 
+	User selectUser(User user); // 회원 조회, 마지막 로그인 날짜 갱신 및 휴면 계정 처리 메소드
+	User selectUserByNickname(User user); // 닉네임으로 회원 조회 (로그인 전용)
 	int updateUser(User loginUser); // 정보 수정
 	int updateBudget(User loginUser); // 월 예산 + 저축 목표 수정
 	int deleteUser(User loginUser); // 회원 탈퇴 메소드
 	int changeUserPwd(User loginUser); // 비밀번호 변경 메소드
 	User selectByLoginId(String loginId); // 아이디로 회원 정보 조회하는 메소드 
-	User findLoginIdByEmail(String email);
 	int resetPassword(Map<String, String> userMap); 
 	
 	// 카카오 로그인 처리 메소드 , 기존에 연동 했던 사람이 연동 해제 후 다시 연동 하려고 할때 연동 가능한 메소드
 	// redirectUri: 프론트가 인가 요청 때 실제로 쓴 콜백 URL(배포 도메인이 여러 개일 수 있어 필요) — 없으면 서버 기본값 사용
 	Map<String, Object> processKakaoLogin(String code, String redirectUri);
-	
+
+	// 카카오 신규가입 마무리 — 사용자가 직접 정한 닉네임으로 계정을 생성하고 로그인까지 처리
+	Map<String, Object> completeKakaoRegistration(String providerUserId, String email, String userName, String nickName);
+
+
 	//카카오 연동 해제 메소드 
 	boolean unlinkKakao(int userId);
 	

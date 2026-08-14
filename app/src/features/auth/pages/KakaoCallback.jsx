@@ -23,6 +23,20 @@ export default function KakaoCallback() {
 
       apiFetch(`/user/kakao/callback?code=${code}&redirectUri=${encodeURIComponent(redirectUri)}`)
         .then((res) => {
+          // 신규 회원이면 바로 가입시키지 않고, 닉네임을 직접 정하는 화면으로 보낸다(제출해야 가입 완료).
+          if (res.isNewMember) {
+            navigate("/social-nickname", {
+              replace: true,
+              state: {
+                providerUserId: res.providerUserId,
+                email: res.email,
+                userName: res.userName,
+                suggestedNickName: res.suggestedNickName,
+              },
+            });
+            return;
+          }
+
           const status = res?.user?.status;
 
           if (status === "H") {
@@ -34,11 +48,6 @@ export default function KakaoCallback() {
           }
 
           login(res); // 일반 로그인 마냥 감
-
-          if (res.isNewMember) {
-            toast("회원가입이 완료되었습니다. 환영합니다!", { type: "success" });
-          }
-
           navigate("/mypage", { replace: true });
         })
         .catch((err) => {

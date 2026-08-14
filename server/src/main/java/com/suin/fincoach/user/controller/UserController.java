@@ -79,8 +79,8 @@ public class UserController {
 
 		HashMap<String, Object> map = new HashMap<>();
 
-		// LOGIN_ID로 사용자 조회 (해시 password까지 가져오기)
-		User loginUser = service.selectUser(user);
+		// 닉네임으로 사용자 조회 (해시 password까지 가져오기) — "아이디" 없이 닉네임+비밀번호로 로그인
+		User loginUser = service.selectUserByNickname(user);
 
 		if (loginUser != null && bcrypt.matches(user.getPassword(), loginUser.getPassword())) { // 평문과 암호화된 비밀번호 비교, 로그인 유저가 실제로 존재하는 값인지도 보기
 
@@ -156,7 +156,7 @@ public class UserController {
 			} else { // 이건 회원 정보가 아예 없을 경우 뭐가 틀렸는지 구분하지 않게 하기 위함 (보안) 혹은 비회원 
 				
 				map.put("code", "LOGIN_FAIL");
-				map.put("message", "아이디와 비밀번호를 다시 입력해주세요.");
+				map.put("message", "닉네임과 비밀번호를 다시 입력해주세요.");
 				
 			}
 
@@ -166,11 +166,15 @@ public class UserController {
 
 	}
 
-	//회원 가입
+	//회원 가입 — "아이디" 개념이 없어져서(닉네임으로 로그인) LOGIN_ID는 프론트가 안 보내고 서버가 내부용으로 생성한다.
 	@PostMapping("/register")
 	public ResponseEntity<?> insertUser(@RequestBody UserRegisterRequest request) {
 
 		User user = request.getUser();
+
+		if (user.getLoginId() == null || user.getLoginId().isBlank()) {
+			user.setLoginId("local_" + java.util.UUID.randomUUID().toString().replace("-", ""));
+		}
 
 		user.setPassword(bcrypt.encode(user.getPassword())); // 갖고 온 비밀번호를 평문이 아닌 암호화된 비밀번호로 처리
 
@@ -374,41 +378,13 @@ public class UserController {
 
 	}
 
-	// 아이디 찾기 메소드
-	@PostMapping("/findId")
-	public ResponseEntity<?> findLoginIdByEmail(@RequestBody Map<String, String> emailMap) {
-
-		HashMap<String, String> res = new HashMap<>();
-
-		String email = emailMap.get("email");
-
-		User loginUser = service.findLoginIdByEmail(email); // 이메일 기반으로 유저 찾기
-
-		if (loginUser != null) {
-
-			res.put("loginId", loginUser.getLoginId());
-
-			return ResponseEntity.ok(res);
-
-		} else {
-
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("회원 정보가 없습니다.");
-
-		}
-
-	}
-
-	// 비밀번호 찾기 1단계
+	// 비밀번호 찾기 1단계 — 아이디 없이 닉네임으로 회원 존재 여부만 확인
 	@PostMapping("/findPassword")
-	public ResponseEntity<?> findPassword(@RequestBody Map<String, String> loginIdMap) {
+	public ResponseEntity<?> findPassword(@RequestBody Map<String, String> nickNameMap) {
 
-		HashMap<String, String> res = new HashMap<>();
+		String nickName = nickNameMap.get("nickName");
 
-		String loginId = loginIdMap.get("loginId");
-
-		User loginUser = service.selectByLoginId(loginId);
-
-		if (loginUser != null) {
+		if (service.nickNameCheck(nickName) > 0) {
 
 			return ResponseEntity.ok("회원 정보가 조회 되어 비밀번호 재설정 페이지로 이동합니다.");
 
@@ -463,6 +439,25 @@ public class UserController {
         return ResponseEntity.ok(result);
     }
 	
+	// 카카오 신규가입 마무리 — 인증 직후 자동가입 대신, 사용자가 닉네임 확정 화면에서 직접 정한
+	// 닉네임을 제출해야만 가입이 완료된다(KakaoCallback이 isNewMember:true를 받으면 이 화면으로 보냄).
+	@PostMapping("/kakao/complete-registration")
+	public ResponseEntity<?> completeKakaoRegistration(@RequestBody Map<String, String> body) {
+
+		String providerUserId = body.get("providerUserId");
+		String email = body.get("email");
+		String userName = body.get("userName");
+		String nickName = body.get("nickName");
+
+		Map<String, Object> result = service.completeKakaoRegistration(providerUserId, email, userName, nickName);
+
+		if (result.get("token") == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
+		}
+
+		return ResponseEntity.status(HttpStatus.CREATED).body(result);
+	}
+
 	// 카카오 연동 해제는 더 이상 지원하지 않는다 — 해제 후 재로그인 시 LOGIN_ID(kakao_{providerUserId})가
 	// 이미 존재하는 상태로 남아있어 재가입을 시도하다 충돌(500)이 나는 문제가 있었다. 프론트에서도
 	// 버튼을 없앴지만, 과거 클라이언트가 남아있을 수 있어 서버에서도 명시적으로 막는다.

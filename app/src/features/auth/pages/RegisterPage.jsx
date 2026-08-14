@@ -9,10 +9,6 @@ export default function RegisterPage() {
   const { toast } = useFeedback();
 
   const RULES = {
-    loginId: {
-      re: /^[A-Za-z0-9]{8,16}$/,
-      msg: "영어/숫자 8~16자로 입력해 주세요.",
-    },
     userName: {
       re: /^[가-힣]{3,5}$/,
       msg: "한글 3~5자로 입력해 주세요.",
@@ -28,7 +24,6 @@ export default function RegisterPage() {
   };
 
   const [form, setForm] = useState({
-    loginId: "",
     password: "",
     userName: "",
     nickName: "",
@@ -36,7 +31,6 @@ export default function RegisterPage() {
   });
 
   const [fieldError, setFieldError] = useState({
-    loginId: "",
     password: "",
     userName: "",
     nickName: "",
@@ -44,14 +38,12 @@ export default function RegisterPage() {
   });
 
   const [touched, setTouched] = useState({
-    loginId: false,
     password: false,
     userName: false,
     nickName: false,
     email: false,
   });
 
-  const [idCheck, setIdCheck] = useState(null);
   const [nickCheck, setNickCheck] = useState(null);
   const [emailCheck, setEmailCheck] = useState(null);
   const [error, setError] = useState("");
@@ -99,7 +91,6 @@ export default function RegisterPage() {
     setForm((p) => ({ ...p, [name]: value }));
     setError("");
 
-    if (name === "loginId") setIdCheck(null);
     if (name === "nickName") setNickCheck(null);
     if (name === "email") setEmailCheck(null);
 
@@ -112,8 +103,6 @@ export default function RegisterPage() {
     const { name, value } = e.target;
     setTouched((p) => ({ ...p, [name]: true }));
     setFieldError((p) => ({ ...p, [name]: validateField(name, value) }));
-
-    if (name === "loginId") setIdCheck(null);
 
     if (name === "nickName") {
       setNickCheck(null);
@@ -130,7 +119,6 @@ export default function RegisterPage() {
 
   const canSubmit = useMemo(() => {
     return (
-      form.loginId.trim() &&
       form.password.trim() &&
       form.userName.trim() &&
       form.nickName.trim() &&
@@ -138,39 +126,11 @@ export default function RegisterPage() {
     );
   }, [form]);
 
-  const handleCheckId = async () => {
-    setError("");
-    setIdCheck(null);
-
-    const loginId = form.loginId.trim();
-    if (!loginId) {
-      setError("아이디를 입력해 주세요.");
-      return;
-    }
-
-    const loginIdMsg = validateField("loginId", loginId);
-    setTouched((p) => ({ ...p, loginId: true }));
-    setFieldError((p) => ({ ...p, loginId: loginIdMsg }));
-    if (loginIdMsg) return;
-
-    try {
-      const res = await authApi.checkId(loginId);
-      const count = Number(res?.count ?? 0);
-      setIdCheck({
-        count,
-        msg: count === 0 ? "사용 가능한 아이디입니다." : "이미 사용중인 아이디입니다.",
-      });
-    } catch (e) {
-      setError("아이디 중복체크 실패");
-    }
-  };
-
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     const nextTouched = {
-      loginId: true,
       password: true,
       userName: true,
       nickName: true,
@@ -178,7 +138,6 @@ export default function RegisterPage() {
     };
 
     const nextFieldError = {
-      loginId: validateField("loginId", form.loginId),
       password: validateField("password", form.password),
       userName: validateField("userName", form.userName),
       nickName: validateField("nickName", form.nickName),
@@ -199,8 +158,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (idCheck && Number(idCheck.count ?? 0) > 0) {
-      setError("이미 사용중인 아이디입니다.");
+    if (nickCheck && Number(nickCheck.count ?? 0) > 0) {
+      setError("이미 사용중인 닉네임입니다.");
       return;
     }
 
@@ -208,20 +167,19 @@ export default function RegisterPage() {
     try {
       const requestData = {
         user : {
-          loginId : form.loginId.trim(),
           password : form.password,
           userName : form.userName.trim(),
           nickName : form.nickName.trim(),
           email : form.email.trim()
         },
         loginType : "LOCAL",
-        providerUserId : null 
+        providerUserId : null
       }
 
-      await authApi.register(requestData); 
+      await authApi.register(requestData);
 
       toast("회원가입 성공", { type: "success" });
-      navigate("/login", { replace: true, state: { loginId: form.loginId.trim() }});
+      navigate("/login", { replace: true, state: { nickName: form.nickName.trim() }});
     } catch (e) {
       const msg = e?.data?.message || "회원가입 실패";
       setError(msg);
@@ -235,40 +193,6 @@ export default function RegisterPage() {
       <h1 className={styles.title}>회원가입</h1>
 
       <form className={styles.form} onSubmit={onSubmit}>
-        {/* 아이디 + 중복체크 (라벨 줄) */}
-        <div className={styles.labelRow}>
-          <div className={styles.label}>아이디</div>
-          <button className={styles.checkBtn} type="button" onClick={handleCheckId}>
-            중복체크
-          </button>
-        </div>
-
-        {/* 아이디 입력란 (다음 줄) */}
-        <input
-          className={styles.input}
-          name="loginId"
-          value={form.loginId}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder="영어/숫자 8~16자로 입력해 주세요."
-          autoComplete="username"
-        />
-
-        {/* 아이디 메시지 (다음 줄) */}
-        {touched.loginId && fieldError.loginId ? (
-          <div className={`${styles.hint} ${styles.bad}`}>{fieldError.loginId}</div>
-        ) : (
-          idCheck && (
-            <div
-              className={`${styles.hint} ${
-                Number(idCheck.count ?? 0) === 0 ? styles.ok : styles.bad
-              }`}
-            >
-              {idCheck.msg}
-            </div>
-          )
-        )}
-
         {/* 비밀번호 */}
         <div className={styles.label}>비밀번호</div>
         <input
@@ -299,7 +223,7 @@ export default function RegisterPage() {
           <div className={`${styles.hint} ${styles.bad}`}>{fieldError.userName}</div>
         )}
 
-        {/* 닉네임 */}
+        {/* 닉네임 — 아이디 대신 로그인에 사용됩니다 */}
         <div className={styles.label}>닉네임</div>
         <input
           className={styles.input}
@@ -307,7 +231,8 @@ export default function RegisterPage() {
           value={form.nickName}
           onChange={onChange}
           onBlur={onBlur}
-          placeholder="한글 3~5자로 입력해 주세요."
+          placeholder="한글 3~5자, 로그인에 사용됩니다"
+          autoComplete="username"
         />
         {touched.nickName && fieldError.nickName ? (
           <div className={`${styles.hint} ${styles.bad}`}>{fieldError.nickName}</div>

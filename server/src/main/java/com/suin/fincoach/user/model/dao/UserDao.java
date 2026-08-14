@@ -20,9 +20,14 @@ public class UserDao {
 		
 		//회원 조회
 		public User selectUser(SqlSessionTemplate sqlSession, User user) {
-			return sqlSession.selectOne("userMapper.selectUser", user); 
+			return sqlSession.selectOne("userMapper.selectUser", user);
 		}
-		
+
+		//닉네임으로 회원 조회 (로그인 전용)
+		public User selectUserByNickname(SqlSessionTemplate sqlSession, User user) {
+			return sqlSession.selectOne("userMapper.selectUserByNickname", user);
+		}
+
 
 		//아이디 중복체크 
 		public int idCheck(SqlSessionTemplate sqlSession, String loginId) {
@@ -76,11 +81,6 @@ public class UserDao {
 		//loginId를 바탕으로 사용자 찾기 
 		public User selectByLoginId(SqlSessionTemplate sqlSession, String loginId) {
 			return sqlSession.selectOne("userMapper.selectByLoginId", loginId); 
-		}
-
-		//Email을 바탕으로 사용자 찾기
-		public User findLoginIdByEmail(SqlSessionTemplate sqlSession, String email) {
-			return sqlSession.selectOne("userMapper.findLoginIdByEmail",email);
 		}
 
 		//카카오 providerUserId를 바탕으로 사용자 찾기 (이메일 동의항목 권한이 없어도 동작)

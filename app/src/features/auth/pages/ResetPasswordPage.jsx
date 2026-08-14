@@ -9,8 +9,8 @@ export default function ResetPasswordPage() {
   const location = useLocation();
   const { toast } = useFeedback();
 
-  // /find-password 에서 넘겨준 loginId (필요 없으면 화면에서 숨겨도 됨)
-  const loginId = location.state?.loginId || "";
+  // /find-password 에서 넘겨준 닉네임 (필요 없으면 화면에서 숨겨도 됨)
+  const nickName = location.state?.nickName || "";
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -44,12 +44,11 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // loginId + 새 비밀번호 -> 서버로 전송
-    // - 매핑 주소는 authApi.resetPassword 안에서 맞춰서 바꾸면 된다. 
+    // 닉네임 + 새 비밀번호 -> 서버로 전송
     (async () => {
       try {
         setLoading(true);
-        const data = await authApi.resetPassword({ loginId, newPassword: pw1 });
+        const data = await authApi.resetPassword({ nickName, newPassword: pw1 });
         const msg = data?.message || "비밀번호가 재설정되었습니다.";
         setServerMessage(msg);
 

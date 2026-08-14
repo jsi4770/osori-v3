@@ -33,6 +33,18 @@
     	WHERE U.LOGIN_ID = #{loginId}	
     </select>
     
+    <!-- 로그인은 닉네임+비밀번호로 한다(로컬/카카오 가입 모두 "아이디" 개념 없음).
+         내부적으로는 LOGIN_ID가 여전히 안정적인 식별자로 남아있고(JWT subject 등), 이 select만
+         닉네임으로 조회한다 — selectUser(LOGIN_ID 기반)는 프로필 저장 후 재조회 등에서 그대로 씀. -->
+    <select id="selectUserByNickname" parameterType="User" resultType="User">
+    	SELECT
+    		U.*,
+    		A.LOGIN_TYPE AS loginType
+    	FROM USERS U
+    	LEFT JOIN AUTH_ACCOUNT A ON (U.USER_ID = A.USER_ID)
+    	WHERE U.NICKNAME = #{nickName}
+    </select>
+
     <select id="selectByLoginId" parameterType="string" resultType="User">
     	SELECT *
     	FROM USERS
@@ -126,23 +138,6 @@
   		WHERE LOGIN_ID = #{loginId}
   	</update>
   	
-  	<!--
-  	<select id="findLoginIdByEmail" parameterType="string" resultType="User">
-  		SELECT *
-  		FROM USERS
-  		WHERE EMAIL = #{email} 
-  	</select>
-  	-->
-  	
-  	<select id="findLoginIdByEmail" parameterType="string" resultType="User">
-  		SELECT
-  			U.*,
-  			A.LOGIN_TYPE AS loginType
-  		FROM USERS U
-  		JOIN AUTH_ACCOUNT A ON (U.USER_ID = A.USER_ID)
-  		WHERE U.EMAIL = #{email}
-  	</select>
-
   	<!-- 카카오 이메일 동의항목 권한이 없어(계정마다 email이 null일 수 있음) providerUserId로 회원 식별 -->
   	<select id="findLoginIdByProviderUserId" parameterType="string" resultType="User">
   		SELECT
@@ -157,7 +152,7 @@
   	<update id="resetPassword" parameterType="Map">
   		UPDATE USERS
   		SET PASSWORD = #{newPassword}
-  		WHERE LOGIN_ID = #{loginId} 	
+  		WHERE NICKNAME = #{nickName}
   	</update>
   	
   	<select id="selectUserId" resultType="int">
