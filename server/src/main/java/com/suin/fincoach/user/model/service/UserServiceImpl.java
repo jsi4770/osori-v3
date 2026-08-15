@@ -410,12 +410,14 @@ public class UserServiceImpl implements UserService {
 		return dao.updateBudget(sqlSession, loginUser);
 	}
 	
-	//회원 상태 N으로 바꾸기 (로그인 불가능 하게) 
+	//회원 상태 N으로 바꾸기 (로그인 불가능 하게), 식별 정보 해제 + 카카오 연동 해제로 재가입 가능하게
+	@Transactional
 	@Override
 	public int deleteUser(User loginUser) {
-		int result = dao.deleteUser(sqlSession,loginUser); 
-		
-		return result; 
+		int result = dao.deleteUser(sqlSession,loginUser);
+		dao.clearAuthProvider(sqlSession, loginUser.getUserId());
+
+		return result;
 	}
 	
 	//비밀번호 변경 메소드 

@@ -125,13 +125,25 @@
   		WHERE USER_ID = #{userId}
   	</update>
 
+  	<!-- 탈퇴 시 LOGIN_ID/NICKNAME/EMAIL이 UNIQUE 제약으로 남아있으면 같은 닉네임/이메일/카카오 계정으로
+  	     재가입이 영구히 막히므로, 탈퇴 시점에 식별 정보를 USER_ID를 붙여 비워준다(이력은 STATUS='N'으로 보존). -->
   	<update id="deleteUser" parameterType="User">
   		UPDATE USERS
   		SET STATUS = 'N',
-  			WITHDRAW_REASON = #{withdrawReason}
+  			WITHDRAW_REASON = #{withdrawReason},
+  			NICKNAME = NICKNAME || '_del' || USER_ID,
+  			EMAIL = NULL,
+  			LOGIN_ID = LOGIN_ID || '_del' || USER_ID
   		WHERE LOGIN_ID = #{loginId}
   	</update>
-  	
+
+  	<!-- 카카오 재가입 시 새 계정으로 인식되도록, 탈퇴한 계정의 카카오 연동 정보를 끊는다. -->
+  	<update id="clearAuthProvider" parameterType="int">
+  		UPDATE AUTH_ACCOUNT
+  		SET PROVIDER_USER_ID = NULL
+  		WHERE USER_ID = #{userId}
+  	</update>
+
   	<update id="changeUserPwd" parameterType="User">
   		UPDATE USERS
   		SET PASSWORD = #{password}

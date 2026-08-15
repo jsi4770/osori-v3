@@ -70,9 +70,14 @@ public class UserDao {
 		
 		//회원 삭제(DB에서 아예 삭제가 아닌 STATUS='N'으로)
 		public int deleteUser(SqlSessionTemplate sqlSession, User loginUser) {
-			return sqlSession.delete("userMapper.deleteUser", loginUser); 
+			return sqlSession.delete("userMapper.deleteUser", loginUser);
 		}
-		
+
+		//탈퇴한 회원의 카카오 연동 끊기(재가입 시 신규 회원으로 인식되도록)
+		public int clearAuthProvider(SqlSessionTemplate sqlSession, int userId) {
+			return sqlSession.update("userMapper.clearAuthProvider", userId);
+		}
+
 		//회원 비밀번호 변경 
 		public int changeUserPwd(SqlSessionTemplate sqlSession, User loginUser) {
 			return sqlSession.update("userMapper.changeUserPwd", loginUser); 
