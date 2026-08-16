@@ -189,3 +189,22 @@ CREATE TABLE IF NOT EXISTS USER_CATEGORY (
     CREATED_AT  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (USER_ID, TYPE, NAME)
 );
+
+CREATE SEQUENCE IF NOT EXISTS SEQ_NL_PARSE_LOG START WITH 1 INCREMENT BY 1;
+
+-- 자연어 파싱 (입력 -> JSON) 쌍 로그. 나중에 소형 모델 파인튜닝용 학습 데이터로 쓰기 위해
+-- 성공적으로 파싱된 요청만 기록한다(AMOUNT_NOT_FOUND 등 실패 케이스는 학습 신호로 쓸모가 적어 제외).
+-- RAW_LLM_JSON은 Gemini가 실제로 뱉은 원본 구조화 출력(정규화/캐시 보정 전), RESULT_JSON은 정규식
+-- 이중 체크·카테고리 enum 강제·가맹점 캐시까지 반영된 최종 결과 — 파인튜닝 타깃은 보통 후자가 더 정답에
+-- 가깝다. PII(가맹점명/메모 원문)는 이 단계에서 별도 마스킹하지 않으며, 학습 데이터로 반출하기 전에 처리한다.
+CREATE TABLE IF NOT EXISTS NL_PARSE_LOG (
+    LOG_ID        INT PRIMARY KEY,
+    USER_ID       INT REFERENCES USERS(USER_ID),
+    TYPE          VARCHAR(3) NOT NULL,
+    INPUT_TEXT    VARCHAR(500) NOT NULL,
+    SOURCE        VARCHAR(30) NOT NULL,
+    RAW_LLM_JSON  VARCHAR(2000),
+    RESULT_JSON   VARCHAR(2000) NOT NULL,
+    CONFIDENCE    NUMERIC(4,3),
+    CREATED_AT    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

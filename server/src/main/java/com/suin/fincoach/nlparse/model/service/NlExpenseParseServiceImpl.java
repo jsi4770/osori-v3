@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,8 +19,10 @@ import com.suin.fincoach.category.model.service.CategoryService;
 import com.suin.fincoach.coaching.model.service.GeminiClient;
 import com.suin.fincoach.nlparse.model.dao.MerchantCacheDao;
 import com.suin.fincoach.nlparse.model.dao.NlInputHistoryDao;
+import com.suin.fincoach.nlparse.model.dao.NlParseLogDao;
 import com.suin.fincoach.nlparse.model.vo.MerchantCategoryCache;
 import com.suin.fincoach.nlparse.model.vo.NlInputHistory;
+import com.suin.fincoach.nlparse.model.vo.NlParseLog;
 import com.suin.fincoach.nlparse.util.RegexExpenseParser;
 
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,9 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 
 	@Autowired
 	private NlInputHistoryDao nlInputHistoryDao;
+
+	@Autowired
+	private NlParseLogDao nlParseLogDao;
 
 	@Autowired
 	private CategoryService categoryService;
@@ -159,7 +165,31 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		result.put("needsConfirmation", confidence < CONFIDENCE_THRESHOLD || installmentMonths != null);
 		result.put("source", source);
 		result.put("installmentMonths", installmentMonths);
+
+		logParse(userId, txType, text, source, llm, result, confidence);
+
 		return result;
+	}
+
+	// 향후 소형 모델 파인튜닝용 데이터 확보를 위한 (입력 -> 파싱 결과) 로깅. 로깅 실패가 실제
+	// 파싱 응답에 영향을 주면 안 되므로 예외를 삼키고 경고만 남긴다.
+	private void logParse(int userId, String txType, String text, String source, JSONObject llm,
+			Map<String, Object> result, double confidence) {
+		try {
+			String trimmedText = text.length() > 500 ? text.substring(0, 500) : text;
+			NlParseLog logEntry = NlParseLog.builder()
+					.userId(userId)
+					.type(txType)
+					.inputText(trimmedText)
+					.source(source)
+					.rawLlmJson(llm != null ? llm.toJSONString() : null)
+					.resultJson(JSONValue.toJSONString(result))
+					.confidence(confidence)
+					.build();
+			nlParseLogDao.insert(sqlSession, logEntry);
+		} catch (Exception e) {
+			log.warn("NL_PARSE_LOG 저장 실패, 파싱 응답에는 영향 없음", e);
+		}
 	}
 
 	@Override
