@@ -34,17 +34,16 @@ public class PushNotificationService {
 	@Value("${webpush.enabled:false}")
 	private boolean enabled;
 
-	public void sendToUser(int userId, PushPayload payload) {
+	/** @return 발송을 시도한 구독 수 (0이면 이 사용자는 구독이 없거나 푸시 비활성). */
+	public int sendToUser(int userId, PushPayload payload) {
 		if (!enabled) {
-			return;
+			return 0;
 		}
 		List<PushSubscription> subs = dao.findByUserId(sqlSession, userId);
-		if (subs.isEmpty()) {
-			return;
-		}
 		for (PushSubscription sub : subs) {
 			sendOne(sub, payload);
 		}
+		return subs.size();
 	}
 
 	private void sendOne(PushSubscription sub, PushPayload payload) {

@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.suin.fincoach.push.model.dao.PushSubscriptionDao;
 import com.suin.fincoach.push.model.dto.SubscribeRequest;
+import com.suin.fincoach.push.model.service.PushNotificationService;
+import com.suin.fincoach.push.model.vo.PushPayload;
 import com.suin.fincoach.push.model.vo.PushSubscription;
 
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class PushController {
 
 	private final PushSubscriptionDao dao;
 	private final SqlSessionTemplate sqlSession;
+	private final PushNotificationService pushNotificationService;
 
 	@Value("${webpush.vapid.public-key:}")
 	private String vapidPublicKey;
@@ -68,6 +71,25 @@ public class PushController {
 			return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 사용자입니다. 다시 로그인해주세요."));
 		}
 		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "구독 완료"));
+	}
+
+	/** 설정 화면의 "테스트 알림" 버튼 — 요청한 사용자 본인에게 즉시 푸시 1건. */
+	@PostMapping("/test")
+	public ResponseEntity<?> test(@RequestBody Map<String, Object> body) {
+		Object rawId = body.get("userId");
+		if (rawId == null) {
+			return ResponseEntity.badRequest().body(Map.of("message", "userId가 필요합니다."));
+		}
+		int userId = Integer.parseInt(String.valueOf(rawId));
+		int sent = pushNotificationService.sendToUser(userId, new PushPayload(
+				"테스트 알림",
+				"알림이 정상적으로 도착합니다. 🎉",
+				"/mypage/assets",
+				"push-test"));
+		if (sent == 0) {
+			return ResponseEntity.ok(Map.of("sent", 0, "message", "이 기기에 등록된 구독이 없습니다. 알림을 다시 켜주세요."));
+		}
+		return ResponseEntity.ok(Map.of("sent", sent, "message", "테스트 알림을 보냈습니다."));
 	}
 
 	@PostMapping("/unsubscribe")

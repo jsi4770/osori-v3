@@ -16,6 +16,11 @@ export const pushApi = {
     const res = await api.post("/push/unsubscribe", { endpoint });
     return res.data;
   },
+
+  test: async ({ userId }) => {
+    const res = await api.post("/push/test", { userId });
+    return res.data; // { sent, message }
+  },
 };
 
 export default pushApi;

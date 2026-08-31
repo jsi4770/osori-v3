@@ -7,6 +7,7 @@ import { userApi } from "../../../api/userApi";
 import CategoryManager from "./CategoryManager";
 import BudgetSettings from "./BudgetSettings";
 import { usePushNotifications } from "../../../hooks/usePushNotifications";
+import { pushApi } from "../../../api/pushApi";
 import "./MyPage.css";
 import "./ProfileSettings.css";
 
@@ -17,12 +18,28 @@ function ProfileSettings() {
   const { toast, confirm } = useFeedback();
   const push = usePushNotifications();
 
+  const [pushTesting, setPushTesting] = useState(false);
+
   const handleTogglePush = async () => {
     if (push.subscribed) {
       await push.disable();
       toast("알림을 껐어요.", { type: "info" });
     } else {
       await push.enable();
+    }
+  };
+
+  const handleTestPush = async () => {
+    setPushTesting(true);
+    try {
+      const res = await pushApi.test({ userId: user?.userId });
+      toast(res?.message || "테스트 알림을 보냈어요.", {
+        type: res?.sent ? "success" : "error",
+      });
+    } catch {
+      toast("테스트 알림 전송에 실패했어요.", { type: "error" });
+    } finally {
+      setPushTesting(false);
     }
   };
 
@@ -629,6 +646,18 @@ function ProfileSettings() {
               </button>
             </div>
           </div>
+
+          {push.subscribed && (
+            <button
+              type="button"
+              className="ps-link-btn"
+              style={{ marginTop: 10 }}
+              disabled={pushTesting}
+              onClick={handleTestPush}
+            >
+              {pushTesting ? "보내는 중..." : "테스트 알림 보내기"}
+            </button>
+          )}
         </section>
 
         {/* 예산/저축 목표: 월 예산 + 저축 목표 금액/날짜/현재 저축액 */}
