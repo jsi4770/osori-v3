@@ -58,6 +58,12 @@ coaching.llm.daily-limit=50
 gemini.api.key=CHANGE_ME
 gemini.model=gemini-2.5-flash
 
+# Web Push (VAPID) — PWA 푸시 알림. 키 생성: `npx web-push generate-vapid-keys`
+webpush.enabled=${WEBPUSH_ENABLED:false}
+webpush.vapid.public-key=${WEBPUSH_VAPID_PUBLIC:CHANGE_ME}
+webpush.vapid.private-key=${WEBPUSH_VAPID_PRIVATE:CHANGE_ME}
+webpush.vapid.subject=${WEBPUSH_VAPID_SUBJECT:mailto:you@example.com}
+
 # Logging
 logging.level.root=info
 logging.level.com.suin.fincoach.user=debug

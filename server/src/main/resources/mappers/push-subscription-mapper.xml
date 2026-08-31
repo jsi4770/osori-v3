@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="pushSubscriptionMapper">
+
+	<!-- 같은 (USER_ID, ENDPOINT) 재등록 시 키/UA만 갱신 (구독은 만료 후 재생성되면 키가 바뀔 수 있다) -->
+	<insert id="upsert" parameterType="PushSubscription">
+		INSERT INTO PUSH_SUBSCRIPTION (
+			SUB_ID, USER_ID, ENDPOINT, P256DH, AUTH, USER_AGENT
+		) VALUES (
+			nextval('SEQ_PUSH_SUBSCRIPTION'),
+			#{userId}, #{endpoint}, #{p256dh}, #{auth}, #{userAgent}
+		)
+		ON CONFLICT (USER_ID, ENDPOINT) DO UPDATE SET
+			P256DH = EXCLUDED.P256DH,
+			AUTH = EXCLUDED.AUTH,
+			USER_AGENT = EXCLUDED.USER_AGENT
+	</insert>
+
+	<delete id="deleteByEndpoint" parameterType="string">
+		DELETE FROM PUSH_SUBSCRIPTION WHERE ENDPOINT = #{endpoint}
+	</delete>
+
+	<select id="findByUserId" parameterType="int" resultType="PushSubscription">
+		SELECT SUB_ID, USER_ID, ENDPOINT, P256DH, AUTH, USER_AGENT, CREATED_AT
+		FROM PUSH_SUBSCRIPTION
+		WHERE USER_ID = #{userId}
+	</select>
+
+	<select id="findUserIdsWithSubscription" resultType="int">
+		SELECT DISTINCT USER_ID FROM PUSH_SUBSCRIPTION
+	</select>
+
+	<!-- 구독 사용자 중, 이번 달 실제 지출(OUT, 분석제외 아님) 합계가 월 예산을 넘은 사람 -->
+	<select id="findBudgetOverspenders"
+	        resultType="com.suin.fincoach.push.model.dao.PushSubscriptionDao$BudgetStatus">
+		SELECT u.USER_ID AS userId,
+		       u.B_AMOUNT AS budget,
+		       COALESCE(SUM(m.ORIGINAL_AMOUNT), 0) AS spent
+		FROM USERS u
+		JOIN (SELECT DISTINCT USER_ID FROM PUSH_SUBSCRIPTION) p ON p.USER_ID = u.USER_ID
+		LEFT JOIN MYTRANS m
+		       ON m.USER_ID = u.USER_ID
+		      AND m.TYPE = 'OUT'
+		      AND COALESCE(m.EXCLUDE_ANALYSIS, 'N') = 'N'
+		      AND m.TRANS_DATE &gt;= date_trunc('month', CURRENT_DATE)
+		      AND m.TRANS_DATE &lt; date_trunc('month', CURRENT_DATE) + INTERVAL '1 month'
+		WHERE u.STATUS = 'Y'
+		  AND u.B_AMOUNT IS NOT NULL
+		  AND u.B_AMOUNT &gt; 0
+		GROUP BY u.USER_ID, u.B_AMOUNT
+		HAVING COALESCE(SUM(m.ORIGINAL_AMOUNT), 0) &gt; u.B_AMOUNT
+	</select>
+
+	<insert id="markBudgetAlertSent" parameterType="map">
+		INSERT INTO BUDGET_ALERT_LOG (USER_ID, YEAR_MONTH)
+		VALUES (#{userId}, #{yearMonth})
+		ON CONFLICT (USER_ID, YEAR_MONTH) DO NOTHING
+	</insert>
+
+	<!-- PAY_DAY가 '내일 일자'와 같은 고정지출 (구독 사용자 한정) -->
+	<select id="findFixedTransDueTomorrow"
+	        resultType="com.suin.fincoach.push.model.dao.PushSubscriptionDao$UpcomingFixedTrans">
+		SELECT f.USER_ID AS userId,
+		       f.NAME AS name,
+		       f.AMOUNT AS amount
+		FROM FIXEDTRANS f
+		JOIN (SELECT DISTINCT USER_ID FROM PUSH_SUBSCRIPTION) p ON p.USER_ID = f.USER_ID
+		WHERE f.PAY_DAY = EXTRACT(DAY FROM (CURRENT_DATE + INTERVAL '1 day'))
+	</select>
+
+</mapper>

@@ -9,6 +9,7 @@ import ChallengeCard from "../../coaching/ChallengeCard";
 import transApi from "../../../api/transApi";
 import ExpenseChart from "./ExpenseChart";
 import MonthlyTrendChart from "./MonthlyTrendChart";
+import { maybeNotifyBudgetExceeded } from "../../Util/budgetLocalAlert";
 
 const MyPage = () => {
   const { user } = useAuth();
@@ -130,6 +131,14 @@ const MyPage = () => {
   useEffect(() => {
     loadData();
   }, [user?.userId]);
+
+  // 이번 달 지출이 월 예산을 넘으면 (앱 사용 중) 로컬 알림 — 이번 달 1회
+  useEffect(() => {
+    if (isLoading) return;
+    const budget = Number(user?.bAmount ?? user?.bamount) || 0;
+    if (budget <= 0) return;
+    maybeNotifyBudgetExceeded({ monthSpent: totalMonthlyExpenditure, budget });
+  }, [isLoading, totalMonthlyExpenditure, user?.bAmount, user?.bamount]);
 
   return (
     <main className="fade-in">

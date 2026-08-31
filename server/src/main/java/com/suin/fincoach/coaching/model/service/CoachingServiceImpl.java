@@ -16,6 +16,8 @@ import com.suin.fincoach.coaching.model.dao.TrendDao;
 import com.suin.fincoach.coaching.model.vo.AnomalyItem;
 import com.suin.fincoach.coaching.model.vo.CoachingMessage;
 import com.suin.fincoach.coaching.model.vo.SpendingTrend;
+import com.suin.fincoach.push.model.service.PushNotificationService;
+import com.suin.fincoach.push.model.vo.PushPayload;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,6 +36,10 @@ public class CoachingServiceImpl implements CoachingService {
 
 	@Autowired
 	private GeminiClient geminiClient;
+
+	// 새 넛지가 생성되면(오늘 캐시 재사용이 아닐 때만) 웹푸시로도 알려준다.
+	@Autowired
+	private PushNotificationService pushNotificationService;
 
 	// Gemini는 무료 티어라도 호출 실패/한도 초과가 있을 수 있어, 꺼져 있거나 오류일 때는 Mock으로 우아하게 대체한다.
 	@Value("${coaching.llm.enabled:false}")
@@ -99,6 +105,8 @@ public class CoachingServiceImpl implements CoachingService {
 
 		dao.insertMessage(sqlSession, nudge);
 		nudge.setThreadId(nudge.getMessageId()); // 반환 객체에도 self-thread 반영
+
+		pushNewNudge(nudge);
 		return nudge;
 	}
 
@@ -138,7 +146,23 @@ public class CoachingServiceImpl implements CoachingService {
 
 		dao.insertMessage(sqlSession, nudge);
 		nudge.setThreadId(nudge.getMessageId());
+
+		pushNewNudge(nudge);
 		return nudge;
+	}
+
+	// 넛지 카드 내용을 그대로 푸시 본문으로 보내고, 클릭하면 해당 코칭 대화(chat/{threadId})로 이동한다.
+	// 앱이 열려 있을 때 생성돼도 알림이 뜨지만 tag가 스레드별이라 중복해서 쌓이진 않는다.
+	private void pushNewNudge(CoachingMessage nudge) {
+		try {
+			pushNotificationService.sendToUser(nudge.getUserId(), new PushPayload(
+					"소비 코치",
+					nudge.getContent(),
+					"/mypage/coaching/chat/" + nudge.getThreadId(),
+					"nudge-" + nudge.getThreadId()));
+		} catch (Exception e) {
+			log.warn("넛지 푸시 발송 실패 (무시하고 진행)", e);
+		}
 	}
 
 	@Override

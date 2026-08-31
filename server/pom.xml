@@ -143,7 +143,25 @@
 		    <version>0.11.5</version>
 		    <scope>runtime</scope>
 		</dependency>
-		
+
+		<!-- Web Push (VAPID) — 브라우저(PWA) 푸시 알림 발송. -->
+		<dependency>
+		    <groupId>nl.martijndwars</groupId>
+		    <artifactId>web-push</artifactId>
+		    <version>5.1.1</version>
+		</dependency>
+		<!-- web-push는 BouncyCastle을 전이 의존성으로 가져오지 않으므로 직접 추가 (VAPID 키/암호화에 필요) -->
+		<dependency>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bcprov-jdk18on</artifactId>
+		    <version>1.78.1</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bcpkix-jdk18on</artifactId>
+		    <version>1.78.1</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

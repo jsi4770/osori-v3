@@ -6,6 +6,7 @@ import { useFeedback } from "../../../context/FeedbackContext";
 import { userApi } from "../../../api/userApi";
 import CategoryManager from "./CategoryManager";
 import BudgetSettings from "./BudgetSettings";
+import { usePushNotifications } from "../../../hooks/usePushNotifications";
 import "./MyPage.css";
 import "./ProfileSettings.css";
 
@@ -14,6 +15,16 @@ function ProfileSettings() {
   const { user, setUser, logout } = useAuth();
   const { pref: themePref, setTheme } = useTheme();
   const { toast, confirm } = useFeedback();
+  const push = usePushNotifications();
+
+  const handleTogglePush = async () => {
+    if (push.subscribed) {
+      await push.disable();
+      toast("알림을 껐어요.", { type: "info" });
+    } else {
+      await push.enable();
+    }
+  };
 
   const THEME_OPTIONS = [
     { key: "light", label: "라이트" },
@@ -565,6 +576,57 @@ function ProfileSettings() {
                   {o.label}
                 </button>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 알림: 웹푸시(예산 초과, 소비 코치 넛지, 고정지출 예정, 매일 리포트 리마인더) */}
+        <section className="ps-section">
+          <h2 className="ps-section-title">알림</h2>
+
+          <div className="info-card ps-theme">
+            <div className="ps-theme-info">
+              <div className="ps-theme-title">푸시 알림</div>
+              <div className="ps-theme-desc">
+                예산 초과, 소비 코치 넛지, 고정지출 결제 예정, 매일 저녁 소비 리포트 리마인더를
+                기기 알림으로 받아요.
+              </div>
+
+              {!push.supported && (
+                <div className="ps-field-error" style={{ marginTop: 8 }}>
+                  이 브라우저는 푸시 알림을 지원하지 않습니다.
+                </div>
+              )}
+              {push.supported && push.iosNeedsInstall && (
+                <div className="ps-help" style={{ marginTop: 8 }}>
+                  iPhone/iPad은 공유 → &quot;홈 화면에 추가&quot; 후 앱에서 열어야 알림을 켤 수 있어요.
+                </div>
+              )}
+              {push.permission === "denied" && (
+                <div className="ps-field-error" style={{ marginTop: 8 }}>
+                  브라우저에서 알림이 차단돼 있어요. 사이트 설정에서 알림을 허용해주세요.
+                </div>
+              )}
+              {push.error && (
+                <div className="ps-field-error" style={{ marginTop: 8 }}>{push.error}</div>
+              )}
+            </div>
+
+            <div className="ps-theme-seg" role="group" aria-label="푸시 알림 설정">
+              <button
+                type="button"
+                className={`ps-theme-opt ${push.subscribed ? "active" : ""}`}
+                aria-pressed={push.subscribed}
+                disabled={
+                  push.busy ||
+                  !push.supported ||
+                  push.iosNeedsInstall ||
+                  push.permission === "denied"
+                }
+                onClick={handleTogglePush}
+              >
+                {push.busy ? "처리 중..." : push.subscribed ? "켜짐" : "꺼짐"}
+              </button>
             </div>
           </div>
         </section>

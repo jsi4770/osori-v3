@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import './ExpenseForm.css';
 import transApi from '../../../api/transApi';
 import nlParseApi from '../../../api/nlParseApi';
@@ -18,6 +18,7 @@ const ExpenseForm = () => {
   const { user } = useAuth();
   const { toast, confirm } = useFeedback();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -39,15 +40,20 @@ const ExpenseForm = () => {
     return `${year}-${month}-${day}`;
   };
 
-  const [formData, setFormData] = useState({
-    type: '지출',
-    transDate: '',
-    title: '',
-    originalAmount: '',
-    category: EXPENSE_CATEGORIES[0],
-    memo: '',
-    excludeAnalysis: 'N',
-    installmentMonths: '' // 지출에서만 사용 — 2 이상이면 할부로 등록
+  // PWA 홈 화면 바로가기(빠른 수입 입력)는 ?type=IN 으로 들어온다 → 처음부터 수입 모드로 시작.
+  // (?quick=1 로 오는 빠른 지출 입력은 NL 입력창의 autoFocus로 이미 커서가 잡힌다.)
+  const [formData, setFormData] = useState(() => {
+    const startAsIncome = searchParams.get('type') === 'IN';
+    return {
+      type: startAsIncome ? '수입' : '지출',
+      transDate: '',
+      title: '',
+      originalAmount: '',
+      category: (startAsIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES)[0],
+      memo: '',
+      excludeAnalysis: 'N',
+      installmentMonths: '' // 지출에서만 사용 — 2 이상이면 할부로 등록
+    };
   });
 
   const apiType = formData.type === '수입' ? 'IN' : 'OUT';
