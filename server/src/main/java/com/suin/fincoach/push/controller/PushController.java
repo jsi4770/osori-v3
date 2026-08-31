@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -59,7 +60,13 @@ public class PushController {
 				.userAgent(userAgent == null ? null : userAgent.substring(0, Math.min(userAgent.length(), 390)))
 				.build();
 
-		dao.upsert(sqlSession, sub);
+		try {
+			dao.upsert(sqlSession, sub);
+		} catch (DataIntegrityViolationException e) {
+			// 존재하지 않는 userId 등 FK 위반 — 클라이언트 요청 문제이므로 400
+			log.warn("push subscribe 실패 (userId={} 무결성 위반)", req.getUserId());
+			return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 사용자입니다. 다시 로그인해주세요."));
+		}
 		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "구독 완료"));
 	}
 
