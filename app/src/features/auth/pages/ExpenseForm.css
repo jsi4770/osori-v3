@@ -162,6 +162,68 @@
   color: var(--primary-color);
 }
 
+/* 문장 파싱 결과 인라인 미리보기 (모달 대체) */
+.nl-parsed-card {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: left;
+}
+.nl-parsed-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-main, #1f2430);
+}
+.nl-parsed-cat { color: var(--primary-color); font-weight: 700; }
+.nl-parsed-title { color: var(--text-sub); }
+.nl-parsed-amt { font-weight: 800; }
+.nl-parsed-dot { color: var(--text-weak); }
+.nl-parsed-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-accent);
+  color: var(--primary-color);
+}
+.nl-parsed-sub {
+  margin-top: 5px;
+  font-size: 0.78rem;
+  color: var(--text-weak);
+}
+.nl-parsed-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.nl-parsed-btn {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+.nl-parsed-btn:active { transform: scale(0.97); }
+.nl-parsed-edit {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-sub);
+}
+.nl-parsed-save {
+  border: none;
+  background: var(--primary-color);
+  color: #fff;
+}
+.nl-parsed-save:hover { background: var(--primary-hover); }
+
 .nl-hero-examples {
   display: flex;
   flex-wrap: wrap;

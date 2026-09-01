@@ -18,7 +18,7 @@ const NL_INCOME_EXAMPLES = ['이번 달 월급 250만원', '용돈 10만원', '�
 
 const ExpenseForm = () => {
   const { user } = useAuth();
-  const { toast, confirm } = useFeedback();
+  const { toast } = useFeedback();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -26,7 +26,8 @@ const ExpenseForm = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [nlText, setNlText] = useState('');
-  const [nlPreviewAmount, setNlPreviewAmount] = useState(null);
+  // 문장 파싱 결과 미리보기. { result, apiType } — 저장/수정 버튼으로 확정하기 전 인라인으로 보여준다.
+  const [nlParsed, setNlParsed] = useState(null);
   const [nlParsing, setNlParsing] = useState(false);
   // 지출 등록의 기본 화면은 AI 빠른 입력 — 영수증/직접 입력은 필요할 때만 펼친다.
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -123,7 +124,7 @@ const ExpenseForm = () => {
     // 탭을 바꾸면 항상 AI 빠른 입력 화면부터 다시 보여준다(수입/지출 둘 다 지원).
     setShowManualEntry(false);
     setNlText('');
-    setNlPreviewAmount(null);
+    setNlParsed(null);
   };
 
   const handleChange = (e) => {
@@ -218,33 +219,14 @@ const ExpenseForm = () => {
   const computedKrw = fxRate ? Math.round(foreignAmountNum * fxRate) : 0;
   const effectiveKrw = krwOverride ? (Number(krwOverrideValue) || 0) : computedKrw;
 
-  // 서버 왕복 전에 로컬에서 즉시 보여주는 낙관적 금액 미리보기 — 정식 파싱 결과가 아니라
-  // "이 정도 금액으로 인식되고 있어요"라는 느낌만 먼저 준다(체감 지연 최소화 목적).
-  const previewAmountFromText = (text) => {
-    const manMatch = text.match(/(\d+(?:\.\d+)?)\s*만\s*(?:(\d+)\s*천)?\s*원?/);
-    if (manMatch) {
-      const man = parseFloat(manMatch[1]) * 10000;
-      const cheon = manMatch[2] ? Number(manMatch[2]) * 1000 : 0;
-      return Math.round(man + cheon);
-    }
-    const cheonMatch = text.match(/(\d+)\s*천\s*원?/);
-    if (cheonMatch) return Number(cheonMatch[1]) * 1000;
-    const wonMatch = text.match(/([\d,]+)\s*원/);
-    if (wonMatch) return Number(wonMatch[1].replace(/,/g, ''));
-    const bareMatch = text.match(/\d{1,3}(?:,\d{3})+/);
-    if (bareMatch) return Number(bareMatch[0].replace(/,/g, ''));
-    return null;
-  };
-
   const handleNlTextChange = (e) => {
-    const value = e.target.value;
-    setNlText(value);
-    setNlPreviewAmount(value.trim() ? previewAmountFromText(value) : null);
+    setNlText(e.target.value);
+    setNlParsed(null); // 문장을 다시 고치면 이전 미리보기는 지운다
   };
 
   const applyExample = (example) => {
     setNlText(example);
-    setNlPreviewAmount(previewAmountFromText(example));
+    setNlParsed(null);
   };
 
   // 파싱 결과를 그대로 저장(자동 저장 또는 원탭 확인 "저장" 선택 시). apiType: "IN" | "OUT"
@@ -288,7 +270,7 @@ const ExpenseForm = () => {
       }).catch(() => {});
       toast('저장되었습니다!', { type: 'success' });
       setNlText('');
-      setNlPreviewAmount(null);
+      setNlParsed(null);
       navigate('/mypage/calendarView');
     } catch (error) {
       toast('저장 중 오류 발생', { type: 'error' });
@@ -333,30 +315,9 @@ const ExpenseForm = () => {
         return;
       }
 
-      if (result.needsConfirmation) {
-        const merchantPart = result.merchant ? `${result.merchant} · ` : '';
-        const resultForeign = isForeign(result.currency);
-        const fxLine = resultForeign
-          ? `${currencyMeta(result.currency).symbol}${Number(result.fxAmount).toLocaleString()} ${result.currency}` +
-            ` → ${Number(result.amount).toLocaleString()}원\n` +
-            `(1 ${result.currency} = ${Number(result.fxRate).toLocaleString()}원` +
-            `${result.fxStale ? ', 추정' : ''} · ${result.fxRateDate} 기준)\n`
-          : '';
-        const summary = result.installmentMonths > 1
-          ? `${merchantPart}${result.category} · ${Number(result.amount).toLocaleString()}원 · ${result.installmentMonths}개월 할부\n` +
-            `${result.date}부터 매달 나눠서 ${result.installmentMonths}건으로 저장할까요?`
-          : `${merchantPart}${result.category}\n${fxLine}${resultForeign ? '' : `${Number(result.amount).toLocaleString()}원\n`}` +
-            `${result.date}로 저장할까요?`;
-        const ok = await confirm(summary, { confirmLabel: '저장', cancelLabel: '수정' });
-        if (ok) {
-          await saveParsedExpense(result, apiType);
-        } else {
-          applyParsedToManualForm(result, apiType);
-          toast('아래에서 확인하고 저장해주세요.', { type: 'info' });
-        }
-      } else {
-        await saveParsedExpense(result, apiType);
-      }
+      // 파싱 결과는 모달 없이 입력창 아래 "카테고리 · 제목 · 금액" 미리보기로 보여주고,
+      // 사용자가 [저장]/[수정]으로 확정한다(원화·외화 동일).
+      setNlParsed({ result, apiType });
     } catch (error) {
       toast(error?.response?.data?.message || '인식에 실패했어요. 직접 입력해주세요.', { type: 'error' });
     } finally {
@@ -486,9 +447,50 @@ const ExpenseForm = () => {
                 </button>
               </div>
 
-              {nlPreviewAmount != null && (
-                <div className="nl-hero-preview">{nlPreviewAmount.toLocaleString()}원 정도로 보여요…</div>
-              )}
+              {nlParsed && (() => {
+                const p = nlParsed.result;
+                const pForeign = isForeign(p.currency);
+                const pTitle = p.merchant || p.memo || nlText;
+                return (
+                  <div className="nl-parsed-card">
+                    <div className="nl-parsed-main">
+                      <span className="nl-parsed-cat">{p.category}</span>
+                      <span className="nl-parsed-dot">·</span>
+                      <span className="nl-parsed-title">{pTitle}</span>
+                      <span className="nl-parsed-dot">·</span>
+                      <span className="nl-parsed-amt">{Number(p.amount).toLocaleString()}원</span>
+                      {p.installmentMonths > 1 && (
+                        <span className="nl-parsed-badge">{p.installmentMonths}개월 할부</span>
+                      )}
+                    </div>
+                    {(pForeign || p.date !== today) && (
+                      <div className="nl-parsed-sub">
+                        {pForeign && (
+                          <>
+                            {currencyMeta(p.currency).symbol}{Number(p.fxAmount).toLocaleString()} {p.currency}
+                            {' · '}1 {p.currency} = {Number(p.fxRate).toLocaleString()}원
+                            {p.fxStale ? ' · 추정' : ''}
+                          </>
+                        )}
+                        {pForeign && p.date !== today && ' · '}
+                        {p.date !== today && p.date}
+                      </div>
+                    )}
+                    <div className="nl-parsed-actions">
+                      <button
+                        type="button"
+                        className="nl-parsed-btn nl-parsed-edit"
+                        onClick={() => { applyParsedToManualForm(p, nlParsed.apiType); setNlParsed(null); }}
+                      >수정</button>
+                      <button
+                        type="button"
+                        className="nl-parsed-btn nl-parsed-save"
+                        onClick={() => saveParsedExpense(p, nlParsed.apiType)}
+                      >저장</button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="nl-hero-examples">
                 {(personalExamples.length > 0
