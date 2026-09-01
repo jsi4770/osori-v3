@@ -99,6 +99,9 @@ export default function FixedTransPage() {
                     <div className="ftRowName">
                       <IconReceipt size={15} className="ftRowIcon" aria-hidden="true" />
                       <span className="ftName">{item.name}</span>
+                      <span className="status-dot ftPayDay">
+                        {Number(item.payDay) === 31 ? "매달 말일" : `매달 ${item.payDay}일`}
+                      </span>
                     </div>
 
                     <div className="ftRowSub">
@@ -108,9 +111,6 @@ export default function FixedTransPage() {
                   </div>
 
                   <div className="ftRowRight">
-                    <span className="status-dot ftPayDay">
-                      {Number(item.payDay) === 31 ? "매달 말일" : `매달 ${item.payDay}일`}
-                    </span>
                     <div className="ftAmount">{Number(item.amount).toLocaleString()}원</div>
                     <div className="ftRowActions">
                       <button type="button" className="ftBtn ftBtnEdit" onClick={() => openEdit(item)}>

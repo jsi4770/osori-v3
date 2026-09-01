@@ -40,8 +40,8 @@
   align-items: stretch; /* 좌/우 컬럼을 같은 높이로 늘려 버튼을 등록일 줄에 맞춤 */
   justify-content: space-between;
   gap: 10px;
-  padding: 8px 0;
-  min-height: 94px; /* 모든 항목 카드 높이 통일 */
+  padding: 14px 0; /* 항목 위·아래 간격 확보 */
+  min-height: 96px; /* 모든 항목 카드 높이 통일 */
   box-sizing: border-box;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -61,6 +61,7 @@
 .ftRowName {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 8px;
   min-width: 0;
 }
@@ -100,7 +101,10 @@
   text-align: right;
 }
 
+/* 이름 옆 '매달 N일' 뱃지: 이름과 살짝 띄우고 줄어들지 않게 */
 .ftPayDay {
+  flex-shrink: 0;
+  margin-left: 2px;
   white-space: nowrap;
 }
 
