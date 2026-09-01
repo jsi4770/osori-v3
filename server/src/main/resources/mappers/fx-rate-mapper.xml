@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="fxRateMapper">
+
+	<select id="selectRate" resultType="com.suin.fincoach.fx.model.vo.FxRate">
+		SELECT
+			CURRENCY   AS "currency",
+			RATE_DATE  AS "rateDate",
+			RATE       AS "rate",
+			SOURCE     AS "source",
+			FETCHED_AT AS "fetchedAt"
+		FROM FX_RATE_CACHE
+		WHERE CURRENCY = #{currency}
+		  AND RATE_DATE = #{rateDate}
+	</select>
+
+	<!-- 과거 환율은 불변이라 재조회하지 않지만, 당일 환율/폴백은 나중에 정식 값으로 덮어쓸 수 있어야 한다. -->
+	<insert id="upsertRate" parameterType="com.suin.fincoach.fx.model.vo.FxRate">
+		INSERT INTO FX_RATE_CACHE (CURRENCY, RATE_DATE, RATE, SOURCE, FETCHED_AT)
+		VALUES (#{currency}, #{rateDate}, #{rate}, #{source}, CURRENT_TIMESTAMP)
+		ON CONFLICT (CURRENCY, RATE_DATE)
+		DO UPDATE SET
+			RATE = EXCLUDED.RATE,
+			SOURCE = EXCLUDED.SOURCE,
+			FETCHED_AT = CURRENT_TIMESTAMP
+	</insert>
+
+</mapper>

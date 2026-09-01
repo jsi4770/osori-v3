@@ -263,3 +263,33 @@ CREATE TABLE IF NOT EXISTS EMAIL_VERIFICATION (
     CREATED_AT  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS IDX_EMAIL_VERIFICATION_LOOKUP ON EMAIL_VERIFICATION (EMAIL, PURPOSE, CONSUMED);
+
+-- =========================================================================
+-- 외화(FX) 거래 지원.
+-- MYTRANS.ORIGINAL_AMOUNT는 계속 "원화(KRW) 금액"이며 모든 차트/예산/코칭의 소스 오브 트루스다.
+-- 외화로 입력된 거래만 원본 외화금액(FX_AMOUNT)/통화(CURRENCY)/적용 환율(FX_RATE)/환율 기준일
+-- (FX_RATE_DATE)/환율 소스(FX_RATE_SOURCE)를 함께 스냅샷으로 저장해, 나중에 카드 명세서 등으로
+-- 원화값을 보정할 수 있게 한다. 순수 원화 거래는 CURRENCY='KRW', 나머지 FX_* 컬럼은 NULL.
+-- =========================================================================
+ALTER TABLE MYTRANS ADD COLUMN IF NOT EXISTS CURRENCY       VARCHAR(3) DEFAULT 'KRW';
+ALTER TABLE MYTRANS ADD COLUMN IF NOT EXISTS FX_AMOUNT      NUMERIC(15,2);
+ALTER TABLE MYTRANS ADD COLUMN IF NOT EXISTS FX_RATE        NUMERIC(15,4);
+ALTER TABLE MYTRANS ADD COLUMN IF NOT EXISTS FX_RATE_DATE   DATE;
+ALTER TABLE MYTRANS ADD COLUMN IF NOT EXISTS FX_RATE_SOURCE VARCHAR(20);
+
+-- 고정지출도 외화(해외 구독 등) 지원. 정기결제는 환율을 한 번 고정하지 않고 매달 "결제일(발생일)"
+-- 환율로 다시 환산해 MYTRANS에 반영한다 → 여기엔 원본 외화금액/통화만 저장한다.
+ALTER TABLE FIXEDTRANS ADD COLUMN IF NOT EXISTS CURRENCY  VARCHAR(3) DEFAULT 'KRW';
+ALTER TABLE FIXEDTRANS ADD COLUMN IF NOT EXISTS FX_AMOUNT NUMERIC(15,2);
+
+-- 환율 캐시: (통화, 기준일)당 매매기준율(KRW per 1 unit) 1행.
+-- 과거 환율은 불변이라 영구 캐싱하고, 당일(RATE_DATE = 오늘) 행만 FETCHED_AT로 TTL을 판단해 갱신한다.
+-- SOURCE: eximbank(한국수출입은행) | erapi(open.er-api.com 교차환율) | fallback(하드코딩 근사) | manual(사용자 지정).
+CREATE TABLE IF NOT EXISTS FX_RATE_CACHE (
+    CURRENCY   VARCHAR(3)    NOT NULL,
+    RATE_DATE  DATE          NOT NULL,
+    RATE       NUMERIC(15,4) NOT NULL,
+    SOURCE     VARCHAR(20)   NOT NULL,
+    FETCHED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (CURRENCY, RATE_DATE)
+);

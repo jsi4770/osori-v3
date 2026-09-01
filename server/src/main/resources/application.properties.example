@@ -58,6 +58,22 @@ coaching.llm.daily-limit=50
 gemini.api.key=CHANGE_ME
 gemini.model=gemini-2.5-flash
 
+# 외화(FX) 거래 — 수기/자연어 입력에서 통화를 골라 원화로 환산해 저장한다(MYTRANS.ORIGINAL_AMOUNT는 항상 원화).
+# fx.enabled=false면 원격 환율을 조회하지 않고 아래 fx.fallback.* 근사치만 쓴다(기능은 동작하되 "추정" 표시).
+# 무료로 켜려면: https://www.koreaexim.go.kr 현재환율 API 인증키 발급(무료, 카드 불필요) 후
+#   Railway 환경변수 EXIM_FX_KEY 주입 + FX_ENABLED=true. TWD는 수은이 고시하지 않아 open.er-api.com(키 불필요)로 보강한다.
+fx.enabled=${FX_ENABLED:false}
+fx.eximbank.key=${EXIM_FX_KEY:CHANGE_ME}
+# Safety cap: 무료 API지만 하루 원격 환율 호출 상한(폭주/실수 방지).
+fx.daily-limit=${FX_DAILY_LIMIT:300}
+# 모든 원격 소스 실패 시 최후 폴백 환율(KRW per 1 단위). 대략치이며 필요할 때 갱신.
+fx.fallback.USD=1360
+fx.fallback.JPY=9.1
+fx.fallback.EUR=1470
+fx.fallback.GBP=1730
+fx.fallback.CNY=189
+fx.fallback.TWD=42
+
 # Web Push (VAPID) — PWA 푸시 알림. 키 생성: `npx web-push generate-vapid-keys`
 webpush.enabled=${WEBPUSH_ENABLED:false}
 webpush.vapid.public-key=${WEBPUSH_VAPID_PUBLIC:CHANGE_ME}

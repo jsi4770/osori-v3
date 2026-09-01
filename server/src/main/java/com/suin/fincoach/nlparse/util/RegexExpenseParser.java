@@ -28,6 +28,15 @@ public class RegexExpenseParser {
 	private static final Pattern INSTALLMENT_PATTERN_C =
 			Pattern.compile("원\\s*(\\d+)\\s*개월(?!\\s*(?:동안|간|치|전|후|째|만))");
 
+	// 외화: 숫자에 바로 붙은 통화 기호/단어를 잡는다. "$30", "30달러", "1,500엔", "12.5 파운드", "€20".
+	// 반드시 숫자와 인접해야 하므로 "이번엔", "엔진" 같은 오탐을 피한다.
+	private static final Pattern FX_NUM_THEN_UNIT = Pattern.compile(
+			"([\\d,]+(?:\\.\\d+)?)\\s*(달러|불|USD|엔화|엔|JPY|\\u00A5|유로|EUR|\\u20AC|파운드|GBP|\\u00A3|위안|\\u5143|CNY|RMB|대만\\s*달러|TWD|NT\\$|\\$)",
+			Pattern.CASE_INSENSITIVE);
+	private static final Pattern FX_UNIT_THEN_NUM = Pattern.compile(
+			"(NT\\$|\\$|\\u00A3|\\u20AC|\\u00A5|USD|EUR|GBP|JPY|CNY)\\s*([\\d,]+(?:\\.\\d+)?)",
+			Pattern.CASE_INSENSITIVE);
+
 	private RegexExpenseParser() {}
 
 	// 텍스트에서 원 단위 금액을 추출. 못 찾으면 null.
@@ -61,6 +70,74 @@ public class RegexExpenseParser {
 		}
 
 		return null;
+	}
+
+	// 텍스트에 외화 단위가 숫자에 붙어 있으면 통화 코드(USD/JPY/EUR/GBP/CNY/TWD)를, 없으면 null(=원화).
+	public static String parseCurrency(String text) {
+		String unit = matchedUnit(text);
+		return unit == null ? null : unitToCode(unit);
+	}
+
+	// 외화 단위에 인접한 숫자 금액(정수로 반올림). 통화가 안 붙어 있으면 null.
+	public static Integer parseForeignAmount(String text) {
+		if (text == null) {
+			return null;
+		}
+		Matcher a = FX_NUM_THEN_UNIT.matcher(text);
+		if (a.find()) {
+			return looseInt(a.group(1));
+		}
+		Matcher b = FX_UNIT_THEN_NUM.matcher(text);
+		if (b.find()) {
+			return looseInt(b.group(2));
+		}
+		return null;
+	}
+
+	private static String matchedUnit(String text) {
+		if (text == null || text.isBlank()) {
+			return null;
+		}
+		Matcher a = FX_NUM_THEN_UNIT.matcher(text);
+		if (a.find()) {
+			return a.group(2);
+		}
+		Matcher b = FX_UNIT_THEN_NUM.matcher(text);
+		if (b.find()) {
+			return b.group(1);
+		}
+		return null;
+	}
+
+	private static String unitToCode(String unit) {
+		String u = unit.toLowerCase().replace(" ", "");
+		if (u.contains("대만") || u.equals("nt$") || u.equals("twd")) {
+			return "TWD";
+		}
+		if (u.contains("달러") || u.contains("불") || u.equals("$") || u.equals("usd")) {
+			return "USD";
+		}
+		if (u.contains("엔") || u.equals("jpy") || u.equals("¥")) {
+			return "JPY";
+		}
+		if (u.contains("유로") || u.equals("eur") || u.equals("€")) {
+			return "EUR";
+		}
+		if (u.contains("파운드") || u.equals("gbp") || u.equals("£")) {
+			return "GBP";
+		}
+		if (u.contains("위안") || u.equals("元") || u.equals("cny") || u.equals("rmb")) {
+			return "CNY";
+		}
+		return null;
+	}
+
+	private static Integer looseInt(String s) {
+		try {
+			return (int) Math.round(Double.parseDouble(s.replace(",", "")));
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	// 텍스트에서 "3개월 할부"/"할부 3개월" 같은 할부 개월수를 추출. 없으면(=일시불) null.

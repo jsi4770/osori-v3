@@ -6,7 +6,7 @@
 <mapper namespace="fixedTransMapper">
 
 	<insert id="create" parameterType="FixedTransCreateRequest">
-	
+
 		INSERT INTO FIXEDTRANS (
 			FIXED_ID,
 			NAME,
@@ -14,7 +14,9 @@
 			AMOUNT,
 			CATEGORY,
 			PAY_DAY,
-			USER_ID
+			USER_ID,
+			CURRENCY,
+			FX_AMOUNT
 		) VALUES (
 			nextval('SEQ_FNO'),
 			#{name},
@@ -22,7 +24,9 @@
 			#{amount},
 			#{category},
 			#{payDay},
-			#{userId}			
+			#{userId},
+			#{currency},
+			#{fxAmount}
 		)
 	</insert>
 	
@@ -43,9 +47,11 @@
 		SET NAME = #{name},
 			AMOUNT = #{amount},
 			CATEGORY = #{category},
-			PAY_DAY = #{payDay}
+			PAY_DAY = #{payDay},
+			CURRENCY = #{currency},
+			FX_AMOUNT = #{fxAmount}
 		WHERE FIXED_ID = #{fixedId}
-		AND USER_ID = #{userId}			
+		AND USER_ID = #{userId}
 	</update>
 	
 	

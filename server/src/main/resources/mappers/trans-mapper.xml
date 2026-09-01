@@ -17,7 +17,12 @@
         USER_ID,
         GROUPB_ID,
         EXCLUDE_ANALYSIS,
-        INSTALLMENT_ID)
+        INSTALLMENT_ID,
+        CURRENCY,
+        FX_AMOUNT,
+        FX_RATE,
+        FX_RATE_DATE,
+        FX_RATE_SOURCE)
         VALUES (
         nextval('SEQ_MYTRANS'),
         #{title},
@@ -30,7 +35,12 @@
         #{userId},
         #{groupBId},
         #{excludeAnalysis},
-        #{installmentId} )
+        #{installmentId},
+        #{currency},
+        #{fxAmount},
+        #{fxRate},
+        #{fxRateDate},
+        #{fxRateSource} )
 </insert>
 
 	<select id="selectMyTrans" resultType="mytrans">
@@ -46,7 +56,12 @@
 		    IS_SHARED      AS "isShared",
 		    GROUPB_ID  	   AS "groupBId",
 		    EXCLUDE_ANALYSIS AS "excludeAnalysis",
-		    INSTALLMENT_ID AS "installmentId"
+		    INSTALLMENT_ID AS "installmentId",
+		    CURRENCY       AS "currency",
+		    FX_AMOUNT      AS "fxAmount",
+		    FX_RATE        AS "fxRate",
+		    FX_RATE_DATE   AS "fxRateDate",
+		    FX_RATE_SOURCE AS "fxRateSource"
 		FROM MYTRANS
 		WHERE USER_ID = #{userId}
 		ORDER BY TRAN_ID DESC
@@ -61,7 +76,12 @@
 		CATEGORY = #{category} ,
 		TYPE = #{type},
 		MEMO = #{memo},
-		EXCLUDE_ANALYSIS = #{excludeAnalysis}
+		EXCLUDE_ANALYSIS = #{excludeAnalysis},
+		CURRENCY = #{currency},
+		FX_AMOUNT = #{fxAmount},
+		FX_RATE = #{fxRate},
+		FX_RATE_DATE = #{fxRateDate},
+		FX_RATE_SOURCE = #{fxRateSource}
 		WHERE TRAN_ID = #{transId}
 		AND USER_ID = #{userId}
 	</update>
@@ -81,6 +101,8 @@
 
 	<!-- [추가] 고정지출 -> MYTRANS 자동 반영 (매일 실행용) -->
 	<!-- Postgres에는 표준 MERGE 버전 제약이 있어, INSERT ... SELECT ... WHERE NOT EXISTS로 동일 로직을 구현 -->
+	<!-- 원화 고정지출만 여기서 처리. 외화 고정지출은 결제일 환율로 재환산해야 하므로 selectDueForeignFixed + -->
+	<!-- insertFixedForeignToMyTrans로 서비스 코드(TransServiceImpl)에서 별도로 처리한다. -->
 	<insert id="mergeFixedToMyTrans">
 	  INSERT INTO MYTRANS (
 	    TRAN_ID,
@@ -93,7 +115,8 @@
 	    MEMO,
 	    USER_ID,
 	    GROUPB_ID,
-	    FIXED_ID
+	    FIXED_ID,
+	    CURRENCY
 	  )
 	  SELECT
 	    nextval('SEQ_MYTRANS'),
@@ -106,10 +129,12 @@
 	    '고정지출 자동등록',
 	    f.USER_ID,
 	    NULL,
-	    f.FIXED_ID
+	    f.FIXED_ID,
+	    'KRW'
 	  FROM FIXEDTRANS f
 	  WHERE
-	    EXTRACT(DAY FROM CURRENT_DATE) =
+	    (f.CURRENCY IS NULL OR f.CURRENCY = 'KRW')
+	    AND EXTRACT(DAY FROM CURRENT_DATE) =
 	    LEAST(
 	      f.PAY_DAY,
 	      EXTRACT(DAY FROM (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month - 1 day'))
@@ -122,12 +147,53 @@
 	    )
 	</insert>
 
+	<!-- 오늘이 결제일이고 아직 이번 회차가 안 들어간 외화 고정지출 목록. TransServiceImpl이 건별로 -->
+	<!-- 오늘 환율을 붙여 insertFixedForeignToMyTrans로 등록한다. -->
+	<select id="selectDueForeignFixed" resultType="com.suin.fincoach.fixedtrans.model.vo.FixedTrans">
+	  SELECT
+	    f.FIXED_ID  AS "fixedId",
+	    f.NAME      AS "name",
+	    f.CATEGORY  AS "category",
+	    f.PAY_DAY   AS "payDay",
+	    f.USER_ID   AS "userId",
+	    f.AMOUNT    AS "amount",
+	    f.CURRENCY  AS "currency",
+	    f.FX_AMOUNT AS "fxAmount"
+	  FROM FIXEDTRANS f
+	  WHERE
+	    f.CURRENCY IS NOT NULL AND f.CURRENCY <> 'KRW'
+	    AND f.FX_AMOUNT IS NOT NULL
+	    AND EXTRACT(DAY FROM CURRENT_DATE) =
+	    LEAST(
+	      f.PAY_DAY,
+	      EXTRACT(DAY FROM (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month - 1 day'))
+	    )
+	    AND NOT EXISTS (
+	      SELECT 1 FROM MYTRANS m
+	      WHERE m.FIXED_ID = f.FIXED_ID
+	        AND m.TRANS_DATE = CURRENT_DATE
+	        AND m.USER_ID = f.USER_ID
+	    )
+	</select>
+
+	<insert id="insertFixedForeignToMyTrans" parameterType="map">
+	  INSERT INTO MYTRANS (
+	    TRAN_ID, TITLE, TRANS_DATE, ORIGINAL_AMOUNT, IS_SHARED, CATEGORY, TYPE, MEMO,
+	    USER_ID, GROUPB_ID, FIXED_ID, CURRENCY, FX_AMOUNT, FX_RATE, FX_RATE_DATE, FX_RATE_SOURCE
+	  ) VALUES (
+	    nextval('SEQ_MYTRANS'), #{name}, CURRENT_DATE, #{krw}, 'N', #{category}, 'OUT', '고정지출 자동등록',
+	    #{userId}, NULL, #{fixedId}, #{currency}, #{fxAmount}, #{fxRate}, #{fxRateDate}, #{fxRateSource}
+	  )
+	</insert>
+
 	<select id="recentTrans" resultType="mytrans">
 	    SELECT
 	        TITLE           AS "title",
 	        ORIGINAL_AMOUNT  AS "originalAmount",
 	        CATEGORY        AS "category",
-	        TYPE            AS "type"
+	        TYPE            AS "type",
+	        CURRENCY        AS "currency",
+	        FX_AMOUNT       AS "fxAmount"
 	    FROM MYTRANS
 	    WHERE USER_ID = #{userId}
 	      AND IS_SHARED = 'N'

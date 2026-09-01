@@ -1,5 +1,6 @@
 package com.suin.fincoach.nlparse.model.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -17,6 +18,9 @@ import org.springframework.stereotype.Service;
 
 import com.suin.fincoach.category.model.service.CategoryService;
 import com.suin.fincoach.coaching.model.service.GeminiClient;
+import com.suin.fincoach.fx.model.vo.Currency;
+import com.suin.fincoach.fx.model.vo.FxRateResult;
+import com.suin.fincoach.fx.service.FxRateService;
 import com.suin.fincoach.nlparse.model.dao.MerchantCacheDao;
 import com.suin.fincoach.nlparse.model.dao.NlInputHistoryDao;
 import com.suin.fincoach.nlparse.model.dao.NlParseLogDao;
@@ -47,6 +51,9 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 
 	@Autowired
 	private CategoryService categoryService;
+
+	@Autowired
+	private FxRateService fxRateService;
 
 	@Autowired
 	private SqlSessionTemplate sqlSession;
@@ -119,7 +126,7 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 							? regexInstallmentMonths
 							: llmInstallmentMonths;
 		} else {
-			amount = regexAmount;
+			amount = regexAmount != null ? regexAmount : RegexExpenseParser.parseForeignAmount(text);
 			category = "기타";
 			subcategory = null;
 			merchant = null;
@@ -139,6 +146,37 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 					"ok", false,
 					"errorReason", "AMOUNT_NOT_FOUND",
 					"message", "금액을 찾지 못했어요. 다시 입력해주세요.");
+		}
+
+		// --- 외화 처리 ---
+		// 사용자가 "원" 대신 다른 통화 단위로 말했으면(예: "런던에서 30파운드 점심"), 거래일 기준 환율로
+		// 원화 환산해 저장값(amount = 원화)을 만들고, 원본 외화 금액/환율은 스냅샷으로 결과에 싣는다.
+		// LLM이 통화를 뽑았으면 그걸 우선하고, 없으면 정규식으로 단위를 감지한다.
+		String currencyCode = (llm != null) ? blankToNull(str(llm.get("currency"))) : null;
+		if (currencyCode == null) {
+			currencyCode = RegexExpenseParser.parseCurrency(text);
+		}
+		Currency currency = Currency.of(currencyCode);
+		Integer fxAmount = null;
+		FxRateResult fx = null;
+		if (currency != Currency.KRW) {
+			// 외화면 정규식-LLM 자릿수 이중 체크를 신뢰하지 않는다(정규식은 원화 가정이라 '3만엔'을
+			// 30000'원'으로 오인할 수 있음). LLM 원값이 있으면 그걸, 없으면 지금 amount를 외화 금액으로 본다.
+			if (llm != null) {
+				Integer llmAmount = toInteger(llm.get("amount"));
+				if (llmAmount != null && llmAmount > 0) {
+					amount = llmAmount;
+				}
+			}
+			fxAmount = amount;
+			fx = fxRateService.getRate(currency.name(), date);
+			amount = fx.toKrw(BigDecimal.valueOf(fxAmount));
+			if (amount <= 0) {
+				return Map.of(
+						"ok", false,
+						"errorReason", "AMOUNT_NOT_FOUND",
+						"message", "환율 환산에 실패했어요. 잠시 후 다시 시도해주세요.");
+			}
 		}
 
 		// 이 유저가 같은 가맹점/수입원을 저장·확인해 학습된 카테고리가 있으면 LLM 추측보다 우선한다.
@@ -161,10 +199,23 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		result.put("date", date.toString());
 		result.put("memo", memo);
 		result.put("confidence", confidence);
-		// 할부가 인식되면(예: "3개월 할부") 확신도와 무관하게 항상 확인 UI를 거치게 한다 — 회차별 분할 등록이라 되돌리기 번거로움.
-		result.put("needsConfirmation", confidence < CONFIDENCE_THRESHOLD || installmentMonths != null);
+		// 할부가 인식되거나(회차별 분할 등록이라 되돌리기 번거로움) 외화 거래면(적용 환율을 사용자가
+		// 눈으로 확인해야 함) 확신도와 무관하게 항상 확인 UI를 거치게 한다.
+		result.put("needsConfirmation",
+				confidence < CONFIDENCE_THRESHOLD || installmentMonths != null || currency != Currency.KRW);
 		result.put("source", source);
 		result.put("installmentMonths", installmentMonths);
+
+		if (currency != Currency.KRW && fx != null) {
+			result.put("currency", currency.name());
+			result.put("fxAmount", fxAmount);
+			result.put("fxRate", fx.getRate());
+			result.put("fxRateDate", fx.getRateDate() == null ? null : fx.getRateDate().toString());
+			result.put("fxRateSource", fx.getSource());
+			result.put("fxStale", fx.isStale());
+		} else {
+			result.put("currency", "KRW");
+		}
 
 		logParse(userId, txType, text, source, llm, result, confidence);
 
@@ -244,8 +295,11 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 				+ "오늘 날짜는 " + today + "입니다. '어제', '그제', '3일 전'처럼 상대적인 날짜 표현은 반드시 이 날짜를 "
 				+ "기준으로 계산해 yyyy-MM-dd 형식으로 답하세요(모델 자체 학습 시점 기준으로 착각하지 마세요). "
 				+ "category는 반드시 다음 목록 중 하나여야 합니다: " + categoriesStr + ". 목록에 없는 카테고리를 새로 "
-				+ "만들지 마세요. amount는 텍스트에서 명확하게 찾을 수 있는 원 단위 " + subject + " 금액만 넣고, 찾을 수 없으면 "
-				+ "추측하지 말고 0으로 답하세요. merchant는 " + (isIncome ? "입금처나 수입원 이름이" : "가게/거래처 이름이")
+				+ "만들지 마세요. amount는 텍스트에서 명확하게 찾을 수 있는 " + subject + " 금액(숫자만)을 넣고, 찾을 수 없으면 "
+				+ "추측하지 말고 0으로 답하세요. currency는 기본이 KRW(원)이며, 텍스트에 '달러'·'$'·'USD'는 USD, "
+				+ "'엔'·'엔화'는 JPY, '유로'·'€'는 EUR, '파운드'·'£'는 GBP, '위안'·'元'·'RMB'는 CNY, '대만달러'·'NT$'는 TWD로 "
+				+ "답하세요. 외화 단위가 붙어 있으면 amount는 원화로 환산하지 말고 그 통화 기준 숫자를 그대로 넣으세요. "
+				+ "merchant는 " + (isIncome ? "입금처나 수입원 이름이" : "가게/거래처 이름이")
 				+ " 텍스트에 있을 때만 채우고 없으면 빈 문자열로 답하세요. confidence는 category 판단의 확신 정도를 0~1 사이 "
 				+ "숫자로 답하되, " + (isIncome
 						? "수입 출처가 불분명하면"
@@ -292,8 +346,19 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		JSONObject installmentMonths = new JSONObject();
 		installmentMonths.put("type", "INTEGER");
 
+		// 통화. 기본은 KRW(원). 텍스트에 '달러/$', '엔', '유로/€', '파운드/£', '위안/元', '대만달러' 같은
+		// 외화 단위가 있을 때만 해당 코드로, 그때 amount는 "그 통화 기준 금액"(환산하지 말 것).
+		JSONObject currency = new JSONObject();
+		currency.put("type", "STRING");
+		JSONArray currencyEnum = new JSONArray();
+		for (Currency c : Currency.values()) {
+			currencyEnum.add(c.name());
+		}
+		currency.put("enum", currencyEnum);
+
 		JSONObject properties = new JSONObject();
 		properties.put("amount", amount);
+		properties.put("currency", currency);
 		properties.put("category", category);
 		properties.put("subcategory", subcategory);
 		properties.put("merchant", merchant);
