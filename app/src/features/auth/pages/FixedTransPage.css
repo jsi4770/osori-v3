@@ -94,16 +94,16 @@
   margin-top: 1px; /* 이름줄과 시각적으로 정렬 */
 }
 
-/* 액션 영역: 항목 맨 위(이름줄)에 붙여 배치, 예약 폭 없이 버튼 크기만큼만 */
+/* 액션 영역: 등록일 줄 높이에 맞춰 하단 정렬(기존 위치에서 살짝만 올림) */
 .ftRowActions {
   display: flex;
   align-items: center;
-  align-self: flex-start;
+  align-self: flex-end;
   gap: 8px;
   white-space: nowrap;
   flex: 0 0 auto;
   min-width: 0;
-  margin-top: -2px;
+  margin-bottom: 1px;
   justify-content: flex-end;
 }
 
@@ -236,9 +236,9 @@
     align-items: flex-start;
   }
 
-  /* 모바일에서도 수정/삭제 버튼을 별도 줄로 내리지 않고 상단에 유지해 항목 높이를 줄임 */
+  /* 모바일에서도 수정/삭제 버튼을 별도 줄로 내리지 않고 등록일 줄 높이에 맞춰 유지 */
   .ftRowActions {
-    align-self: flex-start;
+    align-self: flex-end;
     justify-content: flex-end;
     min-width: 0;
   }
