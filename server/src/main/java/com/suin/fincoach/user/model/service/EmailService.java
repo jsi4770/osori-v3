@@ -1,5 +1,7 @@
 package com.suin.fincoach.user.model.service;
 
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -7,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -22,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailService {
 
 	private static final String BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email";
+	// application.properties는 ISO-8859-1로 읽혀 한글 기본값이 깨지므로, 발신자 이름 기본값은 여기(UTF-8 소스)에 둔다.
+	private static final String DEFAULT_FROM_NAME = "오소리";
 
 	private final RestTemplate rest = new RestTemplate();
 
@@ -31,8 +36,11 @@ public class EmailService {
 	@Value("${app.mail.from:no-reply@osori.app}")
 	private String from;
 
-	@Value("${app.mail.from-name:오소리}")
+	@Value("${app.mail.from-name:}")
 	private String fromName;
+
+	@Value("${app.mail.reply-to:}")
+	private String replyTo;
 
 	@Value("${brevo.api-key:}")
 	private String brevoApiKey;
@@ -49,20 +57,26 @@ public class EmailService {
 			return;
 		}
 
-		Map<String, Object> body = Map.of(
-				"sender", Map.of("email", from, "name", fromName),
-				"to", List.of(Map.of("email", toEmail)),
-				"subject", subject,
-				"textContent", textContent);
+		String senderName = (fromName == null || fromName.isBlank()) ? DEFAULT_FROM_NAME : fromName;
+
+		// 순서 유지를 위해 LinkedHashMap 사용 (직렬화는 Jackson이 UTF-8로 처리)
+		Map<String, Object> body = new LinkedHashMap<>();
+		body.put("sender", Map.of("email", from, "name", senderName));
+		body.put("to", List.of(Map.of("email", toEmail)));
+		body.put("subject", subject);
+		body.put("textContent", textContent);
+		if (replyTo != null && !replyTo.isBlank()) {
+			body.put("replyTo", Map.of("email", replyTo));
+		}
 
 		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setContentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8));
 		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		headers.set("api-key", brevoApiKey);
 
 		try {
-			rest.postForEntity(BREVO_SEND_URL, new HttpEntity<>(body, headers), String.class);
-			log.info("[email] 인증코드 발송 완료 to={}", toEmail);
+			ResponseEntity<String> res = rest.postForEntity(BREVO_SEND_URL, new HttpEntity<>(body, headers), String.class);
+			log.info("[email] 인증코드 발송 완료 to={} status={} resp={}", toEmail, res.getStatusCode(), res.getBody());
 		} catch (Exception e) {
 			log.error("[email] 인증코드 발송 실패 to={} : {}", toEmail, e.getMessage());
 			throw new IllegalStateException("인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.");

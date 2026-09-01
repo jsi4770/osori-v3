@@ -222,38 +222,6 @@ public class UserController {
 		return ResponseEntity.ok("로그아웃 되었습니다.");
 	}
 
-	// 아이디 중복 체크 (UNIQUE 제약 조건으로 인해 중복 체크 해줘야한다.)
-	@GetMapping("/checkId")
-	public ResponseEntity<?> idCheck(@RequestParam("loginId") String loginId) {
-
-		String v = (loginId == null) ? "" : loginId.trim();
-
-		int count = service.idCheck(v);
-
-		HashMap<String, Object> resp = new HashMap<>();
-
-		resp.put("count", count);
-
-		return ResponseEntity.ok(resp);
-
-	}
-
-	// 이메일 중복 체크 (UNIQUE 제약 조건으로 인해 중복 체크 해줘야한다.)
-	@GetMapping("/checkEmail")
-	public ResponseEntity<?> emailCheck(@RequestParam("email") String email) {
-
-		// 이메일은 대소문자/공백 때문에 헷갈릴 수 있어서 trim + lower 처리
-		String v = (email == null) ? "" : email.trim().toLowerCase();
-
-		int count = service.emailCheck(v);
-
-		HashMap<String, Object> resp = new HashMap<>();
-
-		resp.put("count", count);
-
-		return ResponseEntity.ok(resp);
-	}
-
 	// 정보 수정 메소드
 	// 월 예산(기존 B_AMOUNT 컬럼 재사용) + 저축 목표(금액/날짜/현재 저축액) 저장.
 	// 프론트는 항상 전체 값을 함께 보내야 한다 — 일부만 보내면 나머지가 0/null로 덮어써진다.

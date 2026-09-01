@@ -30,10 +30,6 @@ export const authApi = {
       auth: false,
     }),
 
-  //이메일 중복 체크
-  checkEmail: (email) =>
-    apiFetch(`/user/checkEmail?email=${encodeURIComponent(email)}`, { auth: false }),
-
   // 비밀번호 재설정 1단계: 이메일로 인증코드 발송 (가입 계정 여부는 응답에 드러나지 않음)
   sendPasswordResetCode: (email) =>
     apiFetch("/user/password/send-code", { method: "POST", body: { email }, auth: false }),

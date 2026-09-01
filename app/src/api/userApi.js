@@ -2,8 +2,6 @@ import { apiFetch } from "./http";
 
 export const userApi = {
 
-  checkEmail: (email) => apiFetch(`/user/checkEmail?email=${encodeURIComponent(email)}`),
-
   // 내 정보 수정 (이름 등)
   updateMe: (payload) => apiFetch("/user/update", { method: "PATCH", body: payload }),
 

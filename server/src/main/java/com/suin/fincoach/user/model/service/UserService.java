@@ -9,7 +9,6 @@ import com.suin.fincoach.user.model.vo.User;
 public interface UserService {
 	
 	int insertUser(UserRegisterRequest request); // 회원 가입 메소드
-	int idCheck(String inputId); // 아이디 중복 체크 메소드
 	int emailCheck(String email); // 이메일 중복 체크 메소드
 	User selectUser(User user); // 회원 조회, 마지막 로그인 날짜 갱신 및 휴면 계정 처리 메소드
 	User selectUserByEmail(User user); // 이메일로 회원 조회 (로그인 전용)

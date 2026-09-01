@@ -316,13 +316,6 @@ public class UserServiceImpl implements UserService {
 	
 	
 	
-	@Override // 아이디 중복체크 
-	public int idCheck(String loginId) {
-		int result = dao.idCheck(sqlSession, loginId);
-		
-		return result; 
-	}
-	
 	@Override // 이메일 중복체크
 	public int emailCheck(String email) {
 		

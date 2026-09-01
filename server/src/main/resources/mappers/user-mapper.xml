@@ -50,12 +50,6 @@
     </select>
     
     
-    <select id="idCheck" parameterType="string" resultType="int">
-    	SELECT COUNT(*)
-    	FROM USERS
-    	WHERE LOGIN_ID= #{loginId}
-    </select>
-    
     <select id="emailCheck" parameterType="string" resultType="int">
     	SELECT COUNT(*)
     	FROM USERS

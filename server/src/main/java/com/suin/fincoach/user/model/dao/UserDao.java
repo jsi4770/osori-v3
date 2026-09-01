@@ -29,11 +29,6 @@ public class UserDao {
 		}
 
 
-		//아이디 중복체크 
-		public int idCheck(SqlSessionTemplate sqlSession, String loginId) {
-			return sqlSession.selectOne("userMapper.idCheck", loginId); 
-		}
-		
 		//이메일 중복체크
 		public int emailCheck(SqlSessionTemplate sqlSession, String email) {
 			return sqlSession.selectOne("userMapper.emailCheck",email); 
