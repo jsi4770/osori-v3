@@ -36,8 +36,16 @@ export const IconTrendingUp = ({ size = 20, ...props }) => (
 );
 
 // 채워진 단일 path 기어(머티리얼 스타일) — 작은 크기에서도 확실히 기어로 읽힌다.
-export const IconSettings = ({ size = 20, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" {...props}>
+// 속성을 spread 없이 직접 지정해 렌더 이슈 가능성을 없앤다.
+export const IconSettings = ({ size = 20, color = "currentColor", ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={color}
+    stroke="none"
+    {...props}
+  >
     <path d="M19.43 12.98c.04-.32.07-.64.07-.98 0-.34-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.37.29.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.24.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
   </svg>
 );
@@ -76,9 +84,19 @@ export const IconClock = ({ size = 16, ...props }) => (
   </svg>
 );
 
-export const IconArrowUp = ({ size = 20, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" {...base} strokeWidth={2.6} {...props}>
-    <path d="M12 21V3" />
-    <path d="M4 11l8-8 8 8" />
+export const IconArrowUp = ({ size = 20, color = "currentColor", strokeWidth = 2.75, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M12 22V4" />
+    <path d="M3.5 12.5 12 4l8.5 8.5" />
   </svg>
 );
