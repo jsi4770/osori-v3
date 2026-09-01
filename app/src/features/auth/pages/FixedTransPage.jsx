@@ -70,7 +70,7 @@ export default function FixedTransPage() {
     <main className="fade-in">
       {/* 목록 */}
       <div className="account-book-grid">
-        <div className="info-card ftMainCard" style={{ gridColumn: "1 / -1", paddingTop:'10px'}}>
+        <div className="info-card ftMainCard" style={{ gridColumn: "1 / -1", paddingTop:'26px'}}>
           <div className="ftHeader">
             <div className="ftHeaderTop">
               <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
