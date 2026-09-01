@@ -125,8 +125,12 @@
 
 .cm-modal-close {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
+  padding: 0;
   border: none;
   border-radius: 50%;
   background: var(--surface-subtle);
