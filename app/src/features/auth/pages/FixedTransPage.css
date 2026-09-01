@@ -13,6 +13,15 @@
   margin-top: 16px;
 }
 
+/* 제목 아래 작게 붙는 고정지출 합계 — 눈에 안 띄게 옅은 회색, 얇은 글씨 */
+.ftTotal {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-weak);
+  white-space: nowrap;
+}
+
 .ftRow {
   display: flex;
   align-items: center;

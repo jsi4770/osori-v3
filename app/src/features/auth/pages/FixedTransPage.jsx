@@ -19,6 +19,11 @@ export default function FixedTransPage() {
   const [list, setList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const totalAmount = useMemo(
+    () => list.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    [list]
+  );
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null); // 수정 대상
 
@@ -70,10 +75,15 @@ export default function FixedTransPage() {
       {/* 목록 */}
       <div className="account-book-grid">
         <div className="info-card ftMainCard" style={{ gridColumn: "1 / -1", paddingTop:'10px'}}>
-          <div className="card-title-area" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, whiteSpace: "nowrap" }}>
-              <h3 style={{ whiteSpace: "nowrap" }}>내 고정지출 목록</h3>
-              <span className="status-dot" style={{ whiteSpace: "nowrap" }}>{list.length}개</span>
+          <div className="card-title-area" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, whiteSpace: "nowrap" }}>
+                <h3 style={{ whiteSpace: "nowrap" }}>내 고정지출 목록</h3>
+                <span className="status-dot" style={{ whiteSpace: "nowrap" }}>{list.length}개</span>
+              </div>
+              {!isLoading && list.length > 0 && (
+                <div className="ftTotal">매달 합계 {totalAmount.toLocaleString()}원</div>
+              )}
             </div>
             <button type="button" className="ftAddBtn" onClick={openCreate}>
               <span className="ftAddIcon" aria-hidden="true">＋</span>
