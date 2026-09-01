@@ -114,7 +114,7 @@
 .nl-prompt-input {
   flex: 1;
   min-width: 0;
-  min-height: 68px;
+  min-height: 52px;
   border: none;
   background: transparent;
   outline: none;
@@ -213,7 +213,7 @@
 
 @media (max-width: 768px) {
   .nl-prompt-bar { padding: 6px 6px 6px 20px; }
-  .nl-prompt-input { min-height: 56px; font-size: 1.1rem; }
+  .nl-prompt-input { min-height: 46px; font-size: 1.1rem; }
   .nl-prompt-send { width: 46px; height: 46px; }
 }
 

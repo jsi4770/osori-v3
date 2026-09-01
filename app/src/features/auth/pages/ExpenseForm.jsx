@@ -401,7 +401,7 @@ const ExpenseForm = () => {
                   disabled={nlParsing || !nlText.trim()}
                   aria-label="등록"
                 >
-                  {nlParsing ? <span className="nl-prompt-spinner" /> : <IconArrowUp size={22} />}
+                  {nlParsing ? <span className="nl-prompt-spinner" /> : <IconArrowUp size={28} strokeWidth={3} />}
                 </button>
               </div>
 
