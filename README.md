@@ -70,6 +70,7 @@ npm run dev   # http://localhost:5174 (또는 다른 포트, vite가 자동 배�
 ## 배포
 
 - **백엔드(Railway)**: `railway up -s fincoach-api` — 환경변수로 `DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USER`/`DB_PASSWORD`(Railway Postgres 서비스 참조), `JWT_SECRET`, `NAVER_OCR_*`, `RECEIPT_OCR_ENABLED`, `COACHING_LLM_ENABLED`, `GEMINI_API_KEY` 등을 주입합니다.
+- **이메일 인증(회원가입/비밀번호 재설정)**: `MAIL_ENABLED=true`, `MAIL_USERNAME`(발신 Gmail 주소), `MAIL_PASSWORD`(Gmail 앱 비밀번호 — 2단계 인증 필요)를 주입해야 실제 메일이 발송됩니다. 미설정 시 인증코드는 서버 로그로만 출력되어 회원가입/재설정을 완료할 수 없습니다.
 - **프론트엔드(Vercel)**: `app/.env.production`의 `VITE_API_BASE_URL`이 배포된 Railway 백엔드 URL을 가리키도록 빌드 시 고정합니다.
 
 ## 현재 스코프: 무엇이 진짜고 무엇이 Mock인가
