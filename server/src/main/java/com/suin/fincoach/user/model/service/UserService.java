@@ -13,15 +13,16 @@ public interface UserService {
 	int nickNameCheck(String nickName); // 닉네임 중복 체크 메소드
 	int emailCheck(String email); // 이메일 중복 체크 메소드
 	User selectUser(User user); // 회원 조회, 마지막 로그인 날짜 갱신 및 휴면 계정 처리 메소드
-	User selectUserByNickname(User user); // 닉네임으로 회원 조회 (로그인 전용)
+	User selectUserByNickname(User user); // 닉네임으로 회원 조회 (레거시)
+	User selectUserByEmail(User user); // 이메일로 회원 조회 (로그인 전용)
 	int updateUser(User loginUser); // 정보 수정
 	int updateBudget(User loginUser); // 월 예산 + 저축 목표 수정
 	int deleteUser(User loginUser); // 회원 탈퇴 메소드
 	int changeUserPwd(User loginUser); // 비밀번호 변경 메소드
 	User selectByLoginId(String loginId); // 아이디로 회원 정보 조회하는 메소드
 
-	// 비밀번호 재설정 1단계 — 닉네임+이메일이 일치하는 활성 로컬 계정을 찾는다(소셜 계정 제외). 없으면 null.
-	User findResettableUser(String nickName, String email);
+	// 비밀번호 재설정 1단계 — 이메일로 재설정 가능한(활성 로컬) 계정을 찾는다(소셜 계정 제외). 없으면 null.
+	User findResettableUserByEmail(String email);
 
 	// 비밀번호 재설정 2단계 — 재설정 토큰에서 검증된 USER_ID로만 비밀번호를 갱신한다.
 	int resetPassword(int userId, String encodedPassword);

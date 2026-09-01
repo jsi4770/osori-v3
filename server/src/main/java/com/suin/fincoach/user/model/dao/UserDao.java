@@ -23,9 +23,14 @@ public class UserDao {
 			return sqlSession.selectOne("userMapper.selectUser", user);
 		}
 
-		//닉네임으로 회원 조회 (로그인 전용)
+		//닉네임으로 회원 조회 (레거시)
 		public User selectUserByNickname(SqlSessionTemplate sqlSession, User user) {
 			return sqlSession.selectOne("userMapper.selectUserByNickname", user);
+		}
+
+		//이메일로 회원 조회 (로그인 전용)
+		public User selectUserByEmail(SqlSessionTemplate sqlSession, User user) {
+			return sqlSession.selectOne("userMapper.selectUserByEmail", user);
 		}
 
 
@@ -93,12 +98,9 @@ public class UserDao {
 			return sqlSession.selectOne("userMapper.findLoginIdByProviderUserId", providerUserId);
 		}
 
-		//비밀번호 재설정 1단계 — 닉네임+이메일이 일치하는 활성 로컬 계정 조회 (없으면 null)
-		public User selectResettableUser(SqlSessionTemplate sqlSession, String nickName, String email) {
-			Map<String, Object> params = new HashMap<>();
-			params.put("nickName", nickName);
-			params.put("email", email);
-			return sqlSession.selectOne("userMapper.selectResettableUser", params);
+		//비밀번호 재설정 1단계 — 이메일로 재설정 가능한(활성 로컬) 계정 조회 (없으면 null)
+		public User selectResettableUserByEmail(SqlSessionTemplate sqlSession, String email) {
+			return sqlSession.selectOne("userMapper.selectResettableUserByEmail", email);
 		}
 
 		//비밀번호 재설정 2단계 — USER_ID로만 비밀번호 갱신

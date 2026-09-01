@@ -14,7 +14,7 @@ const MyPageLayout = ({refreshGroupList}) => {
     navigate("/", { replace: true });
   };
 
-  const displayName = user?.nickName || user?.nickname || user?.userName || "회원";
+  const displayName = user?.userName || user?.name || "회원";
 
   return (
     <div className="mypage-container">

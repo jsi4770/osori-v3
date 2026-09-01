@@ -23,18 +23,9 @@ export default function KakaoCallback() {
 
       apiFetch(`/user/kakao/callback?code=${code}&redirectUri=${encodeURIComponent(redirectUri)}`)
         .then((res) => {
-          // 신규 회원이면 바로 가입시키지 않고, 닉네임을 직접 정하는 화면으로 보낸다(제출해야 가입 완료).
+          // 신규/기존 모두 서버가 바로 토큰을 내려준다(닉네임 입력 화면 없음).
           if (res.isNewMember) {
-            navigate("/social-nickname", {
-              replace: true,
-              state: {
-                providerUserId: res.providerUserId,
-                email: res.email,
-                userName: res.userName,
-                suggestedNickName: res.suggestedNickName,
-              },
-            });
-            return;
+            toast("오소리에 오신 걸 환영해요!", { type: "success" });
           }
 
           const status = res?.user?.status;

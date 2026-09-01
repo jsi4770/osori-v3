@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useTheme } from "../../../context/ThemeContext";
@@ -49,35 +49,27 @@ function ProfileSettings() {
     { key: "system", label: "시스템" },
   ];
 
-  // 서버(저장된) 기준 초기값
+  // 서버(저장된) 기준 초기값. 식별자는 이메일이고, 표시 이름은 USER_NAME.
   const initial = useMemo(() => {
-    const displayName = user?.nickName || user?.nickname || user?.loginId || "회원";
     const name = user?.userName || user?.name || "";
     const email = user?.email || "";
+    const displayName = name || email || "회원";
     return { displayName, name, email };
   }, [user]);
 
   // 입력(draft) 상태: 저장 버튼 누르기 전까지는 서버/상단표시와 분리
-  const [nickName, setNickName] = useState(initial.displayName);
   const [userName, setUserName] = useState(initial.name);
   const [email, setEmail] = useState(initial.email);
 
   // 서버 initial이 바뀌면(저장 성공 후 setUser 등) 입력값도 동기화
   useEffect(() => {
-    setNickName(initial.displayName);
     setUserName(initial.name);
     setEmail(initial.email);
-    lastCheckedRef.current = { nickName: "", email: "" };
-  }, [initial.displayName, initial.name, initial.email]);
+  }, [initial.name, initial.email]);
 
   const [fieldErrors, setFieldErrors] = useState({
-    nickName: "",
-    email: "",
     userName: "",
   });
-
-  // blur 중복체크 최적화: 같은 값으로 재-blur 시 서버호출 스킵
-  const lastCheckedRef = useRef({ nickName: "", email: "" });
 
   const [isPasswordEditing, setIsPasswordEditing] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -117,15 +109,14 @@ function ProfileSettings() {
   // 계정 정보(닉네임/이름/이메일/비밀번호)는 기본적으로 접어두고, "내 정보 보기"를 눌러야 펼쳐진다.
   const [showAccountDetails, setShowAccountDetails] = useState(false);
 
-  const hasProfileChanges = nickName !== initial.displayName || userName !== initial.name;
-  const hasEmailChanges = email !== initial.email;
+  const hasProfileChanges = userName !== initial.name;
 
   const hasPasswordChanges =
     isPasswordEditing && (currentPassword || newPassword || newPasswordConfirm);
 
-  const canSave = hasProfileChanges || hasEmailChanges || hasPasswordChanges;
+  const canSave = hasProfileChanges || hasPasswordChanges;
 
-  const hasFieldErrors = Boolean(fieldErrors.nickName || fieldErrors.email || fieldErrors.userName);
+  const hasFieldErrors = Boolean(fieldErrors.userName);
 
   // 휴면(H) 여부
   const isDormant = user?.status === "H";
@@ -134,13 +125,9 @@ function ProfileSettings() {
   const canSubmit = (canSave || isDormant) && !isSaving && !hasFieldErrors;
 
   const validate = () => {
-    if (!nickName.trim()) return "닉네임은 비울 수 없습니다.";
-    if (!email.trim()) return "이메일은 비울 수 없습니다.";
-    if (!email.includes("@")) return "이메일 형식이 아닙니다.";
-
-    // 이름은 선택일 수 있으니: 입력했으면 최소 규칙만
     const trimmedUserName = (userName || "").trim();
-    if (trimmedUserName && trimmedUserName.length < 2) return "이름은 2글자 이상 입력해주세요.";
+    if (!trimmedUserName) return "이름을 입력해주세요.";
+    if (trimmedUserName.length < 2) return "이름은 2글자 이상 입력해주세요.";
 
     if (isPasswordEditing) {
       if (!currentPassword.trim()) return "현재 비밀번호를 입력해야 합니다.";
@@ -149,58 +136,6 @@ function ProfileSettings() {
       if (newPassword !== newPasswordConfirm) return "새 비밀번호 확인이 일치하지 않습니다.";
     }
     return "";
-  };
-
-  // blur 시 닉네임 중복체크: 변경된 경우만 + 같은 값 재-blur 스킵
-  const checkNickNameDuplicate = async () => {
-    const v = (nickName || "").trim();
-    if (!v) return;
-
-    // 초기값(서버 저장값)과 같으면 체크 스킵
-    if (v === (initial.displayName || "")) {
-      setFieldErrors((prev) => ({ ...prev, nickName: "" }));
-      return;
-    }
-
-    // 같은 값으로 또 blur되면 서버 호출 스킵
-    if (v === (lastCheckedRef.current.nickName || "")) return;
-    lastCheckedRef.current.nickName = v;
-
-    try {
-      const res = await userApi.checkNickName(v);
-      const count = Number(res?.count ?? 0);
-      setFieldErrors((prev) => ({
-        ...prev,
-        nickName: count > 0 ? "이미 등록된 닉네임입니다." : "",
-      }));
-    } catch {
-      // 네트워크 오류 등은 UX상 조용히 처리(원하면 메시지 띄워도 됨)
-    }
-  };
-
-  // blur 시 이메일 중복체크: 변경된 경우만 + 같은 값 재-blur 스킵
-  const checkEmailDuplicate = async () => {
-    const v = (email || "").trim().toLowerCase();
-    if (!v) return;
-
-    // 초기값(서버 저장값)과 같으면 체크 스킵
-    if (v === (initial.email || "").trim().toLowerCase()) {
-      setFieldErrors((prev) => ({ ...prev, email: "" }));
-      return;
-    }
-
-    // 같은 값으로 또 blur되면 서버 호출 스킵
-    if (v === (lastCheckedRef.current.email || "")) return;
-    lastCheckedRef.current.email = v;
-
-    try {
-      const res = await userApi.checkEmail(v);
-      const count = Number(res?.count ?? 0);
-      setFieldErrors((prev) => ({
-        ...prev,
-        email: count > 0 ? "이미 등록된 이메일입니다." : "",
-      }));
-    } catch {}
   };
 
   // 이름 blur 간단 검증(중복체크 API가 없다고 해서 프론트 최소검증만)
@@ -231,8 +166,6 @@ function ProfileSettings() {
   const handleSave = async () => {
     const msg = validate();
     if (msg) {
-      if (msg.includes("닉네임")) setFieldErrors((prev) => ({ ...prev, nickName: msg }));
-      if (msg.includes("이메일")) setFieldErrors((prev) => ({ ...prev, email: msg }));
       if (msg.includes("이름")) setFieldErrors((prev) => ({ ...prev, userName: msg }));
       toast(msg, { type: "error" });
       return;
@@ -251,16 +184,12 @@ function ProfileSettings() {
 
     const formData = new FormData();
     formData.append("loginId", loginId);
-    formData.append("nickName", (nickName || "").trim());
     formData.append("userName", (userName || "").trim() || "");
-    formData.append("email", (email || "").trim().toLowerCase());
     formData.append("status", user?.status || "");
 
     const mePayload = {
       loginId,
-      nickName: (nickName || "").trim(),
       userName: (userName || "").trim() || null,
-      email: (email || "").trim().toLowerCase(),
       status: user?.status,
     };
 
@@ -399,24 +328,7 @@ function ProfileSettings() {
 
             {accountDetailsVisible && (
               <>
-            <div className="ps-form ps-form-2col">
-              <div className="ps-field">
-                <label className="ps-label">닉네임</label>
-                <input
-                  className="ps-input"
-                  value={nickName}
-                  onChange={(e) => {
-                    setNickName(e.target.value);
-                    setFieldErrors((prev) => ({ ...prev, nickName: "" }));
-                  }}
-                  onBlur={checkNickNameDuplicate}
-                  placeholder="닉네임 입력"
-                />
-                {fieldErrors.nickName && (
-                  <div className="ps-field-error">{fieldErrors.nickName}</div>
-                )}
-              </div>
-
+            <div className="ps-form">
               <div className="ps-field">
                 <label className="ps-label">이름</label>
                 <input
@@ -427,31 +339,17 @@ function ProfileSettings() {
                     setFieldErrors((prev) => ({ ...prev, userName: "" }));
                   }}
                   onBlur={checkUserNameOnBlur}
-                  placeholder="이름 입력(선택)"
+                  placeholder="이름 입력"
                 />
                 {fieldErrors.userName && (
                   <div className="ps-field-error">{fieldErrors.userName}</div>
                 )}
               </div>
-            </div>
 
-            <div className="ps-divider" />
-
-            <div className="ps-form">
               <div className="ps-field">
                 <label className="ps-label">이메일</label>
-                <input
-                  className="ps-input"
-                  value={email}
-                  readOnly
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setFieldErrors((prev) => ({ ...prev, email: "" }));
-                  }}
-                  onBlur={checkEmailDuplicate}
-                  placeholder="이메일"
-                />
-                {fieldErrors.email && <div className="ps-field-error">{fieldErrors.email}</div>}
+                <input className="ps-input" value={email} readOnly disabled placeholder="이메일" />
+                <div className="ps-help">로그인에 사용하는 이메일이에요. 변경이 필요하면 고객센터에 문의해 주세요.</div>
               </div>
 
               {user?.loginType === 'KAKAO' && (

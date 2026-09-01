@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.suin.fincoach.FincoachApplication;
 import com.suin.fincoach.user.model.dto.UserRegisterRequest;
+import com.suin.fincoach.user.model.service.EmailVerificationService;
 import com.suin.fincoach.user.model.service.UserService;
 import com.suin.fincoach.user.model.vo.User;
 import com.suin.fincoach.util.JwtUtil;
@@ -42,6 +43,9 @@ public class UserController {
 
 	@Autowired
 	private JwtUtil jwtUtil;
+
+	@Autowired
+	private EmailVerificationService emailVerificationService;
 
 	UserController(FincoachApplication fincoachApplication) {
 		this.fincoachApplication = fincoachApplication;
@@ -79,8 +83,8 @@ public class UserController {
 
 		HashMap<String, Object> map = new HashMap<>();
 
-		// 닉네임으로 사용자 조회 (해시 password까지 가져오기) — "아이디" 없이 닉네임+비밀번호로 로그인
-		User loginUser = service.selectUserByNickname(user);
+		// 이메일로 사용자 조회 (해시 password까지 가져오기) — 이메일 + 비밀번호로 로그인
+		User loginUser = service.selectUserByEmail(user);
 
 		if (loginUser != null && bcrypt.matches(user.getPassword(), loginUser.getPassword())) { // 평문과 암호화된 비밀번호 비교, 로그인 유저가 실제로 존재하는 값인지도 보기
 
@@ -156,7 +160,7 @@ public class UserController {
 			} else { // 이건 회원 정보가 아예 없을 경우 뭐가 틀렸는지 구분하지 않게 하기 위함 (보안) 혹은 비회원 
 				
 				map.put("code", "LOGIN_FAIL");
-				map.put("message", "닉네임과 비밀번호를 다시 입력해주세요.");
+				map.put("message", "이메일과 비밀번호를 다시 입력해주세요.");
 				
 			}
 
@@ -166,21 +170,41 @@ public class UserController {
 
 	}
 
-	//회원 가입 — "아이디" 개념이 없어져서(닉네임으로 로그인) LOGIN_ID는 프론트가 안 보내고 서버가 내부용으로 생성한다.
+	//회원 가입 — 식별자는 이메일. 이메일은 반드시 인증 완료 토큰(emailToken)에서만 취하고,
+	// LOGIN_ID는 프론트가 안 보내고 서버가 내부 불변 키로 생성한다. NICKNAME은 더 이상 받지 않는다.
 	@PostMapping("/register")
 	public ResponseEntity<?> insertUser(@RequestBody UserRegisterRequest request) {
 
 		User user = request.getUser();
 
-		if (user.getLoginId() == null || user.getLoginId().isBlank()) {
-			user.setLoginId("local_" + java.util.UUID.randomUUID().toString().replace("-", ""));
+		// 1) 이메일 인증 토큰 검증 → 이메일은 여기서만 확정 (클라이언트가 보낸 값 무시)
+		String verifiedEmail = jwtUtil.parseEmailVerifiedToken(request.getEmailToken(), "SIGNUP");
+		if (verifiedEmail == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body("이메일 인증이 만료되었거나 유효하지 않습니다. 이메일 인증을 다시 진행해 주세요.");
 		}
 
-		user.setPassword(bcrypt.encode(user.getPassword())); // 갖고 온 비밀번호를 평문이 아닌 암호화된 비밀번호로 처리
+		// 2) 필수값 검증
+		if (user == null || user.getPassword() == null || user.getPassword().trim().length() < 8) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("비밀번호는 8자 이상으로 입력해 주세요.");
+		}
+		if (user.getUserName() == null || user.getUserName().trim().isEmpty()) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이름을 입력해 주세요.");
+		}
 
-		int result = service.insertUser(request); // 회원 가입 처리
+		// 3) 인증코드 확인 ~ 가입 요청 사이에 이미 가입됐는지 재확인
+		if (service.emailCheck(verifiedEmail) > 0) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 가입된 이메일입니다. 로그인해 주세요.");
+		}
 
-		if(result >= 2) {
+		user.setEmail(verifiedEmail);
+		user.setNickName(null);
+		user.setLoginId("local_" + java.util.UUID.randomUUID().toString().replace("-", ""));
+		user.setPassword(bcrypt.encode(user.getPassword().trim()));
+
+		int result = service.insertUser(request); // 회원 가입 처리 (USERS + AUTH_ACCOUNT)
+
+		if (result >= 2) {
 			return ResponseEntity.ok("회원 가입에 성공했습니다. 로그인을 해보세요.");
 		} else {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원가입에 실패했습니다.");
@@ -378,22 +402,46 @@ public class UserController {
 
 	}
 
-	// 비밀번호 찾기 1단계 — 닉네임 + 등록된 이메일이 "같은 계정"에서 일치해야 통과한다.
-	// (기존엔 닉네임 존재 여부만 확인 → 닉네임만 알면 아무 계정이나 비밀번호 재설정 가능한 취약점)
-	// 소셜(카카오) 계정은 자체 비밀번호가 없으므로 대상에서 제외된다.
-	// 통과 시, USER_ID에 묶인 10분짜리 재설정 토큰을 발급한다. 2단계는 이 토큰으로만 진행된다.
-	@PostMapping("/findPassword")
-	public ResponseEntity<?> findPassword(@RequestBody Map<String, String> body) {
+	// 비밀번호 재설정 1단계 — 이메일로 인증코드 발송.
+	// 계정 존재 여부는 응답으로 드러내지 않는다(코드는 해당 이메일로만 감). 소셜/비활성 계정은 대상 아님.
+	@PostMapping("/password/send-code")
+	public ResponseEntity<?> sendPasswordResetCode(@RequestBody Map<String, String> body) {
 
-		String nickName = body.get("nickName");
-		String email = body.get("email");
+		String email = body.getOrDefault("email", "").trim();
+		if (!email.contains("@")) {
+			return ResponseEntity.badRequest().body("올바른 이메일을 입력해 주세요.");
+		}
 
-		User target = service.findResettableUser(nickName, email);
+		User target = service.findResettableUserByEmail(email);
+		if (target != null) {
+			try {
+				emailVerificationService.sendCode(email, "RESET");
+			} catch (IllegalStateException e) {
+				return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(e.getMessage());
+			}
+		}
 
-		// 계정 존재 여부를 드러내지 않도록, 매칭 실패는 항상 동일한 400 메시지로 응답한다.
+		return ResponseEntity.ok("가입된 계정이라면 인증코드를 보냈습니다. 메일함을 확인해 주세요.");
+	}
+
+	// 비밀번호 재설정 2단계 — 인증코드 확인 → USER_ID에 묶인 10분짜리 재설정 토큰 발급.
+	@PostMapping("/password/verify-code")
+	public ResponseEntity<?> verifyPasswordResetCode(@RequestBody Map<String, String> body) {
+
+		String email = body.getOrDefault("email", "").trim();
+		String code = body.getOrDefault("code", "").trim();
+		if (email.isEmpty() || code.isEmpty()) {
+			return ResponseEntity.badRequest().body("이메일과 인증코드를 입력해 주세요.");
+		}
+
+		boolean ok = emailVerificationService.verifyCode(email, "RESET", code);
+		if (!ok) {
+			return ResponseEntity.badRequest().body("인증코드가 올바르지 않거나 만료되었습니다.");
+		}
+
+		User target = service.findResettableUserByEmail(email);
 		if (target == null) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body("입력하신 닉네임과 이메일이 일치하는 계정을 찾을 수 없습니다. (카카오 로그인 계정은 카카오에서 로그인해 주세요)");
+			return ResponseEntity.badRequest().body("재설정할 수 있는 계정이 아닙니다.");
 		}
 
 		String resetToken = jwtUtil.generatePasswordResetToken(target.getUserId());
@@ -402,7 +450,6 @@ public class UserController {
 		res.put("resetToken", resetToken);
 		res.put("message", "본인 확인이 완료되었습니다. 새 비밀번호를 설정해 주세요.");
 		return ResponseEntity.ok(res);
-
 	}
 
 	// 비밀번호 재설정 2단계 — 1단계에서 받은 재설정 토큰 + 새 비밀번호만 받는다.

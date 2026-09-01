@@ -1,190 +1,110 @@
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./RegisterPage.module.css";
 import { authApi } from "../../../api/authApi";
 import { useFeedback } from "../../../context/FeedbackContext";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NAME_RE = /^[가-힣]{2,10}$/;
+const RESEND_COOLDOWN = 60; // 서버(app.mail.resend-cooldown-seconds)와 맞춤
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { toast } = useFeedback();
 
-  const RULES = {
-    userName: {
-      re: /^[가-힣]{3,5}$/,
-      msg: "한글 3~5자로 입력해 주세요.",
-    },
-    nickName: {
-      re: /^[가-힣]{3,5}$/,
-      msg: "한글 3~5자로 입력해 주세요.",
-    },
-    email: {
-      re: /^(?=.{10,20}$)[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
-      msg: "이메일 형식(@ 포함)으로 10~20자로 입력해 주세요.",
-    },
-  };
-
-  const [form, setForm] = useState({
-    password: "",
-    userName: "",
-    nickName: "",
-    email: "",
-  });
-
-  const [fieldError, setFieldError] = useState({
-    password: "",
-    userName: "",
-    nickName: "",
-    email: "",
-  });
-
-  const [touched, setTouched] = useState({
-    password: false,
-    userName: false,
-    nickName: false,
-    email: false,
-  });
-
-  const [nickCheck, setNickCheck] = useState(null);
-  const [emailCheck, setEmailCheck] = useState(null);
+  // step 1: 이메일 입력 → 2: 인증코드 확인 → 3: 이름/비밀번호
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  const validateField = (name, rawValue) => {
-    const value = (rawValue ?? "").trim();
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [emailToken, setEmailToken] = useState("");
 
-    if (name === "password") return value ? "" : "비밀번호를 입력해 주세요.";
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
 
-    const rule = RULES[name];
-    if (!rule) return "";
-    if (!value) return rule.msg;
+  const [cooldown, setCooldown] = useState(0);
+  const timerRef = useRef(null);
 
-    return rule.re.test(value) ? "" : rule.msg;
-  };
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    timerRef.current = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timerRef.current);
+  }, [cooldown]);
 
-  const runDupCheck = async (field, rawValue) => {
-    const value = (rawValue ?? "").trim();
-    if (!value) return;
-
-    try {
-      if (field === "nickName") {
-        const res = await authApi.checkNickName(value);
-        const count = Number(res?.count ?? 0);
-        setNickCheck({
-          count,
-          msg: count === 0 ? "사용 가능한 닉네임입니다." : "이미 사용중인 닉네임입니다.",
-        });
-      }
-
-      if (field === "email") {
-        const res = await authApi.checkEmail(value);
-        const count = Number(res?.count ?? 0);
-        setEmailCheck({
-          count,
-          msg: count === 0 ? "사용 가능한 이메일입니다." : "이미 사용중인 이메일입니다.",
-        });
-      }
-    } catch (e) {}
-  };
-
-  const onChange = (e) => {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
+  const sendCode = async () => {
     setError("");
-
-    if (name === "nickName") setNickCheck(null);
-    if (name === "email") setEmailCheck(null);
-
-    if (touched[name]) {
-      setFieldError((p) => ({ ...p, [name]: validateField(name, value) }));
+    const value = email.trim();
+    if (!EMAIL_RE.test(value)) {
+      setError("올바른 이메일 형식으로 입력해 주세요.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await authApi.sendEmailCode(value);
+      setEmail(value);
+      setStep(2);
+      setCode("");
+      setCooldown(RESEND_COOLDOWN);
+      toast("인증코드를 보냈습니다. 메일함을 확인해 주세요.", { type: "success" });
+    } catch (e) {
+      setError(e?.data?.message || e?.data || "인증코드 발송에 실패했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const onBlur = (e) => {
-    const { name, value } = e.target;
-    setTouched((p) => ({ ...p, [name]: true }));
-    setFieldError((p) => ({ ...p, [name]: validateField(name, value) }));
-
-    if (name === "nickName") {
-      setNickCheck(null);
-      const msg = validateField("nickName", value);
-      if (!msg) void runDupCheck("nickName", value);
+  const verifyCode = async () => {
+    setError("");
+    const value = code.trim();
+    if (!/^\d{6}$/.test(value)) {
+      setError("6자리 인증코드를 입력해 주세요.");
+      return;
     }
-
-    if (name === "email") {
-      setEmailCheck(null);
-      const msg = validateField("email", value);
-      if (!msg) void runDupCheck("email", value);
+    setLoading(true);
+    try {
+      const res = await authApi.verifyEmailCode({ email, code: value });
+      if (!res?.emailToken) {
+        setError("인증에 실패했습니다. 다시 시도해 주세요.");
+        return;
+      }
+      setEmailToken(res.emailToken);
+      setStep(3);
+    } catch (e) {
+      setError(e?.data?.message || e?.data || "인증코드가 올바르지 않거나 만료되었습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const canSubmit = useMemo(() => {
-    return (
-      form.password.trim() &&
-      form.userName.trim() &&
-      form.nickName.trim() &&
-      form.email.trim()
-    );
-  }, [form]);
-
-  const onSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setError("");
 
-    const nextTouched = {
-      password: true,
-      userName: true,
-      nickName: true,
-      email: true,
-    };
-
-    const nextFieldError = {
-      password: validateField("password", form.password),
-      userName: validateField("userName", form.userName),
-      nickName: validateField("nickName", form.nickName),
-      email: validateField("email", form.email),
-    };
-
-    setTouched(nextTouched);
-    setFieldError(nextFieldError);
-
-    const hasError = Object.values(nextFieldError).some(Boolean);
-    if (hasError) {
-      setError("입력값을 확인해 주세요.");
+    if (!NAME_RE.test(userName.trim())) {
+      setError("이름은 한글 2~10자로 입력해 주세요.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("비밀번호는 8자 이상으로 입력해 주세요.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setError("비밀번호 확인이 일치하지 않습니다.");
       return;
     }
 
-    if (!canSubmit) {
-      setError("모든 항목을 입력해 주세요.");
-      return;
-    }
-
-    if (nickCheck && Number(nickCheck.count ?? 0) > 0) {
-      setError("이미 사용중인 닉네임입니다.");
-      return;
-    }
-
-    setIsLoading(true);
+    setLoading(true);
     try {
-      const requestData = {
-        user : {
-          password : form.password,
-          userName : form.userName.trim(),
-          nickName : form.nickName.trim(),
-          email : form.email.trim()
-        },
-        loginType : "LOCAL",
-        providerUserId : null
-      }
-
-      await authApi.register(requestData);
-
+      await authApi.register({ emailToken, userName: userName.trim(), password });
       toast("회원가입 성공", { type: "success" });
-      navigate("/login", { replace: true, state: { nickName: form.nickName.trim() }});
-    } catch (e) {
-      const msg = e?.data?.message || "회원가입 실패";
-      setError(msg);
+      navigate("/login", { replace: true, state: { email } });
+    } catch (e2) {
+      setError(e2?.data?.message || e2?.data || "회원가입에 실패했습니다.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -192,94 +112,135 @@ export default function RegisterPage() {
     <div className={styles.wrap}>
       <h1 className={styles.title}>회원가입</h1>
 
-      <form className={styles.form} onSubmit={onSubmit}>
-        {/* 비밀번호 */}
-        <div className={styles.label}>비밀번호</div>
-        <input
-          className={styles.input}
-          type="password"
-          name="password"
-          value={form.password}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder="비밀번호를 입력해 주세요."
-          autoComplete="new-password"
-        />
-        {touched.password && fieldError.password && (
-          <div className={`${styles.hint} ${styles.bad}`}>{fieldError.password}</div>
-        )}
+      <div className={styles.hint} style={{ marginBottom: 14, color: "var(--text-sub)" }}>
+        {step}/3 · {step === 1 ? "이메일 인증" : step === 2 ? "인증코드 확인" : "정보 입력"}
+      </div>
 
-        {/* 이름 */}
-        <div className={styles.label}>이름</div>
-        <input
-          className={styles.input}
-          name="userName"
-          value={form.userName}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder="한글 3~5자로 입력해 주세요."
-        />
-        {touched.userName && fieldError.userName && (
-          <div className={`${styles.hint} ${styles.bad}`}>{fieldError.userName}</div>
-        )}
+      {step === 1 && (
+        <form
+          className={styles.form}
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendCode();
+          }}
+        >
+          <div className={styles.label}>이메일</div>
+          <input
+            className={styles.input}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="이메일을 입력해 주세요."
+            autoComplete="email"
+          />
+          <div className={styles.hint} style={{ color: "var(--text-sub)" }}>
+            이 이메일이 로그인 아이디가 됩니다. 인증코드를 보내드려요.
+          </div>
 
-        {/* 닉네임 — 아이디 대신 로그인에 사용됩니다 */}
-        <div className={styles.label}>닉네임</div>
-        <input
-          className={styles.input}
-          name="nickName"
-          value={form.nickName}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder="한글 3~5자, 로그인에 사용됩니다"
-          autoComplete="username"
-        />
-        {touched.nickName && fieldError.nickName ? (
-          <div className={`${styles.hint} ${styles.bad}`}>{fieldError.nickName}</div>
-        ) : (
-          nickCheck && (
-            <div
-              className={`${styles.hint} ${
-                Number(nickCheck.count ?? 0) === 0 ? styles.ok : styles.bad
-              }`}
+          {error && <div className={styles.error}>{error}</div>}
+
+          <button className={styles.submitBtn} type="submit" disabled={loading}>
+            {loading ? "보내는 중..." : "인증코드 받기"}
+          </button>
+        </form>
+      )}
+
+      {step === 2 && (
+        <form
+          className={styles.form}
+          onSubmit={(e) => {
+            e.preventDefault();
+            verifyCode();
+          }}
+        >
+          <div className={styles.label}>인증코드</div>
+          <input
+            className={styles.input}
+            inputMode="numeric"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            placeholder="메일로 받은 6자리 숫자"
+            autoComplete="one-time-code"
+          />
+          <div className={styles.hint} style={{ color: "var(--text-sub)" }}>
+            {email}로 보냈어요. 5분 안에 입력해 주세요.
+          </div>
+
+          {error && <div className={styles.error}>{error}</div>}
+
+          <button className={styles.submitBtn} type="submit" disabled={loading}>
+            {loading ? "확인 중..." : "확인"}
+          </button>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+            <button
+              className={styles.subBtn}
+              type="button"
+              disabled={loading || cooldown > 0}
+              onClick={sendCode}
             >
-              {nickCheck.msg}
-            </div>
-          )
-        )}
-
-        {/* 이메일 */}
-        <div className={styles.label}>이메일</div>
-        <input
-          className={styles.input}
-          type="text"
-          name="email"
-          value={form.email}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder="이메일 형식(@ 포함)으로 10~20자로 입력해 주세요."
-          autoComplete="email"
-        />
-        {touched.email && fieldError.email ? (
-          <div className={`${styles.hint} ${styles.bad}`}>{fieldError.email}</div>
-        ) : (
-          emailCheck && (
-            <div
-              className={`${styles.hint} ${
-                Number(emailCheck.count ?? 0) === 0 ? styles.ok : styles.bad
-              }`}
+              {cooldown > 0 ? `코드 다시 받기 (${cooldown}s)` : "코드 다시 받기"}
+            </button>
+            <button
+              className={styles.subBtn}
+              type="button"
+              onClick={() => {
+                setStep(1);
+                setError("");
+              }}
             >
-              {emailCheck.msg}
+              이메일 다시 입력
+            </button>
+          </div>
+        </form>
+      )}
+
+      {step === 3 && (
+        <form className={styles.form} onSubmit={submit}>
+          <div className={styles.label}>이메일</div>
+          <input className={styles.input} value={email} readOnly disabled />
+
+          <div className={styles.label}>이름</div>
+          <input
+            className={styles.input}
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            placeholder="한글 2~10자"
+          />
+
+          <div className={styles.label}>비밀번호</div>
+          <input
+            className={styles.input}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="8자 이상"
+            autoComplete="new-password"
+          />
+
+          <div className={styles.label}>비밀번호 확인</div>
+          <input
+            className={styles.input}
+            type="password"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            placeholder="비밀번호를 한 번 더 입력해 주세요."
+            autoComplete="new-password"
+          />
+          {password && passwordConfirm && (
+            <div className={`${styles.hint} ${password === passwordConfirm ? styles.ok : styles.bad}`}>
+              {password === passwordConfirm ? "비밀번호가 일치합니다." : "비밀번호가 일치하지 않습니다."}
             </div>
-          )
-        )}
+          )}
 
-        {error && <div className={styles.error}>{error}</div>}
+          {error && <div className={styles.error}>{error}</div>}
 
-        <button className={styles.submitBtn} type="submit" disabled={isLoading}>
-          {isLoading ? "가입 중..." : "회원가입"}
-        </button>
-      </form>
+          <button className={styles.submitBtn} type="submit" disabled={loading}>
+            {loading ? "가입 중..." : "회원가입"}
+          </button>
+        </form>
+      )}
 
       <button className={styles.subBtn} type="button" onClick={() => navigate("/login")}>
         로그인으로
@@ -287,5 +248,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-

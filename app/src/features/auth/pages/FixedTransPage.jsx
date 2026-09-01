@@ -13,7 +13,7 @@ export default function FixedTransPage() {
   const userId = user?.userId;
 
   const displayName = useMemo(() => {
-    return user?.nickName || user?.nickname || user?.userName || user?.loginId || "회원";
+    return user?.userName || user?.name || "회원";
   }, [user]);
 
   const [list, setList] = useState([]);

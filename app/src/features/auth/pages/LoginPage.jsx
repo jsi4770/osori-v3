@@ -21,16 +21,15 @@ export default function LoginPage() {
   const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code&prompt=login`;
 
   const [form, setForm] = useState({
-    nickName: "",
+    email: "",
     password: "",
     remember: false,
   });
 
   const pwRef = useRef(null);
 
-  // 닉네임 입력창에서 Enter → 곧바로 로그인하지 않고 비밀번호 입력창으로 포커스 이동.
-  // 비밀번호 입력창의 Enter는 폼 기본 동작(submit)이 그대로 로그인 실행.
-  const onNickNameKeyDown = (e) => {
+  // 이메일 입력창에서 Enter → 곧바로 로그인하지 않고 비밀번호 입력창으로 포커스 이동.
+  const onEmailKeyDown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
       pwRef.current?.focus();
@@ -38,13 +37,13 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const fromRegisterNickName = location.state?.nickName;
-    const savedNickname = localStorage.getItem("savedNickname");
+    const fromRegisterEmail = location.state?.email;
+    const savedEmail = localStorage.getItem("savedEmail");
 
-    if (fromRegisterNickName) {
-      setForm((p) => ({ ...p, nickName: fromRegisterNickName }));
-    } else if (savedNickname) {
-      setForm((p) => ({ ...p, nickName: savedNickname, remember: true }));
+    if (fromRegisterEmail) {
+      setForm((p) => ({ ...p, email: fromRegisterEmail }));
+    } else if (savedEmail) {
+      setForm((p) => ({ ...p, email: savedEmail, remember: true }));
     }
 
     const params = new URLSearchParams(location.search);
@@ -62,16 +61,16 @@ export default function LoginPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    const nickName = form.nickName.trim();
+    const email = form.email.trim();
     const password = form.password;
 
-    if (!nickName || !password) {
-      toast("닉네임과 비밀번호를 입력하세요.", { type: "error" });
+    if (!email || !password) {
+      toast("이메일과 비밀번호를 입력하세요.", { type: "error" });
       return;
     }
 
     try {
-      const res = await authApi.login(nickName, password);
+      const res = await authApi.login(email, password);
 
       //로그인 성공이면 token/user 저장부터 해야 PrivateRoute 통과가 안정적임
       login(res);
@@ -80,8 +79,8 @@ export default function LoginPage() {
         localStorage.setItem("token", res.token);
       }
 
-      if (form.remember) localStorage.setItem("savedNickname", nickName);
-      else localStorage.removeItem("savedNickname");
+      if (form.remember) localStorage.setItem("savedEmail", email);
+      else localStorage.removeItem("savedEmail");
 
       const status = res?.user?.status;
       if (status === "H") {
@@ -110,15 +109,16 @@ export default function LoginPage() {
 
       <form className={styles.form} onSubmit={onSubmit}>
         <div className={styles.field}>
-          <div className={styles.label}>닉네임</div>
+          <div className={styles.label}>이메일</div>
           <input
             className={styles.input}
-            name="nickName"
-            value={form.nickName}
+            type="email"
+            name="email"
+            value={form.email}
             onChange={onChange}
-            onKeyDown={onNickNameKeyDown}
-            placeholder="닉네임"
-            autoComplete="username"
+            onKeyDown={onEmailKeyDown}
+            placeholder="이메일"
+            autoComplete="email"
           />
         </div>
 
@@ -179,6 +179,3 @@ function KakaoIcon() {
     </svg>
   );
 }
-
-
-

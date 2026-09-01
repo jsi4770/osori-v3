@@ -139,6 +139,31 @@ public class UserServiceImpl implements UserService {
 
 	}
 
+	@Transactional
+	@Override // 로그인 전용 — 이메일로 회원 조회. 조회되면 마지막 로그인 날짜 갱신 + 휴면 판정.
+	public User selectUserByEmail(User user) {
+
+		User loginUser = dao.selectUserByEmail(sqlSession, user);
+
+		if (loginUser != null) {
+
+			if (loginUser.getStatus().equals("N")) {
+				return loginUser;
+			}
+
+			int result = dao.updateDate(sqlSession, loginUser); // 내부 LOGIN_ID 기준이라 그대로 동작
+
+			loginUser = dao.selectUserByEmail(sqlSession, user); // 갱신된 정보 재조회
+
+			if (result > 0) {
+				return loginUser;
+			}
+		}
+
+		return null;
+
+	}
+
 
 	@Override
 	public Map<String, Object> processKakaoLogin(String code, String redirectUri) {
@@ -174,31 +199,48 @@ public class UserServiceImpl implements UserService {
 	    Map<String, Object> kakaoAccount = (Map<String, Object>) body.get("kakao_account");
 	    Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
 	    
-	    String email = (String) kakaoAccount.get("email"); //에서 권한을 얻어야 null이 안 나옵니다.
-	    String nickName = (String) profile.get("nickname"); //
+	    String email = (String) kakaoAccount.get("email"); // account_email 스코프 미사용이라 보통 null
+	    String kakaoNickname = (String) profile.get("nickname");
 	    String realName = (String) kakaoAccount.get("name"); // 카카오 "이름"(실명) 동의항목 — 콘솔에서 켜야 값이 옴
-	    // 이름 필드는 실명을 우선하고, 동의항목이 꺼져있어 못 받아오면 닉네임으로 대체한다.
-	    String displayName = (realName != null && !realName.isBlank()) ? realName : nickName;
+	    // 이름(USER_NAME)은 실명 우선, 없으면 카카오 닉네임, 그것도 없으면 "오소리".
+	    String displayName = (realName != null && !realName.isBlank()) ? realName
+	    		: (kakaoNickname != null && !kakaoNickname.isBlank()) ? kakaoNickname : "오소리";
 
 	    String providerUserId = String.valueOf(body.get("id")); // 고유 토큰 아이디
 	    String loginType = "KAKAO"; // 로그인 타입
 
 	    // 3. DB 가입 확인 및 처리 (카카오 고유 ID 기준 — 이메일 동의항목 권한이 없어 email이 null일 수 있음)
 	    User user = dao.findLoginIdByProviderUserId(sqlSession, providerUserId); // 회원 조회
-	    
+
 	    Map<String, Object> result = new HashMap<>();
-	    
-	    if (user == null) { // 신규 회원이면 바로 가입시키지 않고, 닉네임을 직접 정하게 한 뒤 완료시킨다
-	    		// (completeKakaoRegistration에서 마무리) — 여기서는 아무것도 insert하지 않는다.
 
-	    		String suggestedNickName = generateUniqueNickName(nickName); // 미리보기용 제안값(최종 확정은 가입 완료 시점에 다시 검증)
+	    if (user == null) { // 신규 카카오 회원 — 닉네임 입력 화면 없이 바로 가입 처리한다.
+	    		// 식별은 PROVIDER_USER_ID로 하며, 이메일은 못 받아오면 null로 둔다(로그인에 필요 없음).
+	    		String generatedLoginId = "kakao_" + providerUserId; // 카카오 고유 ID 기반이라 충돌 없음
+	    		String rawPassword = java.util.UUID.randomUUID().toString(); // 카카오로만 로그인하므로 실사용 안 함
 
-	    		result.put("isNewMember", true);
-	    		result.put("providerUserId", providerUserId);
-	    		result.put("email", email);
-	    		result.put("suggestedNickName", suggestedNickName);
-	    		result.put("userName", displayName); // 카카오 실명/닉네임 — USER_NAME(이름) 필드용, 로그인 식별자인 NICKNAME과는 별개
+	    		User newUser = User.builder()
+	    				.loginId(generatedLoginId)
+	    				.userName(displayName)
+	    				.email(email) // null 가능 (EMAIL 컬럼 nullable)
+	    				.password(bcrypt.encode(rawPassword))
+	    				.build();
 
+	    		UserRegisterRequest registerRequest = UserRegisterRequest.builder()
+	    				.user(newUser)
+	    				.loginType("KAKAO")
+	    				.providerUserId(providerUserId)
+	    				.build();
+
+	    		insertUser(registerRequest); // USERS + AUTH_ACCOUNT 동시 insert
+
+	    		user = dao.findLoginIdByProviderUserId(sqlSession, providerUserId);
+
+	    		String token = jwtUtil.generateToken(user.getLoginId());
+	    		user.setPassword(null);
+	    		result.put("token", token);
+	    		result.put("user", user);
+	    		result.put("isNewMember", true); // 프론트 "가입 완료" 안내 토스트용
 	    		return result;
 	    } else {
 	    	
@@ -436,13 +478,13 @@ public class UserServiceImpl implements UserService {
 		return loginUser; 
 	}
 	
-	//비밀번호 재설정 1단계 — 닉네임+이메일이 같은 행에서 일치하는 활성 로컬 계정 조회 (소셜 계정/비활성/불일치 시 null)
+	//비밀번호 재설정 1단계 — 이메일로 재설정 가능한(활성 로컬) 계정 조회 (소셜/비활성/없음 시 null)
 	@Override
-	public User findResettableUser(String nickName, String email) {
-		if (nickName == null || nickName.isBlank() || email == null || email.isBlank()) {
+	public User findResettableUserByEmail(String email) {
+		if (email == null || email.isBlank()) {
 			return null;
 		}
-		return dao.selectResettableUser(sqlSession, nickName.trim(), email.trim());
+		return dao.selectResettableUserByEmail(sqlSession, email.trim());
 	}
 
 	//비밀번호 재설정 2단계 — 검증된 USER_ID로만 비밀번호 갱신
