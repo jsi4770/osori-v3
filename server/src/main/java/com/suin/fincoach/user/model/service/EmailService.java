@@ -112,7 +112,7 @@ public class EmailService {
 				          </div>
 				        </td></tr>
 				        <tr><td style="padding:0 32px 4px 32px;">
-				          <p style="margin:0;font-size:13px;line-height:1.6;color:#8a929e;">이 코드는 <b style="color:#5b6472;">5분간</b> 유효합니다. 본인이 요청하지 않았다면 이 메일을 무시하셔도 됩니다.</p>
+				          <p style="margin:0;font-size:13px;line-height:1.6;color:#8a929e;">이 코드는 <b style="color:#5b6472;">5분간</b> 유효합니다.<br>본인이 요청하지 않았다면 이 메일을 무시하셔도 됩니다.</p>
 				        </td></tr>
 				        <tr><td style="padding:20px 32px 28px 32px;border-top:1px solid #eef1f6;">
 				          <p style="margin:0;font-size:12px;line-height:1.5;color:#aab0bb;">이 메일은 OSORI 가계부 회원가입 · 비밀번호 재설정 과정에서 발송되었습니다.</p>
