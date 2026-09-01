@@ -30,7 +30,8 @@
 		SELECT *
 		FROM FIXEDTRANS
 		WHERE USER_ID = #{userId}
-	</select> 
+		ORDER BY PAY_DAY ASC NULLS LAST, FIXED_ID ASC
+	</select>
 	
 	<delete id="deleteFixedExpense" parameterType="int">
 		DELETE FROM FIXEDTRANS
