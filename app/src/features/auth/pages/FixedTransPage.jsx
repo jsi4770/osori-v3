@@ -12,10 +12,6 @@ export default function FixedTransPage() {
   const { toast, confirm } = useFeedback();
   const userId = user?.userId;
 
-  const displayName = useMemo(() => {
-    return user?.userName || user?.name || "회원";
-  }, [user]);
-
   const [list, setList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -75,20 +71,20 @@ export default function FixedTransPage() {
       {/* 목록 */}
       <div className="account-book-grid">
         <div className="info-card ftMainCard" style={{ gridColumn: "1 / -1", paddingTop:'10px'}}>
-          <div className="card-title-area" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, whiteSpace: "nowrap" }}>
-                <h3 style={{ whiteSpace: "nowrap" }}>내 고정지출 목록</h3>
+          <div className="ftHeader">
+            <div className="ftHeaderTop">
+              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                <h3 style={{ whiteSpace: "nowrap", margin: 0 }}>내 고정지출 목록</h3>
                 <span className="status-dot" style={{ whiteSpace: "nowrap" }}>{list.length}개</span>
               </div>
-              {!isLoading && list.length > 0 && (
-                <div className="ftTotal">매달 합계 {totalAmount.toLocaleString()}원</div>
-              )}
+              <button type="button" className="ftAddBtn" onClick={openCreate}>
+                <span className="ftAddIcon" aria-hidden="true">＋</span>
+                <span>추가</span>
+              </button>
             </div>
-            <button type="button" className="ftAddBtn" onClick={openCreate}>
-              <span className="ftAddIcon" aria-hidden="true">＋</span>
-              <span>추가</span>
-            </button>
+            {!isLoading && list.length > 0 && (
+              <div className="ftTotal">매달 합계 {totalAmount.toLocaleString()}원</div>
+            )}
           </div>
 
           {isLoading ? (
