@@ -306,19 +306,34 @@
   margin-bottom: 12px;
 }
 
+/* 탈퇴 모달: "탈퇴 사유를 선택해주세요" 라벨을 위 문구와 확실히 띄운다 */
+.ps-modal .ps-field {
+  margin-top: 24px;
+}
+.ps-modal .ps-field > .ps-label {
+  margin-bottom: 12px;
+}
+.ps-modal .ps-check {
+  margin-top: 18px;
+}
+
 .ps-reason-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 
 .ps-reason-btn {
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-sub);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   text-align: center;
