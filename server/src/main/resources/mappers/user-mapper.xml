@@ -77,7 +77,7 @@
     <select id="emailCheck" parameterType="string" resultType="int">
     	SELECT COUNT(*)
     	FROM USERS
-    	WHERE EMAIL=#{email}
+    	WHERE LOWER(EMAIL) = LOWER(#{email})
     </select>
   	
   	<!-- 현재 로그인 시점과 마지막 로그인 시점이 30일이상 차이나면 STATUS H로 강제 변경 -->
