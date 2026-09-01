@@ -1,5 +1,4 @@
-/* .info-card 기본값(max-height:400px/overflow:hidden)을 물려받으면 필드가 많은 이 카드는
-   내용이 잘려 보이므로, ProfileSettings.css의 .ps-account-card와 동일하게 오버라이드한다. */
+/* .info-card 기본값(max-height:400px/overflow:hidden)을 물려받으면 잘려 보이므로 오버라이드 */
 .bs-card {
   padding: 28px;
   gap: 6px;
@@ -9,12 +8,6 @@
 
 .bs-field {
   margin-top: 10px;
-}
-
-.bs-form {
-  display: grid;
-  gap: 14px;
-  margin-top: 14px;
 }
 
 .bs-amount-wrapper {
@@ -35,33 +28,4 @@
   font-weight: 700;
   font-size: 0.9rem;
   pointer-events: none;
-}
-
-.bs-toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 6px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.bs-toggle-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.bs-toggle-title {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--text-main);
-}
-
-.bs-toggle-desc {
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: var(--text-weak);
 }

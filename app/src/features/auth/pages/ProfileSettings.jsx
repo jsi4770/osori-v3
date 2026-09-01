@@ -567,9 +567,9 @@ function ProfileSettings() {
           )}
         </section>
 
-        {/* 예산/저축 목표: 월 예산 + 저축 목표 금액/날짜/현재 저축액 */}
+        {/* 월 예산 */}
         <section className="ps-section">
-          <h2 className="ps-section-title">예산 · 저축 목표</h2>
+          <h2 className="ps-section-title">월 예산</h2>
           <BudgetSettings />
         </section>
 

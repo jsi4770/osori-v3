@@ -53,24 +53,8 @@
   background: var(--error-color);
 }
 
-.bp-bar-fill.bp-savings {
-  background: var(--income-color);
-}
-
-.bp-warning {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--error-color);
-}
-
-.bp-projected {
-  margin-top: 6px;
-  font-size: 0.8rem;
+.bp-sub {
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-sub);
-}
-
-.bp-projected b {
-  color: var(--income-color);
-  font-weight: 800;
+  color: var(--text-weak);
 }

@@ -103,11 +103,7 @@
 
   	<update id="updateBudget" parameterType="User">
   		UPDATE USERS
-  		SET B_AMOUNT = #{bAmount},
-  			SAVINGS_GOAL_AMOUNT = #{savingsGoalAmount},
-  			SAVINGS_GOAL_DATE = #{savingsGoalDate},
-  			SAVINGS_CURRENT_AMOUNT = #{savingsCurrentAmount},
-  			SAVINGS_AUTO_FILL = COALESCE(#{savingsAutoFill}, 'N')
+  		SET B_AMOUNT = #{bAmount}
   		WHERE USER_ID = #{userId}
   	</update>
 
