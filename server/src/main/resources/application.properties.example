@@ -80,6 +80,8 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 spring.mail.properties.mail.smtp.connectiontimeout=5000
 spring.mail.properties.mail.smtp.timeout=5000
 spring.mail.properties.mail.smtp.writetimeout=5000
+# 메일 연결성은 헬스체크에서 제외 (미설정/차단 시 /actuator/health가 DOWN이 되어 배포가 막힘)
+management.health.mail.enabled=false
 
 # Logging
 logging.level.root=info
