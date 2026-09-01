@@ -159,6 +159,10 @@
   gap: 8px;
   align-self: stretch;
   box-sizing: border-box;
+  /* width:100% 없이 margin:0 auto 만 두면, flex column 안에서 auto 좌우 마진이
+     align-self:stretch 를 무력화해 입력바가 max-content(≈입력창 기본폭) 로 커져
+     좁은 화면에서 화면 밖으로 삐져나간다. 명시적 100% 로 컨테이너에 맞춘다. */
+  width: 100%;
   max-width: 560px;
   margin: 0 auto;
   padding: 8px 8px 8px 16px;
