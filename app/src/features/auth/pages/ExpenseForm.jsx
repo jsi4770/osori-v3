@@ -5,7 +5,7 @@ import transApi from '../../../api/transApi';
 import nlParseApi from '../../../api/nlParseApi';
 import installmentApi from '../../../api/installmentApi';
 import { useAuth } from '../../../context/AuthContext';
-import { IconReceipt, IconArrowUp } from '../../../components/icons';
+import { IconReceipt, IconArrowUp, IconSparkle, IconBolt } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
 import { CategoryIcon } from '../../../components/icons/categoryIcons';
 import { CURRENCIES, DEFAULT_CURRENCY, currencyMeta, isForeign } from '../../../constants/currencies';
@@ -419,6 +419,7 @@ const ExpenseForm = () => {
         {!showManualEntry && (
           <div className="nl-hero">
             <form className="nl-hero-form" onSubmit={handleNlSubmit}>
+              <span className="nl-hero-eyebrow"><IconSparkle size={14} /> AI 빠른 입력</span>
               <h3 className="nl-hero-title">
                 {formData.type === '수입' ? '이번 수입, 문장으로 말해보세요' : '이번 지출, 문장으로 말해보세요'}
               </h3>
@@ -428,7 +429,8 @@ const ExpenseForm = () => {
                   : '금액·카테고리·날짜까지 AI가 알아서 채워드려요'}
               </p>
 
-              <div className="nl-prompt-bar">
+              <div className={`nl-prompt-bar ${nlParsing ? 'is-busy' : ''}`}>
+                <span className="nl-prompt-lead" aria-hidden="true"><IconSparkle size={20} /></span>
                 <input
                   type="text"
                   className="nl-prompt-input"
@@ -447,6 +449,13 @@ const ExpenseForm = () => {
                   {nlParsing ? <span className="nl-prompt-spinner" /> : <IconArrowUp size={36} strokeWidth={3} color="#fff" />}
                 </button>
               </div>
+
+              {nlParsing && !nlParsed && (
+                <div className="nl-reading" aria-live="polite">
+                  <span className="nl-reading-dots"><i /><i /><i /></span>
+                  AI가 문장을 읽고 있어요
+                </div>
+              )}
 
               {nlParsed && (() => {
                 const p = nlParsed.result;
@@ -494,20 +503,26 @@ const ExpenseForm = () => {
               })()}
 
               <div className="nl-hero-examples">
-                {(personalExamples.length > 0
-                  ? personalExamples
-                  : (formData.type === '수입' ? NL_INCOME_EXAMPLES : NL_EXPENSE_EXAMPLES)
-                ).map((example) => (
-                  <button
-                    key={example}
-                    type="button"
-                    className="nl-hero-example-chip"
-                    onClick={() => applyExample(example)}
-                    disabled={nlParsing}
-                  >
-                    {example}
-                  </button>
-                ))}
+                <span className="nl-hero-examples-label">
+                  {personalExamples.length > 0 ? '자주 쓰는 문장' : '이렇게 말해보세요'}
+                </span>
+                <div className="nl-hero-example-chips">
+                  {(personalExamples.length > 0
+                    ? personalExamples
+                    : (formData.type === '수입' ? NL_INCOME_EXAMPLES : NL_EXPENSE_EXAMPLES)
+                  ).map((example) => (
+                    <button
+                      key={example}
+                      type="button"
+                      className="nl-hero-example-chip"
+                      onClick={() => applyExample(example)}
+                      disabled={nlParsing}
+                    >
+                      <IconBolt size={12} />
+                      {example}
+                    </button>
+                  ))}
+                </div>
               </div>
             </form>
 

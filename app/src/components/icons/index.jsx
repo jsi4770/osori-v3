@@ -84,6 +84,19 @@ export const IconClock = ({ size = 16, ...props }) => (
   </svg>
 );
 
+export const IconSparkle = ({ size = 18, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...props}>
+    <path d="M12 3.5c.7 3.4 1.6 4.3 5 5-3.4.7-4.3 1.6-5 5-.7-3.4-1.6-4.3-5-5 3.4-.7 4.3-1.6 5-5Z" />
+    <path d="M18.5 13.5c.35 1.6.9 2.15 2.5 2.5-1.6.35-2.15.9-2.5 2.5-.35-1.6-.9-2.15-2.5-2.5 1.6-.35 2.15-.9 2.5-2.5Z" />
+  </svg>
+);
+
+export const IconBolt = ({ size = 14, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...props}>
+    <path d="M13 3 5 13.5h6L11 21l8-10.5h-6L13 3Z" />
+  </svg>
+);
+
 export const IconArrowUp = ({ size = 20, color = "currentColor", strokeWidth = 2.75, ...props }) => (
   <svg
     width={size}
