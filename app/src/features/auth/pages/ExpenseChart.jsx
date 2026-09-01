@@ -65,6 +65,14 @@ function ExpenseChart({ transactions = [], currentDate }) {
   const fixedTotal = labels.reduce((sum, cat) => sum + (isFixedCategory(cat) ? analysisData[cat] : 0), 0);
   const variableTotal = totalExpenditure - fixedTotal;
 
+  // 범례는 옆 공간이 좁아 카테고리가 많으면 잘린다 → 지출액 상위 5개만 범례에 표시한다
+  // (도넛 조각과 툴팁은 전체 카테고리 그대로 유지). 5개 이하면 전부 표시.
+  const LEGEND_LIMIT = 5;
+  const topLegendSet = new Set(
+    [...labels].sort((a, b) => analysisData[b] - analysisData[a]).slice(0, LEGEND_LIMIT)
+  );
+  const hiddenLegendCount = labels.length - topLegendSet.size;
+
   const data = {
     labels: labels,
     datasets: [
@@ -88,7 +96,8 @@ function ExpenseChart({ transactions = [], currentDate }) {
           usePointStyle: true,
           pointStyle: 'circle',
           padding: 20,
-          font: { size: 12, weight: 'bold' }
+          font: { size: 12, weight: 'bold' },
+          filter: (legendItem) => topLegendSet.has(legendItem.text)
         }
       },
       tooltip: {
@@ -120,6 +129,11 @@ function ExpenseChart({ transactions = [], currentDate }) {
           {fixedTotal > 0 && (
             <div style={{ fontSize: '0.85rem', color: 'var(--text-weak)', fontWeight: 600, marginTop: 4 }}>
               고정비 {fixedTotal.toLocaleString()}원 · 변동비 {variableTotal.toLocaleString()}원
+            </div>
+          )}
+          {hiddenLegendCount > 0 && (
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-weak)', marginTop: 4 }}>
+              범례는 지출 상위 {LEGEND_LIMIT}개만 표시 (외 {hiddenLegendCount}개)
             </div>
           )}
       </div>
