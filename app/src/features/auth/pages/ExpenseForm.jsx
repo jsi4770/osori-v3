@@ -14,7 +14,7 @@ import { useFeedback } from '../../../context/FeedbackContext';
 import useCategories from '../../../hooks/useCategories';
 
 // 문장 입력이 감이 안 잡히는 사용자를 위한 예시 — 탭하면 그대로 입력창에 채워진다.
-const NL_EXPENSE_EXAMPLES = ['스타벅스 아메리카노 5천원', '어제 친구랑 밥 3만원', '택시 12000원'];
+const NL_EXPENSE_EXAMPLES = ['올리브영 마스크팩 2천원', '어제 친구랑 밥 3만원', '택시 12000원'];
 const NL_INCOME_EXAMPLES = ['이번 달 월급 250만원', '용돈 10만원', '예금 이자 3200원'];
 
 const ExpenseForm = () => {
@@ -434,7 +434,7 @@ const ExpenseForm = () => {
                 <input
                   type="text"
                   className="nl-prompt-input"
-                  placeholder={formData.type === '수입' ? '예: 이번 달 월급 250만원' : '예: 스타벅스 아메리카노 5천원'}
+                  placeholder={formData.type === '수입' ? '예: 이번 달 월급 250만원' : '예: 올리브영 마스크팩 2천원'}
                   value={nlText}
                   onChange={handleNlTextChange}
                   disabled={nlParsing}

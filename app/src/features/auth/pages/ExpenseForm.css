@@ -109,7 +109,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 }
+.nl-hero-form > * { max-width: 100%; box-sizing: border-box; }
 /* 히어로 요소가 아래에서 순차적으로 올라오며 등장 */
 .nl-hero-form > * { animation: fieldIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .nl-hero-form > *:nth-child(1) { animation-delay: 0.02s; }
@@ -154,7 +157,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
   max-width: 560px;
   margin: 0 auto;
   padding: 8px 8px 8px 16px;
@@ -256,6 +260,7 @@
 
 /* 문장 파싱 결과 인라인 미리보기 (모달 대체) */
 .nl-parsed-card {
+  align-self: stretch;
   margin-top: 16px;
   padding: 16px 18px;
   border: 1px solid var(--border-subtle);
