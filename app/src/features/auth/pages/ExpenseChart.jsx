@@ -7,8 +7,15 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 // 변동비 카테고리는 눈에 띄는 컬러로, 고정비 카테고리(주거/월세·통신비·보험·구독서비스)는
 // 무채색 계열로 구분해 "매달 똑같이 나가는 돈"과 "조절 가능한 소비"를 색으로 한눈에 구분한다.
+// 사용자가 직접 추가한 커스텀 카테고리는 기본 카테고리들과 겹치지 않는 보라색 계열로 따로 칠해,
+// "기본 제공 카테고리"와 "내가 만든 카테고리"를 색으로 바로 알아볼 수 있게 한다.
 const VARIABLE_COLORS = ['#FF6384', '#4BC0C0', '#FFCE56', '#36A2EB', '#9966FF', '#FF9F40', '#65be71', '#C9CBCF'];
 const FIXED_COLORS = ['#64748b', '#94a3b8', '#475569', '#334155'];
+const CUSTOM_COLORS = ['#7C3AED', '#A78BFA', '#6D28D9', '#C4B5FD', '#8B5CF6', '#5B21B6'];
+
+// 기본 제공 지출 카테고리 집합. 여기에 없으면 사용자가 설정 탭에서 직접 추가한 커스텀 카테고리다.
+const DEFAULT_EXPENSE_SET = new Set(EXPENSE_CATEGORIES);
+const isCustomCategory = (cat) => !DEFAULT_EXPENSE_SET.has(cat);
 
 const CATEGORY_COLORS = (() => {
   const map = {};
@@ -25,13 +32,13 @@ const CATEGORY_COLORS = (() => {
   return map;
 })();
 
-// 사용자가 설정 탭에서 추가한 커스텀 카테고리는 이 정적 맵에 없으므로, 이름 기반 해시로 색을
-// 안정적으로(렌더할 때마다 같은 색으로) 배정한다.
+// 사용자가 설정 탭에서 추가한 커스텀 카테고리는 이 정적 맵에 없으므로, 이름 기반 해시로 보라색
+// 계열(CUSTOM_COLORS) 안에서 색을 안정적으로(렌더할 때마다 같은 색으로) 배정한다.
 const colorFor = (cat) => {
   if (CATEGORY_COLORS[cat]) return CATEGORY_COLORS[cat];
   let hash = 0;
   for (let i = 0; i < cat.length; i += 1) hash = (hash * 31 + cat.charCodeAt(i)) >>> 0;
-  return VARIABLE_COLORS[hash % VARIABLE_COLORS.length];
+  return CUSTOM_COLORS[hash % CUSTOM_COLORS.length];
 };
 
 function ExpenseChart({ transactions = [], currentDate }) {
@@ -68,7 +75,9 @@ function ExpenseChart({ transactions = [], currentDate }) {
       {
         data: dataValues,
         backgroundColor: labels.map(cat => colorFor(cat)),
-        borderWidth: 1,
+        // 커스텀 카테고리 조각은 진한 보라 테두리로 한 번 더 강조한다.
+        borderColor: labels.map(cat => (isCustomCategory(cat) ? '#4C1D95' : '#fff')),
+        borderWidth: labels.map(cat => (isCustomCategory(cat) ? 2 : 1)),
       },
     ],
   };
@@ -119,11 +128,6 @@ function ExpenseChart({ transactions = [], currentDate }) {
             </div>
           )}
       </div>
-      {fixedTotal > 0 && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-weak)', textAlign: 'center', marginTop: 2 }}>
-          회색 계열: 고정비 카테고리(주거/월세·통신비·보험·구독서비스)
-        </div>
-      )}
     </div>
   );
 }
