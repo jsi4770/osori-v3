@@ -16,10 +16,9 @@ import lombok.NoArgsConstructor;
 public class User {
 	
 	private int userId; //회원 내부 식별자 (PK, 시퀀스)
-	private String loginId; // 로컬 로그인 아이디 (중복 불가)
-	private String userName; // 회원 이름
-	private String nickName; // 닉네임 (중복 불가)
-	private String email; // 이메일 (중복 불가)
+	private String loginId; // 내부 불변 식별자 (local_* / kakao_*, 중복 불가)
+	private String userName; // 회원 이름 (표시 이름)
+	private String email; // 이메일 — 로그인 식별자 (중복 불가)
 	private String password; // 비밀번호
 	private String status; // 회원 상태 (활성,비활성,휴면)
 	private Date lastLogin; // 마지막 로그인 시점

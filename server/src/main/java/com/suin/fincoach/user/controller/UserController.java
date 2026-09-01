@@ -25,7 +25,9 @@ import com.suin.fincoach.user.model.service.EmailVerificationService;
 import com.suin.fincoach.user.model.service.UserService;
 import com.suin.fincoach.user.model.vo.User;
 import com.suin.fincoach.util.JwtUtil;
+import com.suin.fincoach.util.SimpleRateLimiter;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -46,6 +48,9 @@ public class UserController {
 
 	@Autowired
 	private EmailVerificationService emailVerificationService;
+
+	@Autowired
+	private SimpleRateLimiter rateLimiter;
 
 	UserController(FincoachApplication fincoachApplication) {
 		this.fincoachApplication = fincoachApplication;
@@ -198,7 +203,6 @@ public class UserController {
 		}
 
 		user.setEmail(verifiedEmail);
-		user.setNickName(null);
 		user.setLoginId("local_" + java.util.UUID.randomUUID().toString().replace("-", ""));
 		user.setPassword(bcrypt.encode(user.getPassword().trim()));
 
@@ -232,22 +236,6 @@ public class UserController {
 
 		return ResponseEntity.ok(resp);
 
-	}
-
-	// 닉네임 중복 체크 (UNIQUE 제약 조건으로 인해 중복 체크 해줘야한다.)
-	@GetMapping("/checkNickName")
-	public ResponseEntity<?> nickNameCheck(@RequestParam("nickName") String nickName) {
-
-		// count만 JSON으로 응답
-		String v = (nickName == null) ? "" : nickName.trim();
-
-		int count = service.nickNameCheck(v);
-
-		HashMap<String, Object> resp = new HashMap<>();
-
-		resp.put("count", count);
-
-		return ResponseEntity.ok(resp);
 	}
 
 	// 이메일 중복 체크 (UNIQUE 제약 조건으로 인해 중복 체크 해줘야한다.)
@@ -405,11 +393,15 @@ public class UserController {
 	// 비밀번호 재설정 1단계 — 이메일로 인증코드 발송.
 	// 계정 존재 여부는 응답으로 드러내지 않는다(코드는 해당 이메일로만 감). 소셜/비활성 계정은 대상 아님.
 	@PostMapping("/password/send-code")
-	public ResponseEntity<?> sendPasswordResetCode(@RequestBody Map<String, String> body) {
+	public ResponseEntity<?> sendPasswordResetCode(@RequestBody Map<String, String> body, HttpServletRequest request) {
 
 		String email = body.getOrDefault("email", "").trim();
 		if (!email.contains("@")) {
 			return ResponseEntity.badRequest().body("올바른 이메일을 입력해 주세요.");
+		}
+
+		if (!rateLimiter.allow("reset-code:" + SimpleRateLimiter.clientIp(request), 10, 3_600_000L)) {
+			return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
 		}
 
 		User target = service.findResettableUserByEmail(email);
@@ -499,25 +491,6 @@ public class UserController {
         return ResponseEntity.ok(result);
     }
 	
-	// 카카오 신규가입 마무리 — 인증 직후 자동가입 대신, 사용자가 닉네임 확정 화면에서 직접 정한
-	// 닉네임을 제출해야만 가입이 완료된다(KakaoCallback이 isNewMember:true를 받으면 이 화면으로 보냄).
-	@PostMapping("/kakao/complete-registration")
-	public ResponseEntity<?> completeKakaoRegistration(@RequestBody Map<String, String> body) {
-
-		String providerUserId = body.get("providerUserId");
-		String email = body.get("email");
-		String userName = body.get("userName");
-		String nickName = body.get("nickName");
-
-		Map<String, Object> result = service.completeKakaoRegistration(providerUserId, email, userName, nickName);
-
-		if (result.get("token") == null) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
-		}
-
-		return ResponseEntity.status(HttpStatus.CREATED).body(result);
-	}
-
 	// 카카오 연동 해제는 더 이상 지원하지 않는다 — 해제 후 재로그인 시 LOGIN_ID(kakao_{providerUserId})가
 	// 이미 존재하는 상태로 남아있어 재가입을 시도하다 충돌(500)이 나는 문제가 있었다. 프론트에서도
 	// 버튼을 없앴지만, 과거 클라이언트가 남아있을 수 있어 서버에서도 명시적으로 막는다.

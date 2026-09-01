@@ -23,11 +23,6 @@ public class UserDao {
 			return sqlSession.selectOne("userMapper.selectUser", user);
 		}
 
-		//닉네임으로 회원 조회 (레거시)
-		public User selectUserByNickname(SqlSessionTemplate sqlSession, User user) {
-			return sqlSession.selectOne("userMapper.selectUserByNickname", user);
-		}
-
 		//이메일로 회원 조회 (로그인 전용)
 		public User selectUserByEmail(SqlSessionTemplate sqlSession, User user) {
 			return sqlSession.selectOne("userMapper.selectUserByEmail", user);
@@ -37,11 +32,6 @@ public class UserDao {
 		//아이디 중복체크 
 		public int idCheck(SqlSessionTemplate sqlSession, String loginId) {
 			return sqlSession.selectOne("userMapper.idCheck", loginId); 
-		}
-		
-		//닉네임 중복체크
-		public int nickNameCheck(SqlSessionTemplate sqlSession, String nickName) {
-			return sqlSession.selectOne("userMapper.nickNameCheck",nickName); 
 		}
 		
 		//이메일 중복체크

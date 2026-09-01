@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.suin.fincoach.user.model.service.EmailVerificationService;
 import com.suin.fincoach.user.model.service.UserService;
 import com.suin.fincoach.util.JwtUtil;
+import com.suin.fincoach.util.SimpleRateLimiter;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,13 +37,19 @@ public class EmailVerificationController {
 	private final EmailVerificationService emailVerificationService;
 	private final UserService userService;
 	private final JwtUtil jwtUtil;
+	private final SimpleRateLimiter rateLimiter;
 
 	@PostMapping("/send-code")
-	public ResponseEntity<?> sendCode(@RequestBody Map<String, String> body) {
+	public ResponseEntity<?> sendCode(@RequestBody Map<String, String> body, HttpServletRequest request) {
 		String email = body.getOrDefault("email", "").trim();
 
 		if (email.isEmpty() || !email.contains("@")) {
 			return ResponseEntity.badRequest().body("올바른 이메일을 입력해 주세요.");
+		}
+
+		// 한 IP가 회원가입 인증코드를 시간당 10회까지만 요청할 수 있게 제한 (스팸/쿼터 소진 방지)
+		if (!rateLimiter.allow("signup-code:" + SimpleRateLimiter.clientIp(request), 10, 3_600_000L)) {
+			return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
 		}
 
 		// 회원가입용: 이미 가입된 이메일이면 코드 발송하지 않고 안내
