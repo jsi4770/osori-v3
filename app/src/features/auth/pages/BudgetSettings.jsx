@@ -15,6 +15,7 @@ function BudgetSettings() {
   const [savingsGoalAmount, setSavingsGoalAmount] = useState("");
   const [savingsGoalDate, setSavingsGoalDate] = useState("");
   const [savingsCurrentAmount, setSavingsCurrentAmount] = useState("");
+  const [savingsAutoFill, setSavingsAutoFill] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ function BudgetSettings() {
     setSavingsGoalAmount(user.savingsGoalAmount ? String(user.savingsGoalAmount) : "");
     setSavingsGoalDate(user.savingsGoalDate || "");
     setSavingsCurrentAmount(user.savingsCurrentAmount ? String(user.savingsCurrentAmount) : "");
+    setSavingsAutoFill(user.savingsAutoFill === "Y");
   }, [user]);
 
   const handleSave = async () => {
@@ -37,6 +39,7 @@ function BudgetSettings() {
         savingsGoalAmount: Number(savingsGoalAmount) || 0,
         savingsGoalDate: savingsGoalDate || null,
         savingsCurrentAmount: Number(savingsCurrentAmount) || 0,
+        savingsAutoFill,
       });
 
       const updatedUser = res?.user || { ...user };
@@ -113,6 +116,24 @@ function BudgetSettings() {
             />
             <span className="bs-unit">원</span>
           </div>
+        </div>
+
+        <div className="bs-toggle-row">
+          <div className="bs-toggle-text">
+            <span className="bs-toggle-title">남은 예산 자동 저축</span>
+            <span className="bs-toggle-desc">
+              매달 1일, 지난달에 안 쓴 예산(월 예산 − 지난달 지출)을 현재 저축액에 자동으로 더해요.
+              목표 금액까지만 채우고, 목표일이 지나면 멈춰요.
+            </span>
+          </div>
+          <label className="toggle-switch">
+            <input
+              type="checkbox"
+              checked={savingsAutoFill}
+              onChange={(e) => setSavingsAutoFill(e.target.checked)}
+            />
+            <span className="toggle-slider" />
+          </label>
         </div>
       </div>
 

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="savingsMapper">
+
+	<!-- 지정한 마감월(#{yearMonth}, 예: 2026-08)에 대해 "남은 예산 자동 저축" 대상 회원 조회.
+	     - SAVINGS_AUTO_FILL='Y', 예산/저축목표 금액 > 0, 아직 목표 미달
+	     - 목표일이 있으면 그 달 이후로는 제외 (목표일 지난 달부터 중단)
+	     - 이미 그 달을 적립한 회원은 제외 (SAVINGS_AUTO_LOG)
+	     - spent: 그 달의 OUT 거래 합계 (분석 제외 항목 제외) -->
+	<select id="findLeftoverCandidates" parameterType="string"
+	        resultType="com.suin.fincoach.savings.SavingsDao$LeftoverCandidate">
+		SELECT u.USER_ID AS userId,
+		       COALESCE(u.B_AMOUNT, 0) AS budget,
+		       COALESCE(u.SAVINGS_GOAL_AMOUNT, 0) AS goalAmount,
+		       COALESCE(u.SAVINGS_CURRENT_AMOUNT, 0) AS currentAmount,
+		       COALESCE(SUM(m.ORIGINAL_AMOUNT), 0) AS spent
+		FROM USERS u
+		LEFT JOIN MYTRANS m
+		       ON m.USER_ID = u.USER_ID
+		      AND m.TYPE = 'OUT'
+		      AND COALESCE(m.EXCLUDE_ANALYSIS, 'N') = 'N'
+		      AND m.TRANS_DATE &gt;= to_date(#{yearMonth} || '-01', 'YYYY-MM-DD')
+		      AND m.TRANS_DATE &lt;  (to_date(#{yearMonth} || '-01', 'YYYY-MM-DD') + INTERVAL '1 month')
+		WHERE u.STATUS = 'Y'
+		  AND u.SAVINGS_AUTO_FILL = 'Y'
+		  AND COALESCE(u.B_AMOUNT, 0) &gt; 0
+		  AND COALESCE(u.SAVINGS_GOAL_AMOUNT, 0) &gt; 0
+		  AND COALESCE(u.SAVINGS_CURRENT_AMOUNT, 0) &lt; u.SAVINGS_GOAL_AMOUNT
+		  AND (u.SAVINGS_GOAL_DATE IS NULL
+		       OR u.SAVINGS_GOAL_DATE &gt;= to_date(#{yearMonth} || '-01', 'YYYY-MM-DD'))
+		  AND NOT EXISTS (SELECT 1 FROM SAVINGS_AUTO_LOG l
+		                  WHERE l.USER_ID = u.USER_ID AND l.YEAR_MONTH = #{yearMonth})
+		GROUP BY u.USER_ID, u.B_AMOUNT, u.SAVINGS_GOAL_AMOUNT, u.SAVINGS_CURRENT_AMOUNT
+	</select>
+
+	<!-- 아직 적립 안 했으면 1행 insert하고 1 반환 (경합 대비 최종 멱등 가드). -->
+	<insert id="markAutoLog" parameterType="map">
+		INSERT INTO SAVINGS_AUTO_LOG (USER_ID, YEAR_MONTH, AMOUNT)
+		VALUES (#{userId}, #{yearMonth}, #{amount})
+		ON CONFLICT (USER_ID, YEAR_MONTH) DO NOTHING
+	</insert>
+
+	<!-- 저축액에 적립분을 더하되 목표 금액에서 cap. -->
+	<update id="addToSavings" parameterType="map">
+		UPDATE USERS
+		SET SAVINGS_CURRENT_AMOUNT = LEAST(SAVINGS_GOAL_AMOUNT,
+		                                   COALESCE(SAVINGS_CURRENT_AMOUNT, 0) + #{amount})
+		WHERE USER_ID = #{userId}
+	</update>
+
+</mapper>

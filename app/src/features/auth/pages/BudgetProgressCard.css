@@ -62,3 +62,15 @@
   font-weight: 700;
   color: var(--error-color);
 }
+
+.bp-projected {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.bp-projected b {
+  color: var(--income-color);
+  font-weight: 800;
+}

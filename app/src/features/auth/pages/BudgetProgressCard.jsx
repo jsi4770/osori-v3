@@ -6,6 +6,7 @@ function BudgetProgressCard({ user, monthlySpent }) {
   const savingsGoalAmount = Number(user?.savingsGoalAmount) || 0;
   const savingsCurrentAmount = Number(user?.savingsCurrentAmount) || 0;
   const savingsGoalDate = user?.savingsGoalDate;
+  const autoFill = user?.savingsAutoFill === "Y";
 
   if (!monthlyBudget && !savingsGoalAmount) return null;
 
@@ -23,6 +24,16 @@ function BudgetProgressCard({ user, monthlySpent }) {
     target.setHours(0, 0, 0, 0);
     return Math.round((target - today) / 86400000);
   })();
+
+  // "남은 예산 자동 저축"이 켜져 있을 때, 이번 달이 이대로 끝나면 다음 달에 적립될 예상액 (저장 X, 표시만)
+  const goalActive = savingsGoalAmount > 0 && (dDay == null || dDay >= 0);
+  const projectedSaving =
+    autoFill && goalActive && monthlyBudget > 0
+      ? Math.min(
+          Math.max(0, monthlyBudget - monthlySpent),
+          Math.max(0, savingsGoalAmount - savingsCurrentAmount)
+        )
+      : 0;
 
   return (
     <div className="bp-wrap">
@@ -60,6 +71,11 @@ function BudgetProgressCard({ user, monthlySpent }) {
           <div className="bp-bar-track">
             <div className="bp-bar-fill bp-savings" style={{ width: `${savingsPct}%` }} />
           </div>
+          {projectedSaving > 0 && (
+            <div className="bp-projected">
+              이번 달 이대로면 다음 달에 <b>+{projectedSaving.toLocaleString()}원</b> 자동 저축돼요
+            </div>
+          )}
         </div>
       )}
     </div>
