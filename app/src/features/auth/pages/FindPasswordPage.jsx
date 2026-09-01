@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./FindPasswordPage.module.css";
 import { authApi } from "../../../api/authApi";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN = 60;
+const CODE_TTL = 300; // 서버(app.mail.code-ttl-seconds)와 맞춤 — 5분
+
+const mmss = (s) =>
+  `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 export default function FindPasswordPage() {
   const navigate = useNavigate();
@@ -16,14 +20,17 @@ export default function FindPasswordPage() {
   const [serverMessage, setServerMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [cooldown, setCooldown] = useState(0);
-  const timerRef = useRef(null);
+  const [cooldown, setCooldown] = useState(0); // 재발송 쿨다운
+  const [expiresIn, setExpiresIn] = useState(0); // 인증코드 남은 유효시간
 
   useEffect(() => {
-    if (cooldown <= 0) return;
-    timerRef.current = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(timerRef.current);
-  }, [cooldown]);
+    if (step !== 2) return;
+    const id = setInterval(() => {
+      setCooldown((c) => (c > 0 ? c - 1 : 0));
+      setExpiresIn((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [step]);
 
   const sendCode = async () => {
     setError("");
@@ -40,6 +47,7 @@ export default function FindPasswordPage() {
       setStep(2);
       setCode("");
       setCooldown(RESEND_COOLDOWN);
+      setExpiresIn(CODE_TTL);
       setServerMessage(typeof data === "string" ? data : data?.message || "인증코드를 보냈습니다.");
     } catch (err) {
       setError(err?.data?.message || err?.data || "인증코드 발송에 실패했습니다.");
@@ -121,13 +129,21 @@ export default function FindPasswordPage() {
             autoComplete="one-time-code"
           />
           <div className={styles.hint} style={{ color: "var(--text-sub)", fontWeight: 700 }}>
-            {email}로 보냈어요 (가입된 계정인 경우). 5분 안에 입력해 주세요.
+            {email}로 보냈어요 (가입된 계정인 경우).<br />
+            {expiresIn > 0 ? (
+              <>
+                5분 안에 입력해 주세요.{" "}
+                <b style={{ color: "var(--primary-color)" }}>{mmss(expiresIn)}</b>
+              </>
+            ) : (
+              <span className={styles.error}>인증코드가 만료됐어요. ‘코드 다시 받기’를 눌러주세요.</span>
+            )}
           </div>
 
           {error && <div className={styles.error}>{error}</div>}
           {serverMessage && <div className={styles.ok}>{serverMessage}</div>}
 
-          <button className={styles.submitBtn} type="submit" disabled={loading}>
+          <button className={styles.submitBtn} type="submit" disabled={loading || expiresIn <= 0}>
             {loading ? "확인 중..." : "확인"}
           </button>
 
