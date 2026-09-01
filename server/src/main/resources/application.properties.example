@@ -64,6 +64,23 @@ webpush.vapid.public-key=${WEBPUSH_VAPID_PUBLIC:CHANGE_ME}
 webpush.vapid.private-key=${WEBPUSH_VAPID_PRIVATE:CHANGE_ME}
 webpush.vapid.subject=${WEBPUSH_VAPID_SUBJECT:mailto:you@example.com}
 
+# 이메일 본인인증 코드 발송 (Gmail SMTP)
+# MAIL_ENABLED=true / MAIL_USERNAME=발신 Gmail 주소 / MAIL_PASSWORD=Gmail 앱 비밀번호(2단계 인증 필요) 를 주입하면 켜진다.
+# 꺼져 있으면 실제 발송을 건너뛰고 인증코드를 서버 로그로만 출력한다(로컬 개발용).
+app.mail.enabled=${MAIL_ENABLED:false}
+app.mail.from=${MAIL_FROM:${MAIL_USERNAME:no-reply@osori.app}}
+app.mail.code-ttl-seconds=${MAIL_CODE_TTL:300}
+app.mail.resend-cooldown-seconds=${MAIL_RESEND_COOLDOWN:60}
+spring.mail.host=${MAIL_HOST:smtp.gmail.com}
+spring.mail.port=${MAIL_PORT:587}
+spring.mail.username=${MAIL_USERNAME:CHANGE_ME}
+spring.mail.password=${MAIL_PASSWORD:CHANGE_ME}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+
 # Logging
 logging.level.root=info
 logging.level.com.suin.fincoach.user=debug

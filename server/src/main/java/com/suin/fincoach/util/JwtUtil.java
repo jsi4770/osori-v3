@@ -40,6 +40,10 @@ public class JwtUtil {
 	@Value("${jwt.pwreset-expiration:600000}")
 	private long pwResetExpiration;
 
+	//이메일 인증 완료 토큰의 유효기간 (기본 30분) — 인증코드 확인 후 회원가입/재설정 폼 제출까지의 여유.
+	@Value("${jwt.email-verified-expiration:1800000}")
+	private long emailVerifiedExpiration;
+
     
 	//JWT 토큰에 디지털 서명을 하기 위한 암호화 키를 생성하는 메소드
 	private SecretKey getSignKey() {
@@ -119,6 +123,41 @@ public class JwtUtil {
 			return Integer.parseInt(claims.getSubject());
 		} catch (JwtException | NumberFormatException e) {
 			return -1;
+		}
+	}
+
+	// 이메일 본인인증 완료 토큰 생성. 인증코드 확인에 성공한 (email, purpose) 조합에 대해 발급한다.
+	// - subject: 인증된 이메일
+	// - purpose: "email:SIGNUP" / "email:RESET" 등 — 용도가 다른 토큰을 서로 못 쓰게 함
+	public String generateEmailVerifiedToken(String email, String purpose) {
+		Date now = new Date();
+		Date expiryDate = new Date(now.getTime() + emailVerifiedExpiration);
+
+		return Jwts.builder()
+					.setSubject(email)
+					.claim("purpose", "email:" + purpose)
+					.setIssuedAt(now)
+					.setExpiration(expiryDate)
+					.signWith(getSignKey())
+					.compact();
+	}
+
+	// 이메일 인증 토큰을 검증하고 인증된 이메일을 반환. 서명·만료·purpose 불일치면 null.
+	public String parseEmailVerifiedToken(String token, String expectedPurpose) {
+		try {
+			Claims claims = Jwts.parserBuilder()
+								.setSigningKey(getSignKey())
+								.build()
+								.parseClaimsJws(token)
+								.getBody();
+
+			if (!("email:" + expectedPurpose).equals(claims.get("purpose", String.class))) {
+				return null;
+			}
+
+			return claims.getSubject();
+		} catch (JwtException e) {
+			return null;
 		}
 	}
 

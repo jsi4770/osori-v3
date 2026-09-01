@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="emailVerificationMapper">
+
+	<insert id="insert" parameterType="Map">
+		INSERT INTO EMAIL_VERIFICATION (
+			ID, EMAIL, PURPOSE, CODE_HASH, EXPIRES_AT
+		) VALUES (
+			nextval('SEQ_EMAIL_VERIFICATION'),
+			#{email}, #{purpose}, #{codeHash}, #{expiresAt}
+		)
+	</insert>
+
+	<!-- 검증에 쓸 "지금 유효한" 코드 1건: 미사용 + 미만료 중 가장 최근 것 -->
+	<select id="findActive" parameterType="Map" resultType="EmailVerification">
+		SELECT ID, EMAIL, PURPOSE, CODE_HASH, EXPIRES_AT, CONSUMED, ATTEMPTS, CREATED_AT
+		FROM EMAIL_VERIFICATION
+		WHERE EMAIL = #{email}
+		  AND PURPOSE = #{purpose}
+		  AND CONSUMED = 'N'
+		  AND EXPIRES_AT > CURRENT_TIMESTAMP
+		ORDER BY ID DESC
+		LIMIT 1
+	</select>
+
+	<!-- 재발송 쿨다운 판정용: 소비/만료 여부와 무관하게 가장 최근 발송 1건 -->
+	<select id="findLatest" parameterType="Map" resultType="EmailVerification">
+		SELECT ID, EMAIL, PURPOSE, CODE_HASH, EXPIRES_AT, CONSUMED, ATTEMPTS, CREATED_AT
+		FROM EMAIL_VERIFICATION
+		WHERE EMAIL = #{email}
+		  AND PURPOSE = #{purpose}
+		ORDER BY ID DESC
+		LIMIT 1
+	</select>
+
+	<!-- 재발송/검증성공 시 이전 미사용 코드를 모두 무효화 -->
+	<update id="consumeAllFor" parameterType="Map">
+		UPDATE EMAIL_VERIFICATION
+		SET CONSUMED = 'Y'
+		WHERE EMAIL = #{email}
+		  AND PURPOSE = #{purpose}
+		  AND CONSUMED = 'N'
+	</update>
+
+	<update id="incrementAttempts" parameterType="int">
+		UPDATE EMAIL_VERIFICATION
+		SET ATTEMPTS = ATTEMPTS + 1
+		WHERE ID = #{id}
+	</update>
+
+	<update id="markConsumed" parameterType="int">
+		UPDATE EMAIL_VERIFICATION
+		SET CONSUMED = 'Y'
+		WHERE ID = #{id}
+	</update>
+
+</mapper>
