@@ -1,7 +1,8 @@
-/* 목록 카드: 화면 비율만큼 채우고, 그보다 항목이 많아지면 목록만 스크롤
-   (.info-card의 max-height:400px보다 우선 적용되도록 두 클래스를 함께 명시) */
+/* 목록 카드: 내부 스크롤 없이 내용만큼 세로로 늘어나고, 스크롤은 페이지(브라우저) 스크롤에 맡긴다.
+   (.info-card의 max-height:400px / overflow:hidden 보다 우선 적용되도록 두 클래스를 함께 명시) */
 .info-card.ftMainCard {
-  max-height: calc(100vh - 40px);
+  max-height: none;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
@@ -10,9 +11,6 @@
   display: flex;
   flex-direction: column;
   margin-top: 16px;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0; /* flex 자식이 내용 크기만큼 늘어나지 않고 스크롤되도록 */
 }
 
 .ftRow {
