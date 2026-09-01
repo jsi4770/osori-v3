@@ -8,6 +8,7 @@ import transApi from '../../api/transApi';
 import { fixedTransApi } from '../../api/fixedTransApi';
 import { fetchHolidays } from '../../api/holidayApi';
 import TransactionModal from '../auth/pages/TransactionModal';
+import { currencyMeta, isForeign } from '../../constants/currencies';
 import { FIXED_AUTO_MEMO } from '../Util/zScore';
 import { useFeedback } from '../../context/FeedbackContext';
 
@@ -77,6 +78,11 @@ function CalendarView({ currentDate, setCurrentDate }) {
           memo: t.memo || t.MEMO || '',
           excludeAnalysis: (t.excludeAnalysis || t.EXCLUDE_ANALYSIS) === 'Y' ? 'Y' : 'N',
           installmentId: t.installmentId ?? t.INSTALLMENT_ID ?? null,
+          currency: t.currency || t.CURRENCY || 'KRW',
+          fxAmount: t.fxAmount ?? t.FX_AMOUNT ?? null,
+          fxRate: t.fxRate ?? t.FX_RATE ?? null,
+          fxRateDate: t.fxRateDate ?? t.FX_RATE_DATE ?? null,
+          fxRateSource: t.fxRateSource ?? t.FX_RATE_SOURCE ?? null,
         }));
         setTransactions(mapped);
       })
@@ -215,6 +221,7 @@ function CalendarView({ currentDate, setCurrentDate }) {
   const handleSave = async (updated) => {
     if (!userId) { toast("로그인 정보가 없습니다.", { type: "error" }); return; }
     try {
+      const updForeign = updated.currency && updated.currency !== 'KRW';
       await transApi.updateTrans({
         transId: updated.id,
         title: updated.text,
@@ -226,6 +233,10 @@ function CalendarView({ currentDate, setCurrentDate }) {
         userId: Number(userId),
         isShared: 'N',
         excludeAnalysis: updated.excludeAnalysis === 'Y' ? 'Y' : 'N',
+        currency: updForeign ? updated.currency : 'KRW',
+        fxAmount: updForeign ? (updated.fxAmount ?? null) : null,
+        // 외화 내역은 모달의 금액칸(원화)이 편집 후 최종값 — 서버가 재환산하지 않도록 override.
+        krwOverride: updForeign ? true : undefined,
       });
       toast("수정되었습니다.", { type: "success" });
       setIsModalOpen(false);
@@ -370,6 +381,11 @@ function CalendarView({ currentDate, setCurrentDate }) {
                         style={{ color: item.type === 'IN' ? 'var(--income-color)' : 'var(--expense-color)' }}
                       >
                         {item.type === 'IN' ? '+' : '-'}{item.amount.toLocaleString()}원
+                        {isForeign(item.currency) && item.fxAmount != null && (
+                          <span className="ledger-fx-badge">
+                            {currencyMeta(item.currency).flag} {currencyMeta(item.currency).symbol}{Number(item.fxAmount).toLocaleString()}
+                          </span>
+                        )}
                       </div>
                       <div className="ledger-item-actions">
                         <button type="button" onClick={(e) => openEdit(e, item)}>수정</button>

@@ -7,6 +7,8 @@ import installmentApi from '../../../api/installmentApi';
 import { useAuth } from '../../../context/AuthContext';
 import { IconReceipt, IconArrowUp } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
+import { CURRENCIES, DEFAULT_CURRENCY, currencyMeta, isForeign } from '../../../constants/currencies';
+import fxApi from '../../../api/fxApi';
 import { useFeedback } from '../../../context/FeedbackContext';
 import useCategories from '../../../hooks/useCategories';
 
@@ -49,12 +51,21 @@ const ExpenseForm = () => {
       transDate: '',
       title: '',
       originalAmount: '',
+      currency: DEFAULT_CURRENCY, // 'KRW'면 원화, 그 외면 originalAmount는 "외화 금액"
       category: (startAsIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES)[0],
       memo: '',
       excludeAnalysis: 'N',
       installmentMonths: '' // 지출에서만 사용 — 2 이상이면 할부로 등록
     };
   });
+
+  // 외화 입력 시 거래일 기준 환율(KRW per 1단위)과 그 메타. 원화면 null.
+  const [fxRate, setFxRate] = useState(null);
+  const [fxInfo, setFxInfo] = useState(null); // { rateDate, source, stale }
+  const [fxLoading, setFxLoading] = useState(false);
+  // 환산 원화값을 사용자가 직접 지정(카드 명세서 반영 등)하는 모드
+  const [krwOverride, setKrwOverride] = useState(false);
+  const [krwOverrideValue, setKrwOverrideValue] = useState('');
 
   const apiType = formData.type === '수입' ? 'IN' : 'OUT';
   const [currentCategories] = useCategories(user?.userId, apiType);
@@ -69,6 +80,30 @@ const ExpenseForm = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId, formData.type]);
 
+  // 통화나 거래일이 바뀌면 환율을 다시 불러온다(원화면 초기화). 입력 중 과도한 호출을 막으려 200ms 디바운스.
+  useEffect(() => {
+    const foreign = isForeign(formData.currency);
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      if (!foreign) {
+        setFxRate(null);
+        setFxInfo(null);
+        return;
+      }
+      setFxLoading(true);
+      fxApi.rate(formData.currency, formData.transDate || getToday())
+        .then((data) => {
+          if (cancelled) return;
+          setFxRate(Number(data?.rate) || null);
+          setFxInfo({ rateDate: data?.rateDate, source: data?.source, stale: !!data?.stale });
+        })
+        .catch(() => { if (!cancelled) { setFxRate(null); setFxInfo(null); } })
+        .finally(() => { if (!cancelled) setFxLoading(false); });
+    }, 200);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [formData.currency, formData.transDate]);
+
   const handleTypeToggle = (type) => {
     const newCategories = type === '수입' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
     setFormData({
@@ -78,9 +113,12 @@ const ExpenseForm = () => {
       category: newCategories[0],
       title: '',
       originalAmount: '',
+      currency: DEFAULT_CURRENCY,
       memo: '',
       installmentMonths: ''
     });
+    setKrwOverride(false);
+    setKrwOverrideValue('');
     if (type === '수입') setPreviewUrl(null);
     // 탭을 바꾸면 항상 AI 빠른 입력 화면부터 다시 보여준다(수입/지출 둘 다 지원).
     setShowManualEntry(false);
@@ -175,6 +213,11 @@ const ExpenseForm = () => {
 
   const today = getToday();
 
+  // 외화 입력 시 환산 원화값(미리보기/저장용). fxRate가 아직 없으면 0.
+  const foreignAmountNum = Number(formData.originalAmount) || 0;
+  const computedKrw = fxRate ? Math.round(foreignAmountNum * fxRate) : 0;
+  const effectiveKrw = krwOverride ? (Number(krwOverrideValue) || 0) : computedKrw;
+
   // 서버 왕복 전에 로컬에서 즉시 보여주는 낙관적 금액 미리보기 — 정식 파싱 결과가 아니라
   // "이 정도 금액으로 인식되고 있어요"라는 느낌만 먼저 준다(체감 지연 최소화 목적).
   const previewAmountFromText = (text) => {
@@ -208,8 +251,9 @@ const ExpenseForm = () => {
   const saveParsedExpense = async (parsed, apiType) => {
     try {
       const title = parsed.merchant || parsed.memo || nlText;
-      if (parsed.installmentMonths > 1) {
-        // "3개월 할부"처럼 인식되면 단건 저장 대신 N개월치 회차를 한 번에 등록
+      const parsedForeign = isForeign(parsed.currency);
+      if (parsed.installmentMonths > 1 && !parsedForeign) {
+        // "3개월 할부"처럼 인식되면 단건 저장 대신 N개월치 회차를 한 번에 등록 (외화 할부는 미지원 → 단건 저장)
         await installmentApi.register({
           userId: user?.userId,
           title,
@@ -224,7 +268,10 @@ const ExpenseForm = () => {
           type: apiType,
           transDate: parsed.date,
           title,
+          // 외화면 서버가 fxAmount+거래일 환율로 originalAmount(원화)를 재계산한다. parsed.amount는 표시용.
           originalAmount: parsed.amount,
+          currency: parsedForeign ? parsed.currency : 'KRW',
+          fxAmount: parsedForeign ? parsed.fxAmount : undefined,
           category: parsed.category,
           memo: parsed.memo || nlText,
           excludeAnalysis: 'N',
@@ -252,16 +299,21 @@ const ExpenseForm = () => {
   const applyParsedToManualForm = (parsed, apiType) => {
     const isIncome = apiType === 'IN';
     const categories = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    const parsedForeign = isForeign(parsed.currency);
     setFormData(prev => ({
       ...prev,
       type: isIncome ? '수입' : '지출',
       transDate: parsed.date || today,
       title: parsed.merchant || parsed.memo || nlText,
-      originalAmount: parsed.amount || '',
+      // 외화면 수동 폼의 금액칸엔 "외화 금액"을, 통화 셀렉트엔 해당 통화를 채운다.
+      originalAmount: (parsedForeign ? parsed.fxAmount : parsed.amount) || '',
+      currency: parsedForeign ? parsed.currency : DEFAULT_CURRENCY,
       category: categories.includes(parsed.category) ? parsed.category : '기타',
       memo: parsed.memo || nlText,
-      installmentMonths: parsed.installmentMonths || '',
+      installmentMonths: parsedForeign ? '' : (parsed.installmentMonths || ''),
     }));
+    setKrwOverride(false);
+    setKrwOverrideValue('');
     setShowManualEntry(true);
   };
 
@@ -283,10 +335,17 @@ const ExpenseForm = () => {
 
       if (result.needsConfirmation) {
         const merchantPart = result.merchant ? `${result.merchant} · ` : '';
+        const resultForeign = isForeign(result.currency);
+        const fxLine = resultForeign
+          ? `${currencyMeta(result.currency).symbol}${Number(result.fxAmount).toLocaleString()} ${result.currency}` +
+            ` → ${Number(result.amount).toLocaleString()}원\n` +
+            `(1 ${result.currency} = ${Number(result.fxRate).toLocaleString()}원` +
+            `${result.fxStale ? ', 추정' : ''} · ${result.fxRateDate} 기준)\n`
+          : '';
         const summary = result.installmentMonths > 1
           ? `${merchantPart}${result.category} · ${Number(result.amount).toLocaleString()}원 · ${result.installmentMonths}개월 할부\n` +
             `${result.date}부터 매달 나눠서 ${result.installmentMonths}건으로 저장할까요?`
-          : `${merchantPart}${result.category} · ${Number(result.amount).toLocaleString()}원\n` +
+          : `${merchantPart}${result.category}\n${fxLine}${resultForeign ? '' : `${Number(result.amount).toLocaleString()}원\n`}` +
             `${result.date}로 저장할까요?`;
         const ok = await confirm(summary, { confirmLabel: '저장', cancelLabel: '수정' });
         if (ok) {
@@ -320,8 +379,25 @@ const ExpenseForm = () => {
       return;
     }
 
+    const foreign = isForeign(formData.currency);
+
+    if (foreign) {
+      if (!fxRate) {
+        toast("환율을 불러오는 중이에요. 잠시 후 다시 시도해주세요.", { type: "error" });
+        return;
+      }
+      if (krwOverride && !(Number(krwOverrideValue) > 0)) {
+        toast("직접 입력한 원화 금액을 확인해주세요.", { type: "error" });
+        return;
+      }
+    }
+
     const installmentMonths = Number(formData.installmentMonths);
-    const isInstallment = formData.type === '지출' && Number.isInteger(installmentMonths) && installmentMonths > 1;
+    const isInstallment = !foreign && formData.type === '지출' && Number.isInteger(installmentMonths) && installmentMonths > 1;
+    if (formData.type === '지출' && foreign && Number.isInteger(installmentMonths) && installmentMonths > 1) {
+      toast("외화 거래는 할부로 등록할 수 없어요. 개월수를 비워주세요.", { type: "error" });
+      return;
+    }
     if (isInstallment) {
       try {
         await installmentApi.register({
@@ -346,7 +422,12 @@ const ExpenseForm = () => {
       await transApi.myTransSave({
         transDate: formData.transDate,
         title: formData.title,
-        originalAmount: formData.originalAmount,
+        // 외화면 서버가 fxAmount + 거래일 환율로 originalAmount(원화)를 확정한다.
+        // krwOverride면 여기서 보낸 원화값을 그대로 저장한다.
+        originalAmount: foreign ? effectiveKrw : formData.originalAmount,
+        currency: foreign ? formData.currency : 'KRW',
+        fxAmount: foreign ? Number(formData.originalAmount) : undefined,
+        krwOverride: foreign ? krwOverride : undefined,
         category: formData.category,
         memo: formData.memo,
         excludeAnalysis: formData.excludeAnalysis,
@@ -471,8 +552,71 @@ const ExpenseForm = () => {
                   }
                 }} required /></div>
               <div className="input-group"><label className="input-label">{formData.type === '수입' ? '입금처 / 내용' : '거래처 / 가게명'}</label><input type="text" name="title" className="input-field" placeholder={formData.type === '수입' ? "예: 회사, 부모님" : "예: 스타벅스, 식당"} value={formData.title} onChange={handleChange} required /></div>
-              <div className="input-group"><label className="input-label">금액</label><div className="amount-wrapper"><input type="number" name="originalAmount" className="input-field" placeholder="0" value={formData.originalAmount} onChange={handleChange} min="0" required /><span className="currency-unit">원</span></div></div>
-              {formData.type === '지출' && (
+              <div className="input-group">
+                <label className="input-label">금액</label>
+                <div className="amount-wrapper">
+                  <input type="number" name="originalAmount" className="input-field" placeholder="0" value={formData.originalAmount} onChange={handleChange} min="0" step="any" required />
+                  <select
+                    name="currency"
+                    className="currency-select"
+                    value={formData.currency}
+                    onChange={handleChange}
+                    aria-label="통화 선택"
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.code === 'KRW' ? '원' : `${c.symbol} ${c.code}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {isForeign(formData.currency) && (
+                  <div className="fx-preview">
+                    {fxLoading && !fxRate ? (
+                      <span className="fx-preview-loading">환율 불러오는 중…</span>
+                    ) : fxRate ? (
+                      <>
+                        <div className="fx-preview-main">
+                          ≈ <strong>{effectiveKrw.toLocaleString()}원</strong>
+                          {krwOverride && <span className="fx-preview-tag">직접 입력</span>}
+                          {!krwOverride && fxInfo?.stale && <span className="fx-preview-tag fx-preview-tag-warn">추정</span>}
+                        </div>
+                        <div className="fx-preview-sub">
+                          1 {formData.currency} = {fxRate.toLocaleString()}원
+                          {fxInfo?.rateDate ? ` · ${fxInfo.rateDate} 기준` : ''}
+                        </div>
+                        <label className="fx-override-toggle">
+                          <input
+                            type="checkbox"
+                            checked={krwOverride}
+                            onChange={(e) => {
+                              setKrwOverride(e.target.checked);
+                              if (e.target.checked && !krwOverrideValue) setKrwOverrideValue(String(computedKrw || ''));
+                            }}
+                          />
+                          환산 금액을 직접 입력 (카드 명세서 반영 등)
+                        </label>
+                        {krwOverride && (
+                          <div className="amount-wrapper">
+                            <input
+                              type="number"
+                              className="input-field"
+                              placeholder="0"
+                              value={krwOverrideValue}
+                              onChange={(e) => setKrwOverrideValue(e.target.value)}
+                              min="0"
+                            />
+                            <span className="currency-unit">원</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <span className="fx-preview-loading">환율을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              {formData.type === '지출' && !isForeign(formData.currency) && (
                 <div className="input-group">
                   <label className="input-label">할부 개월수</label>
                   <input

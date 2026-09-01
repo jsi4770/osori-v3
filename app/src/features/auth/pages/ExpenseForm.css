@@ -426,7 +426,7 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-.amount-wrapper { position: relative; display: flex; align-items: center; }
+.amount-wrapper { position: relative; display: flex; align-items: center; gap: 8px; }
 .currency-unit {
   position: absolute;
   right: 20px;
@@ -434,6 +434,58 @@ input[type="number"] {
   color: var(--text-weak);
   pointer-events: none;
 }
+
+/* 통화 선택 (금액칸 옆) */
+.currency-select {
+  flex: 0 0 auto;
+  min-width: 96px;
+  padding: 0 10px;
+  height: 44px;
+  border: 1px solid var(--border, #d8dbe0);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: var(--text, #1f2430);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* 외화 환산 미리보기 */
+.fx-preview {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-weak, #f4f6f9);
+  border: 1px solid var(--border, #e3e6eb);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fx-preview-loading { color: var(--text-weak); font-size: 0.88rem; }
+.fx-preview-main { font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+.fx-preview-main strong { font-size: 1.15rem; }
+.fx-preview-sub { color: var(--text-weak); font-size: 0.82rem; }
+.fx-preview-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent-weak, #e6efff);
+  color: var(--accent, #2f6bff);
+}
+.fx-preview-tag-warn {
+  background: #fff1e0;
+  color: #b26a00;
+}
+.fx-override-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  color: var(--text-sub, #5b6270);
+  cursor: pointer;
+  margin-top: 2px;
+}
+.fx-override-toggle input { width: 15px; height: 15px; }
 
 textarea.input-field {
   height: 120px;

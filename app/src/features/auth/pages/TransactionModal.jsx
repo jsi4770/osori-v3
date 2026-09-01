@@ -3,6 +3,7 @@ import styles from "./MyAccountBook.module.css";
 import { useAuth } from "../../../context/AuthContext";
 import { useFeedback } from "../../../context/FeedbackContext";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../../../constants/categories";
+import { currencyMeta, isForeign } from "../../../constants/currencies";
 import useCategories from "../../../hooks/useCategories";
 
 // 가계부 내역 보기/수정/삭제 공용 모달 (가계부·캘린더뷰에서 공유)
@@ -13,6 +14,7 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
 
   const [formData, setFormData] = useState({
     text: "", amount: 0, date: "", category: "기타", memo: "", type: "OUT", excludeAnalysis: "N",
+    currency: "KRW", fxAmount: null, fxRate: null, fxRateDate: null, fxRateSource: null,
   });
 
   const [currentCategories] = useCategories(user?.userId, formData.type);
@@ -28,9 +30,16 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
         memo: transaction.memo || "",
         type: transType,
         excludeAnalysis: transaction.excludeAnalysis === "Y" ? "Y" : "N",
+        currency: transaction.currency || "KRW",
+        fxAmount: transaction.fxAmount ?? null,
+        fxRate: transaction.fxRate ?? null,
+        fxRateDate: transaction.fxRateDate ?? null,
+        fxRateSource: transaction.fxRateSource ?? null,
       });
     }
   }, [transaction]);
+
+  const foreign = isForeign(formData.currency);
 
   if (!isOpen) return null;
 
@@ -95,8 +104,18 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
                 <input type="text" name="text" className={styles["modal-input"]} value={formData.text} onChange={handleChange} readOnly={isViewMode} />
               </div>
               <div>
-                <label className={styles["modal-label"]}>금액</label>
+                <label className={styles["modal-label"]}>금액{foreign ? " (원화)" : ""}</label>
                 <input type="number" name="amount" className={styles["modal-input"]} value={formData.amount} onChange={handleChange} readOnly={isViewMode} min="0" />
+                {foreign && (
+                  <div style={{ marginTop: 6, fontSize: "0.8rem", color: "var(--text-weak)", lineHeight: 1.5 }}>
+                    원본 {currencyMeta(formData.currency).symbol}
+                    {Number(formData.fxAmount ?? 0).toLocaleString()} {formData.currency}
+                    {formData.fxRate ? ` · 1 ${formData.currency} = ${Number(formData.fxRate).toLocaleString()}원` : ""}
+                    {formData.fxRateDate ? ` (${formData.fxRateDate} 기준)` : ""}
+                    {formData.fxRateSource === "fallback" ? " · 추정" : ""}
+                    {!isViewMode && <><br />금액칸을 고치면 그 원화 금액으로 저장돼요 (카드 명세서 반영 등).</>}
+                  </div>
+                )}
               </div>
               <div>
                 <label className={styles["modal-label"]}>카테고리</label>
@@ -137,7 +156,10 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
                 {isViewMode ? "닫기" : "취소"}
               </button>
               {!isViewMode && (
-                <button className={`${styles["modal-btn"]} ${styles.confirm}`} onClick={() => onSave({ ...transaction, ...formData })}>수정</button>
+                <button
+                  className={`${styles["modal-btn"]} ${styles.confirm}`}
+                  onClick={() => onSave({ ...transaction, ...formData, krwOverride: foreign })}
+                >수정</button>
               )}
             </div>
           </>

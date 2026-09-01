@@ -10,6 +10,7 @@ import transApi from "../../../api/transApi";
 import ExpenseChart from "./ExpenseChart";
 import MonthlyTrendChart from "./MonthlyTrendChart";
 import { maybeNotifyBudgetExceeded } from "../../Util/budgetLocalAlert";
+import { currencyMeta, isForeign } from "../../../constants/currencies";
 
 const MyPage = () => {
   const { user } = useAuth();
@@ -70,6 +71,8 @@ const MyPage = () => {
             category: item.category || item.CATEGORY || "기타",
             memo: item.memo || item.MEMO || "",
             excludeAnalysis: (item.excludeAnalysis || item.EXCLUDE_ANALYSIS) === "Y" ? "Y" : "N",
+            currency: item.currency || item.CURRENCY || "KRW",
+            fxAmount: item.fxAmount ?? item.FX_AMOUNT ?? null,
           };
         });
         // 할부로 미리 생성된 미래 회차는 아직 실제로 지출된 게 아니므로, 홈 화면의 모든 지출 통계
@@ -185,7 +188,14 @@ const MyPage = () => {
                       <span className="recent-expense-name">{t.text}</span>
                       <span className="recent-expense-date">{t.date}</span>
                     </div>
-                    <span className="recent-expense-amount">{Math.abs(t.amount).toLocaleString()}원</span>
+                    <span className="recent-expense-amount">
+                      {Math.abs(t.amount).toLocaleString()}원
+                      {isForeign(t.currency) && t.fxAmount != null && (
+                        <span style={{ marginLeft: 6, fontSize: "0.72rem", fontWeight: 700, color: "var(--text-weak)" }}>
+                          {currencyMeta(t.currency).flag} {currencyMeta(t.currency).symbol}{Number(t.fxAmount).toLocaleString()}
+                        </span>
+                      )}
+                    </span>
                   </li>
                 ))
               ) : (
