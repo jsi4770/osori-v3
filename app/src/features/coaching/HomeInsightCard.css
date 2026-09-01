@@ -21,7 +21,7 @@
   width: 100%;
   height: auto;
   display: flex;
-  gap: 10px;
+  gap: 2px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -41,7 +41,7 @@
   color: var(--text-sub);
   white-space: normal; /* 긴 문구가 잘리지 않고 줄바꿈되도록 */
   overflow: visible;
-  padding: 6px 4px;
+  padding: 1px 4px;
   word-break: keep-all;
 }
 
