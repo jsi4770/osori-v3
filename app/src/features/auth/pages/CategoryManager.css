@@ -2,27 +2,155 @@
    잘려 보이므로, ProfileSettings.css의 .ps-account-card와 동일하게 오버라이드한다. */
 .cm-card {
   padding: 20px 26px;
-  gap: 16px;
+  gap: 14px;
   max-height: none;
   overflow: visible;
 }
 
 .cm-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
 }
 
 .cm-header-text {
   min-width: 0;
 }
 
+/* 톱니바퀴 버튼: 제목 오른쪽에서 관리 모달을 여는 진입점 */
+.cm-gear-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface);
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.cm-gear-btn:hover {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  background: var(--surface-subtle);
+}
+
+.cm-gear-btn:active {
+  transform: rotate(35deg);
+}
+
+/* 지출/수입 미리보기 전환 세그먼트 */
+.cm-preview-seg {
+  align-self: flex-start;
+}
+
+/* 지금 켜져 있는 카테고리들을 알약으로 두세 줄 나열하는 박스 */
+.cm-active-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.cm-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cm-chip-custom {
+  border-color: transparent;
+  background: var(--focus-ring);
+  color: var(--primary-color);
+}
+
+.cm-empty {
+  color: var(--text-weak);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* ── 관리 모달 ── */
+.cm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.cm-modal {
+  width: 100%;
+  max-width: 460px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-3);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cm-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cm-modal-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--text-strong);
+}
+
+.cm-modal-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-subtle);
+  color: var(--text-sub);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cm-modal-close:hover {
+  color: var(--text-main);
+}
+
+.cm-modal-seg {
+  align-self: stretch;
+  justify-content: center;
+}
+
 .cm-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  max-height: 46vh;
+  overflow-y: auto;
 }
 
 .cm-row {
@@ -70,6 +198,7 @@
 
 .cm-add-row .ps-input {
   flex: 1;
+  min-width: 0;
 }
 
 .cm-add-btn {
@@ -90,11 +219,4 @@
 .cm-add-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-@media (max-width: 980px) {
-  .cm-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
 }
