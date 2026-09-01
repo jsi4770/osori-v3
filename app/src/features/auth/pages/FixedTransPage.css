@@ -13,9 +13,9 @@
   margin-top: 16px;
 }
 
-/* 제목 아래 작게 붙는 고정지출 합계 — 눈에 안 띄게 옅은 회색, 얇은 글씨 */
+/* 제목 아래 작게 붙는 고정지출 합계 — 눈에 안 띄게 옅은 회색, 얇은 글씨. 제목에 바짝 붙임 */
 .ftTotal {
-  margin-top: 4px;
+  margin-top: 2px;
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-weak);
@@ -24,10 +24,10 @@
 
 .ftRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* 금액/버튼을 이름줄 높이에 맞춰 위로 */
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 0;
+  gap: 10px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -40,13 +40,13 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px; /* 이름줄 ↔ 카테고리/등록일 을 살짝 띄움 */
 }
 
 .ftRowName {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -56,7 +56,7 @@
 }
 
 .ftName {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   color: var(--text-strong);
   white-space: nowrap;
@@ -64,31 +64,31 @@
   text-overflow: ellipsis;
 }
 
-/* 카테고리/등록일을 항상 각자 한 줄씩(2줄)로 고정 — 텍스트 길이에 따라
-   한 줄/두 줄이 오락가락하던 것을 방지 */
+/* 카테고리·등록일: 한 줄에 나란히(좁으면 자동 줄바꿈) — 2줄 고정보다 항목 높이가 낮아짐 */
 .ftRowSub {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  font-size: 12.5px;
   color: var(--text-weak);
 }
 
 .ftAmount {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 900;
   color: var(--text-strong);
   white-space: nowrap;
+  margin-top: 1px; /* 이름줄과 시각적으로 정렬 */
 }
 
-/* 액션 영역: 아래로 안 내려가게 고정 */
+/* 액션 영역: 아래로 안 내려가게 고정, 예약 폭 없이 버튼 크기만큼만 */
 .ftRowActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   white-space: nowrap;
-  flex: 0 0 auto; /* 줄어들면서 아래로 밀리지 않게 */
-  min-width: 120px;
+  flex: 0 0 auto;
+  min-width: 0;
   justify-content: flex-end;
 }
 
@@ -150,7 +150,7 @@
   line-height: 1;
 }
 
-/* 리스트 '수정/삭제' 버튼: 같은 위치 유지 + 한 줄 고정 */
+/* 리스트 '수정/삭제' 버튼: 한 줄 고정 + 살짝 작게 */
 .ftBtn {
   flex: 0 0 auto;
   display: inline-flex;
@@ -158,14 +158,14 @@
   justify-content: center;
   white-space: nowrap;
 
-  height: 34px;
-  padding: 0 12px;
+  height: 30px;
+  padding: 0 10px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-main);
 
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
 
