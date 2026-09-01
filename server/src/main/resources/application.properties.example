@@ -64,24 +64,15 @@ webpush.vapid.public-key=${WEBPUSH_VAPID_PUBLIC:CHANGE_ME}
 webpush.vapid.private-key=${WEBPUSH_VAPID_PRIVATE:CHANGE_ME}
 webpush.vapid.subject=${WEBPUSH_VAPID_SUBJECT:mailto:you@example.com}
 
-# 이메일 본인인증 코드 발송 (Gmail SMTP)
-# MAIL_ENABLED=true / MAIL_USERNAME=발신 Gmail 주소 / MAIL_PASSWORD=Gmail 앱 비밀번호(2단계 인증 필요) 를 주입하면 켜진다.
+# 이메일 본인인증 코드 발송 (Brevo HTTP API — Railway가 SMTP 아웃바운드를 막으므로 HTTPS API 사용)
+# MAIL_ENABLED=true / BREVO_API_KEY=Brevo API 키 / MAIL_FROM=Brevo에서 인증한 발신 주소 를 주입하면 켜진다.
 # 꺼져 있으면 실제 발송을 건너뛰고 인증코드를 서버 로그로만 출력한다(로컬 개발용).
 app.mail.enabled=${MAIL_ENABLED:false}
-app.mail.from=${MAIL_FROM:${MAIL_USERNAME:no-reply@osori.app}}
+app.mail.from=${MAIL_FROM:no-reply@osori.app}
+app.mail.from-name=${MAIL_FROM_NAME:오소리}
 app.mail.code-ttl-seconds=${MAIL_CODE_TTL:300}
 app.mail.resend-cooldown-seconds=${MAIL_RESEND_COOLDOWN:60}
-spring.mail.host=${MAIL_HOST:smtp.gmail.com}
-spring.mail.port=${MAIL_PORT:587}
-spring.mail.username=${MAIL_USERNAME:CHANGE_ME}
-spring.mail.password=${MAIL_PASSWORD:CHANGE_ME}
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
-spring.mail.properties.mail.smtp.connectiontimeout=5000
-spring.mail.properties.mail.smtp.timeout=5000
-spring.mail.properties.mail.smtp.writetimeout=5000
-# 메일 연결성은 헬스체크에서 제외 (미설정/차단 시 /actuator/health가 DOWN이 되어 배포가 막힘)
-management.health.mail.enabled=false
+brevo.api-key=${BREVO_API_KEY:CHANGE_ME}
 
 # Logging
 logging.level.root=info
