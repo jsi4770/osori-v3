@@ -463,6 +463,14 @@ function ProfileSettings() {
                 </div>
               )}
 
+              {user?.loginType === 'KAKAO' ? (
+                <div className="ps-field">
+                  <label className="ps-label">비밀번호</label>
+                  <div className="ps-help">
+                    카카오 계정으로 로그인 중이에요. 비밀번호는 카카오에서 관리되며 이 화면에서는 변경할 수 없어요.
+                  </div>
+                </div>
+              ) : (
               <div className="ps-field">
                 <div className="ps-row-between">
                   <label className="ps-label">비밀번호</label>
@@ -541,6 +549,7 @@ function ProfileSettings() {
                   </div>
                 )}
               </div>
+              )}
             </div>
 
             <div className="ps-actions ps-actions-in-card">
