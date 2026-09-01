@@ -7,6 +7,7 @@ import installmentApi from '../../../api/installmentApi';
 import { useAuth } from '../../../context/AuthContext';
 import { IconReceipt, IconArrowUp } from '../../../components/icons';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../constants/categories';
+import { CategoryIcon } from '../../../components/icons/categoryIcons';
 import { CURRENCIES, DEFAULT_CURRENCY, currencyMeta, isForeign } from '../../../constants/currencies';
 import fxApi from '../../../api/fxApi';
 import { useFeedback } from '../../../context/FeedbackContext';
@@ -524,54 +525,65 @@ const ExpenseForm = () => {
 
             {formData.type === '지출' && (
               <div
-                className="ocr-upload-area"
+                className={`ocr-strip ${previewUrl ? 'has-preview' : ''}`}
                 style={isLoading ? { pointerEvents: 'none', opacity: 0.6 } : undefined}
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
                 onClick={() => !isLoading && fileInputRef.current.click()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isLoading) fileInputRef.current.click(); }}
               >
                 {previewUrl ? (
                   <>
-                    <img src={previewUrl} alt="Receipt Preview" className="preview-image" />
-                    <div className="re-upload-overlay"><span>다시 올리기</span></div>
+                    <img src={previewUrl} alt="업로드한 영수증 미리보기" className="ocr-strip-thumb" />
+                    <span className="ocr-strip-text">영수증 인식됨 · 다시 올리기</span>
                   </>
                 ) : (
-                  <><div className="ocr-icon"><IconReceipt size={48} /></div><p className="ocr-text">영수증을 여기로 끌어오거나 클릭하세요</p></>
+                  <>
+                    <IconReceipt size={20} />
+                    <span className="ocr-strip-text">영수증으로 자동 채우기</span>
+                    <span className="ocr-strip-hint">사진 선택 또는 드래그</span>
+                  </>
                 )}
                 <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={onFileInput} />
               </div>
             )}
 
             <form className="expense-manual-form" onSubmit={handleSubmit}>
-              <div className="input-group"><label className="input-label">날짜</label><input type="date" name="transDate" className="input-field" value={formData.transDate} onChange={handleChange} max={today}
-                onBlur={(e) => {
-                  const val = e.target.value;
-                  if (!val) return;
-                  if (val > today) {
-                    toast("미래 날짜는 등록할 수 없습니다.", { type: "error" });
-                    setFormData(prev => ({ ...prev, transDate: today }));
-                  }
-                }} required /></div>
-              <div className="input-group"><label className="input-label">{formData.type === '수입' ? '입금처 / 내용' : '거래처 / 가게명'}</label><input type="text" name="title" className="input-field" placeholder={formData.type === '수입' ? "예: 회사, 부모님" : "예: 스타벅스, 식당"} value={formData.title} onChange={handleChange} required /></div>
-              <div className="input-group">
-                <label className="input-label">금액</label>
-                <div className="amount-wrapper">
-                  <input type="number" name="originalAmount" className="input-field" placeholder="0" value={formData.originalAmount} onChange={handleChange} min="0" step="any" required />
-                  <select
-                    name="currency"
-                    className="currency-select"
-                    value={formData.currency}
-                    onChange={handleChange}
-                    aria-label="통화 선택"
-                  >
-                    {CURRENCIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.code === 'KRW' ? '원' : `${c.symbol} ${c.code}`}
-                      </option>
-                    ))}
-                  </select>
+              {/* 금액 히어로 — 통화 선택 + 큰 숫자 입력 */}
+              <div className="amount-hero">
+                <div className="cur-seg" role="group" aria-label="통화 선택">
+                  {CURRENCIES.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      className={`cur-seg-btn ${formData.currency === c.code ? 'is-active' : ''}`}
+                      aria-pressed={formData.currency === c.code}
+                      onClick={() => setFormData(prev => ({ ...prev, currency: c.code }))}
+                    >
+                      <span className="cur-seg-sym">{c.symbol}</span>
+                      {c.code === 'KRW' ? '원' : c.code}
+                    </button>
+                  ))}
                 </div>
+                <div className="amount-hero-row">
+                  <span className="amount-hero-sym">{currencyMeta(formData.currency).symbol}</span>
+                  <input
+                    type="number"
+                    name="originalAmount"
+                    className="amount-hero-input"
+                    placeholder="0"
+                    value={formData.originalAmount}
+                    onChange={handleChange}
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    required
+                  />
+                </div>
+
                 {isForeign(formData.currency) && (
                   <div className="fx-preview">
                     {fxLoading && !fxRate ? (
@@ -618,24 +630,65 @@ const ExpenseForm = () => {
                   </div>
                 )}
               </div>
+
+              {/* 카테고리 — 아이콘 타일 그리드 */}
+              <div className="cat-field">
+                <span className="input-label">카테고리</span>
+                <div className="cat-grid" role="group" aria-label="카테고리 선택">
+                  {currentCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      className={`cat-tile ${formData.category === cat ? 'is-active' : ''}`}
+                      aria-pressed={formData.category === cat}
+                      onClick={() => setFormData(prev => ({ ...prev, category: cat }))}
+                    >
+                      <span className="cat-tile-ico"><CategoryIcon name={cat} size={22} /></span>
+                      <span className="cat-tile-label">{cat}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">{formData.type === '수입' ? '입금처 / 내용' : '거래처 / 가게명'}</label>
+                <input type="text" name="title" className="input-field" placeholder={formData.type === '수입' ? "예: 회사, 부모님" : "예: 스타벅스, 식당"} value={formData.title} onChange={handleChange} required />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">날짜</label>
+                <input type="date" name="transDate" className="input-field" value={formData.transDate} onChange={handleChange} max={today}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (!val) return;
+                    if (val > today) {
+                      toast("미래 날짜는 등록할 수 없습니다.", { type: "error" });
+                      setFormData(prev => ({ ...prev, transDate: today }));
+                    }
+                  }} required />
+              </div>
+
               {formData.type === '지출' && !isForeign(formData.currency) && (
                 <div className="input-group">
-                  <label className="input-label">할부 개월수</label>
+                  <label className="input-label">할부 개월수 <span className="input-label-hint">일시불이면 비워두세요</span></label>
                   <input
                     type="number"
                     name="installmentMonths"
                     className="input-field"
-                    placeholder="일시불이면 비워두세요"
+                    placeholder="2 이상"
                     value={formData.installmentMonths}
                     onChange={handleChange}
                     min="2"
                   />
                 </div>
               )}
-              <div className="input-group"><label className="input-label">카테고리</label><select name="category" className="input-field" value={formData.category} onChange={handleChange}>{currentCategories.map((cat, index) => <option key={index} value={cat}>{cat}</option>)}</select></div>
-              <div className="input-group"><label className="input-label">메모</label><textarea name="memo" className="input-field" placeholder="내용을 입력하세요 (선택)" value={formData.memo} onChange={handleChange}></textarea></div>
 
-              <div className="input-group exclude-toggle-row">
+              <div className="input-group">
+                <label className="input-label">메모 <span className="input-label-hint">선택</span></label>
+                <textarea name="memo" className="input-field" placeholder="내용을 입력하세요" value={formData.memo} onChange={handleChange}></textarea>
+              </div>
+
+              <div className="exclude-toggle-row">
                 <div className="exclude-toggle-label">
                   <span className="exclude-toggle-title">분석에서 제외</span>
                   <span className="exclude-toggle-desc">홈 그래프·AI 코칭 분석에 이 내역을 포함하지 않아요</span>

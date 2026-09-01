@@ -11,80 +11,111 @@
 .expense-card {
   position: relative;
   width: 100%;
-  max-width: none;
+  max-width: var(--container-narrow);
   background-color: var(--surface);
   border-radius: var(--radius-xl);
-  box-shadow: 0 10px 30px var(--shadow-color);
-  padding: 40px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 24px 48px -24px rgba(15, 23, 42, 0.18);
+  padding: 32px 28px 36px;
   box-sizing: border-box;
-  animation: slideUp 0.5s ease-out;
-  margin-top: 0;
+  animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  margin: 12px auto;
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* 폼 필드가 아래에서 살짝 올라오며 순차 등장 */
+@keyframes fieldIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes tilePop {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes cardSpring {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .card-header {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   text-align: center;
 }
 
 .section-title {
-  font-size: 1.7rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 22px;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+  margin-bottom: 18px;
 }
 
+/* 수입/지출 세그먼트 컨트롤 — 슬라이딩 썸(:has로 위치) */
 .type-toggle-container {
+  position: relative;
   display: flex;
   background-color: var(--surface-subtle);
-  border-radius: var(--radius-md);
-  padding: 6px;
-  max-width: 400px;
+  border-radius: var(--radius-pill);
+  padding: 5px;
+  max-width: 340px;
   margin: 0 auto;
+  isolation: isolate;
+}
+
+.type-toggle-container::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 5px;
+  bottom: 5px;
+  width: calc(50% - 5px);
+  left: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+  transition: transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.type-toggle-container:has(.type-btn.active.expense)::before {
+  transform: translateX(100%);
 }
 
 .type-btn {
   flex: 1;
-  padding: 14px;
+  padding: 12px 8px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--text-weak);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: color 0.2s ease;
 }
-
-.type-btn.active {
-  background-color: var(--surface);
-  box-shadow: 0 4px 10px var(--shadow-color);
-}
+.type-btn:hover { border-color: transparent; }
 .type-btn.active.income { color: var(--primary-color); }
 .type-btn.active.expense { color: var(--expense-color); }
 
 /* ===== 지출 등록의 메인 화면 — 생성형 AI 프롬프트 입력 스타일 ===== */
 .nl-hero {
   margin-bottom: 8px;
-  padding: 12px 8px 4px;
+  padding: 8px 4px 4px;
   text-align: center;
 }
 
 .nl-hero-title {
-  margin: 0 0 4px;
-  font-size: 1.3rem;
+  margin: 0 0 6px;
+  font-size: 1.4rem;
   font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--text-main);
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
 }
 
 .nl-hero-subtitle {
   margin: 0 0 22px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--text-weak);
 }
 
@@ -155,72 +186,69 @@
 
 @keyframes nlPromptSpin { to { transform: rotate(360deg); } }
 
-.nl-hero-preview {
-  margin-top: 12px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
 /* 문장 파싱 결과 인라인 미리보기 (모달 대체) */
 .nl-parsed-card {
-  margin-top: 14px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-subtle);
   text-align: left;
+  animation: cardSpring 0.36s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 .nl-parsed-main {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
-  font-size: 0.98rem;
+  gap: 7px;
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--text-main, #1f2430);
+  color: var(--text-strong);
 }
 .nl-parsed-cat { color: var(--primary-color); font-weight: 700; }
 .nl-parsed-title { color: var(--text-sub); }
-.nl-parsed-amt { font-weight: 800; }
+.nl-parsed-amt { font-weight: 800; font-variant-numeric: tabular-nums; }
 .nl-parsed-dot { color: var(--text-weak); }
 .nl-parsed-badge {
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
   background: var(--surface-accent);
   color: var(--primary-color);
 }
 .nl-parsed-sub {
-  margin-top: 5px;
-  font-size: 0.78rem;
+  margin-top: 6px;
+  font-size: 0.8rem;
   color: var(--text-weak);
+  font-variant-numeric: tabular-nums;
 }
 .nl-parsed-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 14px;
 }
 .nl-parsed-btn {
   flex: 1;
-  padding: 9px 0;
-  border-radius: 10px;
-  font-size: 0.92rem;
+  padding: 11px 0;
+  border-radius: var(--radius-md);
+  font-size: 0.94rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.12s ease, background 0.15s ease;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
 }
 .nl-parsed-btn:active { transform: scale(0.97); }
 .nl-parsed-edit {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text-sub);
 }
+.nl-parsed-edit:hover { border-color: var(--text-weak); }
 .nl-parsed-save {
-  border: none;
+  border: 1px solid transparent;
   background: var(--primary-color);
   color: #fff;
+  box-shadow: 0 8px 18px -8px rgba(0, 102, 255, 0.55);
 }
 .nl-parsed-save:hover { background: var(--primary-hover); }
 
@@ -253,24 +281,25 @@
 .nl-hero-example-chip:active:not(:disabled) { transform: scale(0.96); }
 
 .nl-manual-link {
-  display: block;
-  margin: 20px auto 0;
-  padding: 4px;
-  border: none;
-  background: none;
-  color: var(--text-weak);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 20px;
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-sub);
   font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-weight: 700;
   cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
 }
 
-.nl-manual-link:hover { color: var(--primary-color); }
+.nl-manual-link:hover { color: var(--primary-color); border-color: var(--primary-color); background: var(--surface-accent); }
 
 .nl-back-link {
-  margin: 0 0 16px;
-  text-align: left;
+  margin: 0 0 18px;
 }
 
 @media (max-width: 768px) {
@@ -279,91 +308,183 @@
   .nl-prompt-send { width: 46px; height: 46px; }
 }
 
-.ocr-upload-area {
-  width: 100%;
-  height: 220px;
-  box-sizing: border-box;
-  border: 3px dashed var(--border);
-  border-radius: var(--radius-lg);
+/* 영수증 자동 채우기 — 큰 점선 박스 대신 슬림한 스트립 버튼 */
+.ocr-strip {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+  color: var(--text-sub);
   cursor: pointer;
-  background-color: var(--surface-subtle);
-  margin-bottom: 32px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
-
-.ocr-upload-area:hover {
+.ocr-strip:hover {
   border-color: var(--primary-color);
-  background-color: var(--surface-accent);
-}
-
-.ocr-icon {
-  color: var(--text-weak);
-  margin-bottom: 12px;
-  transition: color 0.3s ease;
-}
-
-.ocr-upload-area:hover .ocr-icon {
+  background: var(--surface-accent);
   color: var(--primary-color);
 }
-
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
+.ocr-strip:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
-
-.re-upload-overlay {
-  position: absolute;
-  top: 0; 
-  left: 0; 
-  width: 100%; 
-  height: 100%;
-  background: var(--overlay);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  opacity: 0; 
-  transition: opacity 0.3s ease;
-  z-index: 5;
+.ocr-strip-text { font-size: 0.92rem; font-weight: 700; }
+.ocr-strip-hint {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-weak);
 }
-
-.ocr-upload-area:hover .re-upload-overlay {
-  opacity: 1;
-}
-
-.re-upload-overlay span {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-top: 10px;
+.ocr-strip.has-preview { color: var(--primary-color); border-color: var(--primary-color); }
+.ocr-strip-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .expense-manual-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 32px;
-  row-gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+/* 필드가 아래에서 순차적으로 올라오며 등장 */
+.expense-manual-form > * { animation: fieldIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.expense-manual-form > *:nth-child(1) { animation-delay: 0.02s; }
+.expense-manual-form > *:nth-child(2) { animation-delay: 0.06s; }
+.expense-manual-form > *:nth-child(3) { animation-delay: 0.10s; }
+.expense-manual-form > *:nth-child(4) { animation-delay: 0.14s; }
+.expense-manual-form > *:nth-child(5) { animation-delay: 0.18s; }
+.expense-manual-form > *:nth-child(6) { animation-delay: 0.22s; }
+.expense-manual-form > *:nth-child(n+7) { animation-delay: 0.26s; }
+
+.input-group { min-width: 0; }
+
+/* ===== 금액 히어로 ===== */
+.amount-hero {
+  padding: 18px 18px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
 }
 
-.input-group {
-  margin-bottom: 0;
-  /* grid 셀의 기본 min-width:auto 때문에 date 입력의 고유 최소 너비가
-     트랙을 밀어내 다른 입력보다 넓어지는 것을 방지 */
+.cur-seg {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  margin-bottom: 14px;
+}
+.cur-seg::-webkit-scrollbar { display: none; }
+.cur-seg-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-sub);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+}
+.cur-seg-btn .cur-seg-sym { font-weight: 800; opacity: 0.75; }
+.cur-seg-btn:hover:not(.is-active) { border-color: var(--border-strong); }
+.cur-seg-btn:active { transform: scale(0.94); }
+.cur-seg-btn.is-active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+.cur-seg-btn.is-active .cur-seg-sym { opacity: 1; }
+
+.amount-hero-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.amount-hero-sym {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--text-weak);
+  line-height: 1;
+}
+.amount-hero-input {
+  flex: 1;
   min-width: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.amount-hero-input::placeholder { color: var(--border-strong); }
+.amount-hero-input::-webkit-outer-spin-button,
+.amount-hero-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.amount-hero-input { -moz-appearance: textfield; appearance: textfield; }
+
+/* ===== 카테고리 타일 그리드 ===== */
+.cat-field { display: flex; flex-direction: column; }
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.cat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: transform 0.14s cubic-bezier(0.34, 1.4, 0.64, 1), background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+.cat-tile:hover:not(.is-active) { border-color: var(--border-strong); }
+.cat-tile:active { transform: scale(0.93); }
+.cat-tile.is-active {
+  background: var(--surface-accent);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: scale(1.03);
+}
+.cat-tile-ico { display: inline-flex; }
+.cat-tile-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
-.input-group:nth-child(5),
-.input-group:nth-child(6),
-.submit-btn {
-  grid-column: 1 / -1;
+.input-label-hint {
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--text-weak);
+  margin-left: 4px;
 }
 
 .exclude-toggle-row {
@@ -371,8 +492,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-subtle);
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
 }
 
 .exclude-toggle-label {
@@ -383,7 +506,7 @@
 
 .exclude-toggle-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-main);
 }
 
@@ -437,31 +560,25 @@
 
 .input-label {
   display: block;
-  font-size: 1rem;
+  font-size: 0.86rem;
   font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 12px;
-  padding-left: 5px;
+  color: var(--text-sub);
+  margin-bottom: 8px;
+  padding-left: 2px;
 }
 
 .input-field {
   width: 100%;
-  height: 58px; /* 브라우저 네이티브 date 위젯 등으로 필드마다 높이가 달라지는 것을 방지해 통일 */
-  padding: 18px 20px;
-  border: 1px solid var(--border);
+  height: 52px;
+  padding: 14px 16px;
+  border: 1.5px solid transparent;
   border-radius: var(--radius-md);
-  font-size: 1.05rem;
-  background-color: var(--surface);
-  transition: all 0.2s;
+  background-color: var(--surface-subtle);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
   box-sizing: border-box;
   font-family: inherit;
   font-size: 1rem;
   color: var(--text-main);
-}
-
-
-input[type="number"].input-field {
-  padding-right: 50px;
 }
 
 /* WebKit date 입력의 고유 사이징을 정규화해 다른 input-field와 동일한 폭으로 맞춤 */
@@ -472,10 +589,12 @@ input[type="date"].input-field {
   width: 100%;
 }
 
+.input-field:hover { background-color: var(--surface-subtle); border-color: var(--border); }
 .input-field:focus {
   outline: none;
+  background-color: var(--surface);
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.1);
+  box-shadow: 0 0 0 4px var(--focus-ring);
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -483,95 +602,85 @@ input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-
-.amount-wrapper { position: relative; display: flex; align-items: center; gap: 8px; }
+.amount-wrapper { position: relative; display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .currency-unit {
   position: absolute;
-  right: 20px;
-  font-weight: 600;
+  right: 16px;
+  font-weight: 700;
   color: var(--text-weak);
   pointer-events: none;
 }
-
-/* 통화 선택 (금액칸 옆) */
-.currency-select {
-  flex: 0 0 auto;
-  min-width: 96px;
-  padding: 0 10px;
-  height: 44px;
-  border: 1px solid var(--border, #d8dbe0);
-  border-radius: 10px;
-  background: var(--surface, #fff);
-  color: var(--text, #1f2430);
-  font-weight: 600;
-  font-size: 0.95rem;
-}
+.fx-preview .amount-wrapper .input-field { padding-right: 44px; }
 
 /* 외화 환산 미리보기 */
 .fx-preview {
-  margin-top: 10px;
+  margin-top: 14px;
   padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--surface-weak, #f4f6f9);
-  border: 1px solid var(--border, #e3e6eb);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 .fx-preview-loading { color: var(--text-weak); font-size: 0.88rem; }
-.fx-preview-main { font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
-.fx-preview-main strong { font-size: 1.15rem; }
-.fx-preview-sub { color: var(--text-weak); font-size: 0.82rem; }
+.fx-preview-main { font-size: 1rem; display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.fx-preview-main strong { font-size: 1.15rem; font-weight: 800; color: var(--text-strong); }
+.fx-preview-sub { color: var(--text-weak); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 .fx-preview-tag {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: var(--accent-weak, #e6efff);
-  color: var(--accent, #2f6bff);
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-accent);
+  color: var(--primary-color);
 }
 .fx-preview-tag-warn {
-  background: #fff1e0;
-  color: #b26a00;
+  background: var(--warn-bg);
+  color: var(--warn-text);
 }
 .fx-override-toggle {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.84rem;
-  color: var(--text-sub, #5b6270);
+  font-size: 0.82rem;
+  color: var(--text-sub);
   cursor: pointer;
   margin-top: 2px;
 }
-.fx-override-toggle input { width: 15px; height: 15px; }
+.fx-override-toggle input { width: 15px; height: 15px; accent-color: var(--primary-color); }
 
 textarea.input-field {
-  height: 120px;
+  height: 88px;
+  padding-top: 12px;
   resize: none;
 }
 
 
 .submit-btn {
-  margin-top: 24px;
-  padding: 16px;
+  margin-top: 6px;
+  padding: 17px;
   font-size: 1.05rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
   color: white;
-  background-color: var(--primary-color);
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-hover));
   border: none;
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 10px 20px rgba(0, 102, 255, 0.15);
+  transition: transform 0.14s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 14px 28px -12px rgba(0, 102, 255, 0.6);
 }
 
-.submit-btn:hover { background-color: #0052cc; transform: translateY(-1px); }
-.submit-btn.expense-mode { background-color: var(--expense-color); box-shadow: 0 10px 20px rgba(231, 76, 60, 0.15); }
-.submit-btn.expense-mode:hover { background-color: #c0392b; }
+.submit-btn:hover { filter: brightness(1.05); box-shadow: 0 18px 32px -12px rgba(0, 102, 255, 0.7); border-color: transparent; }
+.submit-btn:active { transform: scale(0.98); }
+.submit-btn.expense-mode {
+  background: linear-gradient(180deg, var(--expense-color), #c0392b);
+  box-shadow: 0 14px 28px -12px rgba(231, 76, 60, 0.6);
+}
+.submit-btn.expense-mode:hover { box-shadow: 0 18px 32px -12px rgba(231, 76, 60, 0.7); }
 
 .loading-overlay {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -590,9 +699,14 @@ textarea.input-field {
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 @media (max-width: 768px) {
-  .expense-manual-form { grid-template-columns: 1fr; }
-  .expense-card { padding: 30px 20px; }
-  .section-title { font-size: 1.8rem; }
+  .expense-card { padding: 24px 18px 30px; }
+  .section-title { font-size: 1.4rem; }
+}
+
+@media (max-width: 400px) {
+  .cat-grid { grid-template-columns: repeat(3, 1fr); }
+  .amount-hero-input { font-size: 2.2rem; }
+  .amount-hero-sym { font-size: 1.6rem; }
 }
 
 .split-section {
