@@ -47,7 +47,7 @@ public class EmailService {
 
 	/** 6자리 인증코드 메일 발송. 비활성 상태면 코드를 로그로만 출력하고 조용히 반환한다. */
 	public void sendVerificationCode(String toEmail, String code) {
-		String subject = "[오소리] 이메일 인증코드 " + code;
+		String subject = "[오소리] 이메일 인증코드";
 		String textContent = "오소리 이메일 인증코드는 " + code + " 입니다.\n"
 				+ "5분 안에 입력해 주세요. 본인이 요청하지 않았다면 이 메일을 무시하셔도 됩니다.";
 
