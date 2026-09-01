@@ -122,7 +122,7 @@ function CategoryManager() {
           onClick={() => setIsOpen(true)}
           aria-label="카테고리 설정 열기"
         >
-          <IconSettings size={20} />
+          <IconSettings size={22} />
         </button>
       </div>
 
