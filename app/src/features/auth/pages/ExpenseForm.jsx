@@ -667,7 +667,7 @@ const ExpenseForm = () => {
 
               <div className="input-group">
                 <label className="input-label">{formData.type === '수입' ? '입금처 / 내용' : '거래처 / 가게명'}</label>
-                <input type="text" name="title" className="input-field" placeholder={formData.type === '수입' ? "예: 회사, 부모님" : "예: 스타벅스, 식당"} value={formData.title} onChange={handleChange} required />
+                <input type="text" name="title" className="input-field input-field--solid" placeholder={formData.type === '수입' ? "예: 회사, 부모님" : "예: 스타벅스, 식당"} value={formData.title} onChange={handleChange} required />
               </div>
 
               <div className="input-group">
