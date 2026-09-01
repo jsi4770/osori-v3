@@ -93,9 +93,20 @@ public class UserDao {
 			return sqlSession.selectOne("userMapper.findLoginIdByProviderUserId", providerUserId);
 		}
 
-		//비밀번호 바꾸는 메소드 
-		public int resetPassword(SqlSessionTemplate sqlSession, Map<String, String> userMap) {
-			return sqlSession.update("userMapper.resetPassword", userMap); 
+		//비밀번호 재설정 1단계 — 닉네임+이메일이 일치하는 활성 로컬 계정 조회 (없으면 null)
+		public User selectResettableUser(SqlSessionTemplate sqlSession, String nickName, String email) {
+			Map<String, Object> params = new HashMap<>();
+			params.put("nickName", nickName);
+			params.put("email", email);
+			return sqlSession.selectOne("userMapper.selectResettableUser", params);
+		}
+
+		//비밀번호 재설정 2단계 — USER_ID로만 비밀번호 갱신
+		public int resetPassword(SqlSessionTemplate sqlSession, int userId, String encodedPassword) {
+			Map<String, Object> userMap = new HashMap<>();
+			userMap.put("userId", userId);
+			userMap.put("newPassword", encodedPassword);
+			return sqlSession.update("userMapper.resetPassword", userMap);
 		}
 		
 		//현재 시퀀스 번호 갖고오는 메소드

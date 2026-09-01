@@ -378,44 +378,57 @@ public class UserController {
 
 	}
 
-	// 비밀번호 찾기 1단계 — 아이디 없이 닉네임으로 회원 존재 여부만 확인
+	// 비밀번호 찾기 1단계 — 닉네임 + 등록된 이메일이 "같은 계정"에서 일치해야 통과한다.
+	// (기존엔 닉네임 존재 여부만 확인 → 닉네임만 알면 아무 계정이나 비밀번호 재설정 가능한 취약점)
+	// 소셜(카카오) 계정은 자체 비밀번호가 없으므로 대상에서 제외된다.
+	// 통과 시, USER_ID에 묶인 10분짜리 재설정 토큰을 발급한다. 2단계는 이 토큰으로만 진행된다.
 	@PostMapping("/findPassword")
-	public ResponseEntity<?> findPassword(@RequestBody Map<String, String> nickNameMap) {
+	public ResponseEntity<?> findPassword(@RequestBody Map<String, String> body) {
 
-		String nickName = nickNameMap.get("nickName");
+		String nickName = body.get("nickName");
+		String email = body.get("email");
 
-		if (service.nickNameCheck(nickName) > 0) {
+		User target = service.findResettableUser(nickName, email);
 
-			return ResponseEntity.ok("회원 정보가 조회 되어 비밀번호 재설정 페이지로 이동합니다.");
-
-		} else {
-
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("회원 정보가 없습니다.");
-
+		// 계정 존재 여부를 드러내지 않도록, 매칭 실패는 항상 동일한 400 메시지로 응답한다.
+		if (target == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body("입력하신 닉네임과 이메일이 일치하는 계정을 찾을 수 없습니다. (카카오 로그인 계정은 카카오에서 로그인해 주세요)");
 		}
+
+		String resetToken = jwtUtil.generatePasswordResetToken(target.getUserId());
+
+		Map<String, Object> res = new HashMap<>();
+		res.put("resetToken", resetToken);
+		res.put("message", "본인 확인이 완료되었습니다. 새 비밀번호를 설정해 주세요.");
+		return ResponseEntity.ok(res);
 
 	}
 
-	// 비밀번호 재설정 2단계
+	// 비밀번호 재설정 2단계 — 1단계에서 받은 재설정 토큰 + 새 비밀번호만 받는다.
+	// 갱신 대상은 토큰에서 검증한 USER_ID로 고정되며, 클라이언트가 넘긴 닉네임 등은 신뢰하지 않는다.
 	@PatchMapping("/resetPassword")
-	public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> userMap) {
+	public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
 
-		String newPassword = userMap.get("newPassword"); // 비밀번호 재설정 페이지에서 사용자가 입력한 비밀번호 갖고 오기
+		String resetToken = body.get("resetToken");
+		String newPassword = body.get("newPassword");
 
-		newPassword = bcrypt.encode(newPassword); // 갖고 온 비밀번호를 암호화
+		int userId = (resetToken == null) ? -1 : jwtUtil.parsePasswordResetToken(resetToken);
+		if (userId <= 0) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body("재설정 링크가 만료되었거나 유효하지 않습니다. 처음부터 다시 시도해 주세요.");
+		}
 
-		userMap.put("newPassword", newPassword); // 맵에 있는 값을 수정
+		if (newPassword == null || newPassword.trim().length() < 8) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("비밀번호는 8자 이상으로 입력해 주세요.");
+		}
 
-		int result = service.resetPassword(userMap); // 수정한 값을 바탕으로 집어넣기
+		int result = service.resetPassword(userId, bcrypt.encode(newPassword.trim()));
 
 		if (result > 0) {
-
-			return ResponseEntity.ok("비밀번호가 수정 됐습니다.");
-
+			return ResponseEntity.ok("비밀번호가 재설정되었습니다.");
 		} else {
-
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버에 문제가 생겨서 비밀번호 수정을 실패 했습니다.");
-
 		}
 
 	}

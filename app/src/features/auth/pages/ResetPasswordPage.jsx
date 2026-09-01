@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./ResetPasswordPage.module.css";
 import { authApi } from "../../../api/authApi";
@@ -9,8 +9,8 @@ export default function ResetPasswordPage() {
   const location = useLocation();
   const { toast } = useFeedback();
 
-  // /find-password 에서 넘겨준 닉네임 (필요 없으면 화면에서 숨겨도 됨)
-  const nickName = location.state?.nickName || "";
+  // /find-password 에서 본인 확인 후 넘겨준 재설정 토큰 (닉네임이 아님)
+  const resetToken = location.state?.resetToken || "";
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -20,10 +20,16 @@ export default function ResetPasswordPage() {
   const [serverMessage, setServerMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 토큰 없이 이 페이지에 직접 들어온 경우 → 1단계로 되돌린다.
+  useEffect(() => {
+    if (!resetToken) {
+      navigate("/find-password", { replace: true });
+    }
+  }, [resetToken, navigate]);
+
   const onSubmit = (e) => {
     e.preventDefault();
     setError("");
-    // 이전 서버 메시지 초기화
     setServerMessage("");
 
     const pw1 = newPassword.trim();
@@ -44,16 +50,15 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // 닉네임 + 새 비밀번호 -> 서버로 전송
+    // 재설정 토큰 + 새 비밀번호 -> 서버로 전송
     (async () => {
       try {
         setLoading(true);
-        const data = await authApi.resetPassword({ nickName, newPassword: pw1 });
-        const msg = data?.message || "비밀번호가 재설정되었습니다.";
-        setServerMessage(msg);
+        const data = await authApi.resetPassword({ resetToken, newPassword: pw1 });
+        const msg = data?.message || data || "비밀번호가 재설정되었습니다.";
+        setServerMessage(String(msg));
 
-        // 서버 정책에 따라 성공 메시지를 토스트로도 보여주고 싶으면 여기서 처리
-        toast(msg, { type: "success" });
+        toast(String(msg), { type: "success" });
 
         navigate("/login");
       } catch (err) {
@@ -70,7 +75,7 @@ export default function ResetPasswordPage() {
       <h1 className={styles.title}>비밀번호 재설정</h1>
 
       <form className={styles.form} onSubmit={onSubmit}>
-        
+
         <div className={styles.label}>새 비밀번호</div>
         <input
           className={styles.input}
@@ -90,7 +95,7 @@ export default function ResetPasswordPage() {
           placeholder="새 비밀번호를 한 번 더 입력해 주세요."
           autoComplete="new-password"
         />
-        
+
         {newPassword.trim() && confirmNewPassword.trim() && (
           newPassword.trim() === confirmNewPassword.trim() ? (
             <div className={styles.ok}>새 비밀번호와 일치합니다.</div>

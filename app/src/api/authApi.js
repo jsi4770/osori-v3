@@ -24,15 +24,16 @@ export const authApi = {
   checkEmail: (email) =>
     apiFetch(`/user/checkEmail?email=${encodeURIComponent(email)}`, { auth: false }),
 
-  // 비밀번호 찾기 1단계: 닉네임 존재 여부 확인(있으면 다음 단계로 이동)
-  checkNicknameForReset: (nickName) =>
-    apiFetch("/user/findPassword", { method: "POST", body: { nickName }, auth: false }),
+  // 비밀번호 찾기 1단계: 닉네임 + 등록된 이메일이 같은 계정에서 일치해야 통과.
+  // 성공 시 { resetToken } 을 돌려받고, 이 토큰으로만 2단계를 진행한다.
+  requestPasswordReset: ({ nickName, email }) =>
+    apiFetch("/user/findPassword", { method: "POST", body: { nickName, email }, auth: false }),
 
-  // 비밀번호 재설정 2단계: nickName + newPassword 전달
-  resetPassword: ({ nickName, newPassword }) =>
+  // 비밀번호 재설정 2단계: 1단계에서 받은 resetToken + 새 비밀번호 전달
+  resetPassword: ({ resetToken, newPassword }) =>
     apiFetch("/user/resetPassword", {
       method: "PATCH",
-      body: { nickName, newPassword },
+      body: { resetToken, newPassword },
       auth: false,
     }),
 

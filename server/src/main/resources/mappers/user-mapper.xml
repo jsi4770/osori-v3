@@ -161,12 +161,32 @@
   		AND A.LOGIN_TYPE = 'KAKAO'
   	</select>
   	
+  	<!-- 비밀번호 재설정 1단계: 닉네임+이메일이 "같은 행"에서 일치하고, 활성 상태(STATUS='Y')이며,
+  	     로컬(비소셜) 계정일 때만 대상 회원을 반환한다.
+  	     - 소셜(KAKAO) 계정은 사용자가 정한 비밀번호가 없으므로 재설정 대상에서 제외
+  	     - 이메일 동의항목이 없어 EMAIL이 NULL인 카카오 계정은 어차피 매칭되지 않음 -->
+  	<select id="selectResettableUser" parameterType="Map" resultType="User">
+  		SELECT
+  			U.USER_ID  AS userId,
+  			U.LOGIN_ID AS loginId,
+  			A.LOGIN_TYPE AS loginType
+  		FROM USERS U
+  		LEFT JOIN AUTH_ACCOUNT A ON (U.USER_ID = A.USER_ID)
+  		WHERE U.NICKNAME = #{nickName}
+  		  AND U.EMAIL = #{email}
+  		  AND U.STATUS = 'Y'
+  		  AND (A.LOGIN_TYPE IS NULL OR A.LOGIN_TYPE = 'LOCAL')
+  	</select>
+
+  	<!-- 비밀번호 재설정 2단계: 재설정 토큰에서 꺼낸 USER_ID로만 갱신한다.
+  	     (기존엔 클라이언트가 넘긴 NICKNAME으로 갱신 → 닉네임만 알면 남의 비밀번호 변경 가능한 취약점) -->
   	<update id="resetPassword" parameterType="Map">
   		UPDATE USERS
   		SET PASSWORD = #{newPassword}
-  		WHERE NICKNAME = #{nickName}
+  		WHERE USER_ID = #{userId}
+  		  AND STATUS = 'Y'
   	</update>
-  	
+
   	<select id="selectUserId" resultType="int">
   		SELECT currval('SEQ_USERS_ID')
   	</select>

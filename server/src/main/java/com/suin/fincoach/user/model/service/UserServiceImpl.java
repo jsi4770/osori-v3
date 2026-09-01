@@ -436,14 +436,19 @@ public class UserServiceImpl implements UserService {
 		return loginUser; 
 	}
 	
-	//비밀번호 재설정 하는 메소드
+	//비밀번호 재설정 1단계 — 닉네임+이메일이 같은 행에서 일치하는 활성 로컬 계정 조회 (소셜 계정/비활성/불일치 시 null)
 	@Override
-	public int resetPassword(Map<String, String> userMap) {
-		
-		int result = dao.resetPassword(sqlSession, userMap);
-		
-		return result; 
-		
+	public User findResettableUser(String nickName, String email) {
+		if (nickName == null || nickName.isBlank() || email == null || email.isBlank()) {
+			return null;
+		}
+		return dao.selectResettableUser(sqlSession, nickName.trim(), email.trim());
+	}
+
+	//비밀번호 재설정 2단계 — 검증된 USER_ID로만 비밀번호 갱신
+	@Override
+	public int resetPassword(int userId, String encodedPassword) {
+		return dao.resetPassword(sqlSession, userId, encodedPassword);
 	}
 	
 	// 추가 메소드 (로그인 카운트 갱신)

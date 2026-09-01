@@ -36,6 +36,10 @@ public class JwtUtil {
 	@Value("${jwt.expiration:864000000}")
 	private long expiration;
 
+	//비밀번호 재설정 전용 토큰의 유효기간 (기본 10분) — 로그인 토큰보다 훨씬 짧게 두어 탈취 시 피해를 줄인다.
+	@Value("${jwt.pwreset-expiration:600000}")
+	private long pwResetExpiration;
+
     
 	//JWT 토큰에 디지털 서명을 하기 위한 암호화 키를 생성하는 메소드
 	private SecretKey getSignKey() {
@@ -83,6 +87,41 @@ public class JwtUtil {
 		return claims.getSubject();
 	}
 	
+	// 비밀번호 재설정 전용 단기 토큰 생성.
+	// - subject: 대상 USER_ID (숫자)
+	// - purpose 클레임("pwreset")으로 일반 로그인 토큰과 구분 → 로그인 토큰을 재설정에 재사용하지 못하게 함
+	public String generatePasswordResetToken(int userId) {
+		Date now = new Date();
+		Date expiryDate = new Date(now.getTime() + pwResetExpiration);
+
+		return Jwts.builder()
+					.setSubject(String.valueOf(userId))
+					.claim("purpose", "pwreset")
+					.setIssuedAt(now)
+					.setExpiration(expiryDate)
+					.signWith(getSignKey())
+					.compact();
+	}
+
+	// 재설정 토큰을 검증하고 대상 USER_ID를 반환. 서명 위조·만료·purpose 불일치·형식 오류면 -1.
+	public int parsePasswordResetToken(String token) {
+		try {
+			Claims claims = Jwts.parserBuilder()
+								.setSigningKey(getSignKey())
+								.build()
+								.parseClaimsJws(token)
+								.getBody();
+
+			if (!"pwreset".equals(claims.get("purpose", String.class))) {
+				return -1;
+			}
+
+			return Integer.parseInt(claims.getSubject());
+		} catch (JwtException | NumberFormatException e) {
+			return -1;
+		}
+	}
+
 	// JWT 토큰이 유효한지 검증하는 메소드
 	public boolean validateToken(String token) {
 		try {
