@@ -319,7 +319,7 @@ export default function FixedTransModal({
                   취소
                 </Button>
                 <Button variant="primary" size="md" type="submit" disabled={isLoading} style={{ minWidth: 88 }}>
-                  {isLoading ? "처리중..." : "수정"}
+                  {isLoading ? "처리중..." : "저장"}
                 </Button>
               </>
             ) : (
