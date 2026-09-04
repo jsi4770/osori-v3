@@ -198,12 +198,14 @@ const ExpenseForm = () => {
           toast("미래 날짜는 등록할 수 없어 오늘 날짜로 변경되었습니다.", { type: "info" });
           finalDate = today;
         }
+        // 기본 카테고리 + 사용자가 만든 커스텀 카테고리까지 허용
+        const allowedCats = new Set([...currentCategories, ...EXPENSE_CATEGORIES]);
         setFormData(prev => ({
           ...prev,
           title: title || '',
           transDate: finalDate,
           originalAmount: originalAmount || '',
-          category: EXPENSE_CATEGORIES.includes(category) ? category : '기타',
+          category: allowedCats.has(category) ? category : '기타',
         }));
         toast("입력된 정보가 맞는지 확인해주세요", { type: "info" });
       }
@@ -282,7 +284,11 @@ const ExpenseForm = () => {
   // 확신이 낮을 때 "수정" 선택 시 — 자동 저장하지 않고 아래 수동 폼에 미리 채워 사용자가 직접 확인/수정하게 함
   const applyParsedToManualForm = (parsed, apiType) => {
     const isIncome = apiType === 'IN';
-    const categories = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    // 기본 카테고리 + 사용자가 만든 커스텀 카테고리(currentCategories)까지 허용
+    const allowedCats = new Set([
+      ...currentCategories,
+      ...(isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES),
+    ]);
     const parsedForeign = isForeign(parsed.currency);
     setFormData(prev => ({
       ...prev,
@@ -293,7 +299,7 @@ const ExpenseForm = () => {
       // 외화면 수동 폼의 금액칸엔 "외화 금액"을, 통화 셀렉트엔 해당 통화를 채운다.
       originalAmount: (parsedForeign ? parsed.fxAmount : parsed.amount) || '',
       currency: parsedForeign ? parsed.currency : DEFAULT_CURRENCY,
-      category: categories.includes(parsed.category) ? parsed.category : '기타',
+      category: allowedCats.has(parsed.category) ? parsed.category : '기타',
       memo: parsed.memo || '',
       installmentMonths: parsedForeign ? '' : (parsed.installmentMonths || ''),
     }));
