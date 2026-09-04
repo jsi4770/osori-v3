@@ -487,8 +487,7 @@
 
 .detail-list-container {
   flex: 1;
-  overflow-y: auto; /* 스크롤 발생 */
-  padding-right: 8px;
+  overflow: visible; /* 내역이 많아지면 영역 자체가 늘어남 (내부 스크롤 없음) */
 }
 
 .detail-list { list-style: none !important; padding: 0 !important; margin: 0; }
@@ -562,14 +561,8 @@
   .detail-card {
     width: 100%;
     flex: none;
-    /*상세 내역 최대 높이 제한 */
-    max-height: 400px; 
+    /* 내역이 많아지면 카드 자체 높이가 늘어나도록 최대 높이 제한 제거 */
     display: flex;
     flex-direction: column;
-  }
-
-  .detail-list-container {
-    flex: 1;
-    overflow-y: auto;
   }
 }
