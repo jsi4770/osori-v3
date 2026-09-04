@@ -13,6 +13,7 @@ export default function FixedTransModal({
   initialValue = null, // 수정 시 기존 값
   onClose,
   onSuccess,
+  onDelete, // 수정 모드에서만: 삭제 요청(부모가 confirm + 삭제 처리)
 }) {
   const { toast } = useFeedback();
   const isEdit = mode === "edit";
@@ -281,6 +282,20 @@ export default function FixedTransModal({
               취소
             </Button>
           </div>
+
+          {isEdit && onDelete && (
+            <Button
+              variant="danger-soft"
+              size="md"
+              block
+              type="button"
+              onClick={() => onDelete(initialValue?.fixedId)}
+              disabled={isLoading}
+              style={{ marginTop: 10 }}
+            >
+              이 고정지출 삭제
+            </Button>
+          )}
         </form>
       </div>
     </div>

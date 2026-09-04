@@ -4,6 +4,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { fixedTransApi } from "../../../api/fixedTransApi";
 import FixedTransModal from "./FixedTransModal";
 import { IconReceipt } from "../../../components/icons";
+import { Button } from "../../../components/ui";
 import "./FixedTransPage.css";
 import { useFeedback } from "../../../context/FeedbackContext";
 
@@ -53,12 +54,14 @@ export default function FixedTransPage() {
   };
 
   const removeOne = async (fixedId) => {
+    if (!fixedId) return;
     const ok = await confirm("삭제되면 되돌릴 수 없습니다. 정말 삭제하시겠습니까?", { danger: true });
     if (!ok) return;
 
     try {
       await fixedTransApi.remove(fixedId);
       toast("삭제가 완료되었습니다.", { type: "success" });
+      setIsModalOpen(false);
       fetchList();
     } catch (err) {
       console.error(err);
@@ -77,10 +80,9 @@ export default function FixedTransPage() {
                 <h3 style={{ whiteSpace: "nowrap", margin: 0 }}>내 고정지출 목록</h3>
                 <span className="status-dot" style={{ whiteSpace: "nowrap" }}>{list.length}개</span>
               </div>
-              <button type="button" className="ftAddBtn" onClick={openCreate}>
-                <span className="ftAddIcon" aria-hidden="true">＋</span>
-                <span>추가</span>
-              </button>
+              <Button type="button" variant="primary" size="sm" pill onClick={openCreate}>
+                ＋ 추가
+              </Button>
             </div>
             {!isLoading && list.length > 0 && (
               <div className="ftTotal">매달 합계 {totalAmount.toLocaleString()}원</div>
@@ -94,7 +96,14 @@ export default function FixedTransPage() {
           ) : (
             <div className="ftList">
               {list.map((item) => (
-                <div key={item.fixedId} className="ftRow">
+                <div
+                  key={item.fixedId}
+                  className="ftRow"
+                  onClick={() => openEdit(item)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEdit(item); } }}
+                >
                   <div className="ftRowMain">
                     <div className="ftRowName">
                       <IconReceipt size={15} className="ftRowIcon" aria-hidden="true" />
@@ -112,15 +121,8 @@ export default function FixedTransPage() {
 
                   <div className="ftRowRight">
                     <div className="ftAmount">{Number(item.amount).toLocaleString()}원</div>
-                    <div className="ftRowActions">
-                      <button type="button" className="ftBtn ftBtnEdit" onClick={() => openEdit(item)}>
-                        수정
-                      </button>
-                      <button type="button" className="ftBtn ftBtnDelete" onClick={() => removeOne(item.fixedId)}>
-                        삭제
-                      </button>
-                    </div>
                   </div>
+                  <span className="ftRowChevron" aria-hidden="true">›</span>
                 </div>
               ))}
             </div>
@@ -137,6 +139,7 @@ export default function FixedTransPage() {
           initialValue={editTarget}
           onClose={() => setIsModalOpen(false)}
           onSuccess={fetchList}
+          onDelete={removeOne}
         />
       )}
     </main>

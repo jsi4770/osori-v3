@@ -290,23 +290,8 @@
   margin-bottom: 12px;
 }
 
-.ledger-add-btn {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  height: 22px; /* .detail-title(날짜 제목)보다 살짝 낮춰 시각적으로 맞춤 */
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--primary-color);
-  cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ledger-add-btn:hover { opacity: 0.85; }
-.ledger-add-btn:active { transform: scale(0.95); transition-duration: 0.08s; }
+/* '＋ 추가' 버튼은 공용 <Button variant="primary" size="sm" pill>로 렌더
+   (고정지출 화면의 '추가' 버튼과 동일 스펙) */
 
 .ledger-toggle {
   display: flex;
@@ -355,14 +340,18 @@
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  padding: 12px 0;
+  padding: 12px 6px;
   border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.12s ease;
 }
+
+.ledger-item:hover { background: var(--surface-subtle); }
+.ledger-item:active { background: var(--surface-accent); }
 
 .ledger-item-main {
   flex: 1;
   min-width: 0;
-  cursor: pointer;
 }
 
 .ledger-item-title {
@@ -426,8 +415,8 @@
 }
 
 .ledger-item-amt {
-  font-weight: bold;
-  font-size: 15px;
+  font-weight: 800;
+  font-size: 17px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -444,24 +433,14 @@
   vertical-align: middle;
 }
 
-.ledger-item-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.ledger-item-actions button {
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-subtle);
-  color: var(--text-sub);
-  border-radius: var(--radius-sm);
-  padding: 3px 8px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.ledger-item-actions button:hover { background: var(--surface-accent); }
-.ledger-item-actions button.del {
-  color: var(--expense-color);
-  border-color: var(--expense-color);
+/* 인라인 수정/삭제 버튼 제거 — 행 탭 → 상세 모달 안에서 처리 */
+.ledger-item-chevron {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--text-weak);
+  font-size: 18px;
+  line-height: 1;
+  padding-left: 2px;
 }
 
 .ledger-empty {

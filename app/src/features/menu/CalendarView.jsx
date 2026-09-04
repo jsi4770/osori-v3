@@ -11,6 +11,7 @@ import TransactionModal from '../auth/pages/TransactionModal';
 import { currencyMeta, isForeign } from '../../constants/currencies';
 import { FIXED_AUTO_MEMO } from '../Util/zScore';
 import { useFeedback } from '../../context/FeedbackContext';
+import { Button } from '../../components/ui';
 
 // 달력 칸은 폭이 좁아 십만 단위 이상이면 잘리므로 만/억 단위로 축약해 표기한다.
 // (우측 가계부 패널은 전체 금액을 그대로 보여준다)
@@ -214,9 +215,8 @@ function CalendarView({ currentDate, setCurrentDate }) {
   };
 
   // ---- 모달 열기/저장/삭제 ----
+  // 행을 탭하면 상세('view') 모달을 연다. 수정/삭제는 그 안에서 처리(인라인 버튼 제거).
   const openView = (item) => { setSelectedItem(item); setModalType('view'); setIsModalOpen(true); };
-  const openEdit = (e, item) => { e.stopPropagation(); setSelectedItem(item); setModalType('edit'); setIsModalOpen(true); };
-  const openDelete = (e, item) => { e.stopPropagation(); setSelectedItem(item); setModalType('delete'); setIsModalOpen(true); };
 
   const handleSave = async (updated) => {
     if (!userId) { toast("로그인 정보가 없습니다.", { type: "error" }); return; }
@@ -324,9 +324,9 @@ function CalendarView({ currentDate, setCurrentDate }) {
             <h3 className="detail-title">
               {listMode === 'day' ? `${fmtKoreanDate(selectedDate)} 내역` : `${currentDate.getMonth() + 1}월 전체`}
             </h3>
-            <button type="button" className="ledger-add-btn" onClick={() => navigate('/mypage/expenseForm')}>
-              + 추가
-            </button>
+            <Button type="button" variant="primary" size="sm" pill onClick={() => navigate('/mypage/expenseForm')}>
+              ＋ 추가
+            </Button>
           </div>
 
           <div className="ledger-toggle" role="group" aria-label="목록 범위">
@@ -357,8 +357,15 @@ function CalendarView({ currentDate, setCurrentDate }) {
             {listItems.length > 0 ? (
               <ul className="detail-list">
                 {listItems.map((item) => (
-                  <li key={item.id} className="ledger-item">
-                    <div className="ledger-item-main" onClick={() => openView(item)}>
+                  <li
+                    key={item.id}
+                    className="ledger-item"
+                    onClick={() => openView(item)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openView(item); } }}
+                  >
+                    <div className="ledger-item-main">
                       <div className="ledger-item-title">
                         <span className="ledger-item-title-text">{item.text}</span>
                         {item.memo === FIXED_AUTO_MEMO && (
@@ -387,11 +394,8 @@ function CalendarView({ currentDate, setCurrentDate }) {
                           </span>
                         )}
                       </div>
-                      <div className="ledger-item-actions">
-                        <button type="button" onClick={(e) => openEdit(e, item)}>수정</button>
-                        <button type="button" className="del" onClick={(e) => openDelete(e, item)}>삭제</button>
-                      </div>
                     </div>
+                    <span className="ledger-item-chevron" aria-hidden="true">›</span>
                   </li>
                 ))}
               </ul>
@@ -407,6 +411,7 @@ function CalendarView({ currentDate, setCurrentDate }) {
       </div>
 
       <TransactionModal
+        key={isModalOpen ? `${modalType}-${selectedItem?.id}` : 'closed'}
         isOpen={isModalOpen}
         type={modalType}
         transaction={selectedItem}

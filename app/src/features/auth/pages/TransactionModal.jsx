@@ -19,6 +19,10 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
 
   const [currentCategories] = useCategories(user?.userId, formData.type);
 
+  // type(부모가 준 초기 모드)을 내부 상태로 들고, 상세('view')에서 '수정'/'삭제'를 누르면 전환한다.
+  // 부모가 열 때마다 key로 리마운트하므로 여는 시점의 type이 초기값이 된다.
+  const [mode, setMode] = useState(type);
+
   useEffect(() => {
     if (transaction) {
       const transType = transaction.type || "OUT";
@@ -63,12 +67,13 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
     setFormData((prev) => ({ ...prev, type: newType, category: newCategories[0] }));
   };
 
-  const isViewMode = type === "view";
-  const isDetailMode = type === "edit" || type === "view";
+  const isViewMode = mode === "view";
+  const isDetailMode = mode === "edit" || mode === "view";
 
   return (
     <div className={styles["modal-overlay"]} onClick={onClose}>
       <div className={styles["modal-content"]} onClick={(e) => e.stopPropagation()}>
+        <button type="button" className={styles["modal-close"]} onClick={onClose} aria-label="닫기">✕</button>
         {isDetailMode ? (
           <>
             <h3>{isViewMode ? "내역 상세" : "내역 수정"}</h3>
@@ -152,14 +157,28 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
             </div>
 
             <div className={styles["modal-actions"]}>
-              <button className={`${styles["modal-btn"]} ${styles.cancel}`} onClick={onClose}>
-                {isViewMode ? "닫기" : "취소"}
-              </button>
-              {!isViewMode && (
-                <button
-                  className={`${styles["modal-btn"]} ${styles.confirm}`}
-                  onClick={() => onSave({ ...transaction, ...formData, krwOverride: foreign })}
-                >수정</button>
+              {isViewMode ? (
+                <>
+                  <button
+                    className={`${styles["modal-btn"]} ${styles.delete}`}
+                    onClick={() => setMode("delete")}
+                  >삭제</button>
+                  <button
+                    className={`${styles["modal-btn"]} ${styles.confirm}`}
+                    onClick={() => setMode("edit")}
+                  >수정</button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className={`${styles["modal-btn"]} ${styles.cancel}`}
+                    onClick={onClose}
+                  >취소</button>
+                  <button
+                    className={`${styles["modal-btn"]} ${styles.confirm}`}
+                    onClick={() => onSave({ ...transaction, ...formData, krwOverride: foreign })}
+                  >저장</button>
+                </>
               )}
             </div>
           </>
@@ -170,7 +189,7 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
               <strong>"{transaction?.text}"</strong> 내역을<br />정말 삭제하시겠습니까?
             </p>
             <div className={styles["modal-actions"]}>
-              <button className={`${styles["modal-btn"]} ${styles.cancel}`} onClick={onClose}>취소</button>
+              <button className={`${styles["modal-btn"]} ${styles.cancel}`} onClick={() => setMode("view")}>취소</button>
               <button className={`${styles["modal-btn"]} ${styles.delete}`} onClick={() => onDelete(transaction.id)}>삭제</button>
             </div>
           </>

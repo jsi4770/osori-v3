@@ -37,14 +37,19 @@
 
 .ftRow {
   display: flex;
-  align-items: stretch; /* 좌/우 컬럼을 같은 높이로 늘려 버튼을 등록일 줄에 맞춤 */
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 14px 0; /* 항목 위·아래 간격 확보 */
-  min-height: 96px; /* 모든 항목 카드 높이 통일 */
+  padding: 14px 6px;
+  min-height: 64px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.12s ease;
 }
+
+.ftRow:hover { background: var(--surface-subtle); }
+.ftRow:active { background: var(--surface-accent); }
 
 .ftRow:last-child {
   border-bottom: none;
@@ -89,16 +94,25 @@
   color: var(--text-weak);
 }
 
-/* 우측 컬럼: 매달 결제일 · 금액 · 수정/삭제 버튼을 오른쪽에 붙여 세로로 배치 */
+/* 우측 컬럼: 금액 */
 .ftRowRight {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: center;
   gap: 6px;
   min-width: 0;
   text-align: right;
+}
+
+.ftRowChevron {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--text-weak);
+  font-size: 18px;
+  line-height: 1;
+  padding-left: 2px;
 }
 
 /* 이름 옆 '매달 N일' 뱃지: 이름과 살짝 띄우고 줄어들지 않게 */
@@ -115,145 +129,12 @@
   white-space: nowrap;
 }
 
-/* 액션 영역: 우측 컬럼 하단 → 등록일 줄 높이에 맞춰 정렬 */
-.ftRowActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  flex: 0 0 auto;
-  min-width: 0;
-  justify-content: flex-end;
-}
-
-/* ------------------------------
-   [ADDED] 버튼 UI만 예쁘게(위치/레이아웃은 그대로)
-   - 고정지출 추가 버튼(ftAddBtn)
-   - 수정/삭제 버튼(ftBtn)
-   ------------------------------ */
-
-/* 상단 '고정지출 추가' 버튼: 오른쪽 위치 유지 */
-.ftAddBtn {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  white-space: nowrap;
-  width: 90px;
-  margin-left: auto;
-
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-
-  background: var(--primary-color);
-  color: #fff;
-  font-weight: 800;
-  font-size: 14px;
-  line-height: 1;
-
-  box-shadow: 0 6px 14px rgba(0, 102, 255, 0.15);
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
-}
-
-.ftAddBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 18px rgba(0, 102, 255, 0.2);
-  background: var(--primary-hover);
-}
-
-.ftAddBtn:active {
-  transform: translateY(0);
-}
-
-.ftAddBtn:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 3px;
-}
-
-.ftAddIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.16);
-  font-size: 14px;
-  line-height: 1;
-}
-
-/* 리스트 '수정/삭제' 버튼: 한 줄 고정 + 살짝 작게 */
-.ftBtn {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-
-  height: 28px;
-  padding: 0 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-main);
-
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
-
-  cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
-}
-
-.ftBtn:hover {
-  background: var(--surface-subtle);
-  transform: translateY(-1px);
-}
-
-.ftBtn:active {
-  transform: translateY(0);
-}
-
-.ftBtn:focus-visible {
-  outline: 3px solid var(--focus-ring);
-  outline-offset: 3px;
-}
-
-.ftBtnEdit {
-  border-color: var(--border-strong);
-}
-
-.ftBtnEdit:hover {
-  background: var(--surface-accent);
-  border-color: var(--primary-color);
-}
-
-.ftBtnDelete {
-  background: var(--danger-bg);
-  border-color: transparent;
-  color: var(--danger-color);
-}
-
-.ftBtnDelete:hover {
-  background: var(--danger-bg-hover);
-  border-color: transparent;
-  color: var(--danger-color);
-}
-
-/* 기존 .alarm 버튼이 너무 커서 리스트용으로만 살짝 축소(혹시 남아있을 때만) */
-.alarm.ftAction {
-  padding: 10px 14px;
-  margin: 0;
-  border-radius: var(--radius-md);
-}
+/* 인라인 수정/삭제 버튼 제거 — 행 탭 → FixedTransModal(수정 모드) 안에서 처리.
+   상단 '추가' 버튼은 공용 <Button variant="primary" size="sm" pill>로 렌더(캘린더뷰 '＋ 추가'와 동일). */
 
 @media (max-width: 640px) {
-  /* 모바일에서도 우측 컬럼(결제일·금액·버튼)을 접지 않고 오른쪽에 유지 */
   .ftRow {
     flex-wrap: nowrap;
-    align-items: stretch;
     gap: 8px;
   }
 }
