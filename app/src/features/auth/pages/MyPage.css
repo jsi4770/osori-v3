@@ -336,7 +336,7 @@
   padding: 6px 0;
   font-size: 13px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   width:100px;
   cursor: pointer;
   transition: opacity 0.2s;
@@ -398,10 +398,6 @@
     padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); /* 화면 아래에서 떠 있는 리퀴드 글래스 탭바 높이 + 여백 */
   }
 
-  .content-header {
-    padding: 8px 4px 12px;
-  }
-
   .info-card {
     padding: 20px;
     max-height: none;
@@ -414,38 +410,8 @@
 
 }
 
-.content-header {
-  position: relative;
-  padding: 30px;
-  padding-top: 0px;
-  margin-bottom: 10px;
-}
-
-
-.content-header h2 {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  margin-top: 0;
-  margin-bottom: 6px;
-}
-
-.content-header .welcome-text,
-.content-header .ps-sub {
-  margin: 0;
-  color: var(--text-weak);
-  font-size: 0.9rem;
-}
-
-.content-header2 {
-  position: absolute;
-  top: 0;
-  right: 40px;
-  display: flex;
-  align-items: center;
-  height: 50px;
-  margin-top: 0;
-}
+/* 예전 페이지 헤더(.content-header*) 규칙은 어느 화면에서도 렌더되지 않아 제거됨.
+   새 화면에서 제목+부제 헤더가 필요하면 components/ui 의 <PageHeader> 사용. */
 
 .alarm-wrapper {
   position: relative;
@@ -576,17 +542,6 @@
   margin: 0;
 }
 
-.amount-title {
-  margin: 0;
-}
-
-.card-title-area {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
 .status-dot {
   font-size: 0.8rem;
   color: var(--text-sub);
@@ -594,23 +549,6 @@
   padding: 4px 8px;
   border-radius: 4px;
 }
-
-.group-name {
-  background: var(--surface-sunken);
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.welecome-text {
-  margin : 8px 0 0;
-  font-size : 1rem;
-  color : var(--text-sub);
-  font-weight: 600;
-}
-
-/*질문봇 영역*/
 
 @media (max-width: 900px) {
   .account-book-grid {

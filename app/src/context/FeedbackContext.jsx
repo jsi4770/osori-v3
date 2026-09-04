@@ -84,6 +84,7 @@ export const FeedbackProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- Provider와 훅을 한 파일에 두는 기존 구조 유지(18곳에서 import)
 export const useFeedback = () => {
   const ctx = useContext(FeedbackContext);
   if (!ctx) throw new Error("useFeedback은 FeedbackProvider 안에서만 사용할 수 있습니다.");

@@ -1,23 +1,4 @@
-.content-header {
-  padding: 30px;
-  padding-top: 0px; 
-  margin-bottom: 10px;
-}
-
-.content-header2 {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.calendar-header {
-  margin: 0;
-  margin-bottom: 1px !important;
-  font-size: 1.8rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--text-strong);
-}
+/* 예전 페이지 헤더 규칙(.content-header* / .calendar-header)은 미사용이라 제거됨 */
 
 /* 월 네비게이션 라벨("July 2026")에 이번 달 총지출을 한 문구로 붙여 표시 */
 .calendar-nav-label {
@@ -411,7 +392,7 @@
   font-weight: 700;
   color: var(--text-weak);
   border: 1px solid var(--border-subtle);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   padding: 1px 6px;
   vertical-align: middle;
 }
@@ -425,7 +406,7 @@
   font-weight: 700;
   color: var(--text-weak);
   background: var(--surface-subtle);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   padding: 1px 6px;
   vertical-align: middle;
 }
@@ -514,7 +495,7 @@
   font-weight: 700;
   color: var(--text-weak);
   border: 1px solid var(--border-subtle);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   padding: 1px 6px;
   margin-left: 6px;
 }

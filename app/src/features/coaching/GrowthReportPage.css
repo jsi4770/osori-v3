@@ -3,30 +3,8 @@
   box-sizing: border-box;
 }
 
-.grp-header {
-  padding: 30px;
-  padding-top: 0;
-  margin-bottom: 10px;
-  box-sizing: border-box;
-}
-
-@media (max-width: 900px) {
-  .grp-header {
-    padding: 8px 4px 12px;
-  }
-}
-
-.grp-header h2 {
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin: 0 0 6px;
-}
-
-.grp-subtitle {
-  color: var(--text-weak);
-  margin: 0;
-  font-size: 0.9rem;
-}
+/* 예전 페이지 헤더 규칙(.grp-header*)은 미사용이라 제거됨.
+   제목 영역이 필요하면 components/ui 의 <PageHeader> 사용. */
 
 .grp-empty {
   color: var(--text-weak);
