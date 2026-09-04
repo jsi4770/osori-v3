@@ -204,4 +204,39 @@ public class RegexExpenseParser {
 		return today;
 	}
 
+	/**
+	 * memo 용 fallback — 원문에서 금액·통화·날짜 표현을 지운 "나머지 설명" 텍스트.
+	 * LLM 이 memo 를 주지 않거나 LLM 없이 파싱한 경우에만 쓰인다(정밀 추출이 아니라 대략적 정리).
+	 * 순수 한글 수사("삼천원") 등 일부 표기는 그대로 남을 수 있다.
+	 */
+	public static String stripAmountAndDate(String text) {
+		if (text == null || text.isBlank()) return "";
+		String s = text;
+
+		// --- 금액 / 통화 ---
+		s = s.replaceAll("\\$\\s*[\\d,.]+", " ");
+		s = s.replaceAll("[\\d,]+(?:\\.\\d+)?\\s*(?:만\\s*(?:\\d+\\s*천)?|천|백)?\\s*원", " ");
+		s = s.replaceAll("[\\d,]+(?:\\.\\d+)?\\s*(?:달러|불|엔화|엔|유로|파운드|위안|元|RMB|USD|JPY|EUR|GBP|CNY|TWD)", " ");
+		s = s.replaceAll("[\\d,]+\\s*만\\s*(?:\\d+\\s*천)?", " ");
+		s = s.replaceAll("[\\d,]+\\s*천", " ");
+		s = s.replaceAll("(?<!\\d)\\d[\\d,]{3,}(?!\\d)", " "); // 남은 4자리 이상 숫자는 금액으로 간주
+
+		// --- 날짜(상대) ---
+		s = s.replaceAll("그끄저께|그끄제|그저께|엊그제|그제|어제|오늘|내일|모레", " ");
+		s = s.replaceAll("(?:지지난|지난|저번|이번|다다음|다음|담)\\s*(?:주|달|해)", " ");
+		s = s.replaceAll("[월화수목금토일]요일", " ");
+		s = s.replaceAll("\\d+\\s*(?:일|주|달|개월|년)\\s*전", " ");
+		// --- 날짜(절대) ---
+		s = s.replaceAll("20\\d{2}\\s*[.\\-/년]\\s*\\d{1,2}\\s*[.\\-/월]\\s*\\d{1,2}\\s*일?", " ");
+		s = s.replaceAll("\\d{1,2}\\s*월\\s*\\d{1,2}\\s*일", " ");
+		s = s.replaceAll("\\d{1,2}\\s*/\\s*\\d{1,2}", " ");
+		s = s.replaceAll("말일|마지막\\s*날", " ");
+
+		// --- 공백/양끝 조사 정리(문장 중간 조사는 건드리지 않음) ---
+		s = s.replaceAll("\\s+", " ").trim();
+		s = s.replaceAll("^(?:에서|에|으로|로|짜리|어치|치)\\s+", "");
+		s = s.replaceAll("\\s+(?:에서|에|으로|로|짜리|어치|치)$", "");
+		return s.trim();
+	}
+
 }

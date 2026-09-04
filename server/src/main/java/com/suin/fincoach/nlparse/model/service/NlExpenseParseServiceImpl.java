@@ -115,7 +115,8 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 			subcategory = blankToNull(str(llm.get("subcategory")));
 			merchant = blankToNull(str(llm.get("merchant")));
 			String llmMemo = str(llm.get("memo"));
-			memo = (llmMemo == null || llmMemo.isBlank()) ? text : llmMemo;
+			// LLM이 memo를 안 주면 원문 전체 대신 금액·날짜만 제거한 나머지를 쓴다.
+			memo = (llmMemo == null || llmMemo.isBlank()) ? RegexExpenseParser.stripAmountAndDate(text) : llmMemo;
 			confidence = toDouble(llm.get("confidence"), 0.5);
 			date = resolveLlmDate(str(llm.get("date")), today);
 
@@ -130,7 +131,7 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 			category = "기타";
 			subcategory = null;
 			merchant = null;
-			memo = text;
+			memo = RegexExpenseParser.stripAmountAndDate(text);
 			confidence = 0.3; // LLM 없이 뽑은 값은 항상 확인 UI를 거치도록 낮게 고정
 			date = RegexExpenseParser.parseDate(text, today);
 			installmentMonths = regexInstallmentMonths;
@@ -309,6 +310,9 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 						+ "'5만원 2개월'처럼 금액 바로 뒤에 개월수만 붙은 구어체 표현도 할부로 간주해 그 숫자를 정수로 답하세요. "
 						+ "단 '2개월 동안', '지난 2개월'처럼 기간·과거를 뜻하는 표현은 할부가 아니므로 0으로 답하고, "
 						+ "할부 언급이 전혀 없거나 '일시불'이면 0으로 답하세요."))
+				+ " memo에는 사용자 입력 문장에서 금액·통화 표현과 날짜 표현(오늘·어제·저번주·3월 5일 등)을 모두 제거한, "
+				+ "무엇을 샀는지 또는 무슨 용도인지 설명하는 나머지 문구만 넣으세요. 가게 이름은 포함해도 되고 빼도 됩니다. "
+				+ "남는 설명이 없으면 빈 문자열로 답하고, 입력 문장을 그대로 복사하지 마세요."
 				+ topUsedHint;
 	}
 
