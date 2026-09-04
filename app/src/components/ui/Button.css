@@ -110,6 +110,16 @@
 }
 .ui-btn--danger:disabled { opacity: 0.55; }
 
+/* 글자만 빨강, 배경 없음 — 주요 액션 옆에서 톤 낮춘 삭제 */
+.ui-btn--danger-ghost {
+  background: transparent;
+  color: var(--danger-color);
+}
+.ui-btn--danger-ghost:hover:not(:disabled):not([aria-busy="true"]) {
+  background: var(--danger-bg);
+}
+.ui-btn--danger-ghost:disabled { opacity: 0.55; }
+
 /* 옅은 배경의 위험 버튼(탈퇴/삭제 링크형) */
 .ui-btn--danger-soft {
   background: var(--danger-bg);

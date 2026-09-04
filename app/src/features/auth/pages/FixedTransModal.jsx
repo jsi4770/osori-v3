@@ -294,38 +294,45 @@ export default function FixedTransModal({
                   수정
                 </Button>
               </>
-            ) : (
+            ) : isEdit ? (
               <>
-                <Button variant="primary" size="md" block type="submit" disabled={isLoading}>
-                  {isLoading ? "처리중..." : isEdit ? "수정" : "추가"}
-                </Button>
+                {onDelete && (
+                  <Button
+                    variant="danger-ghost"
+                    size="md"
+                    type="button"
+                    onClick={() => onDelete(initialValue?.fixedId)}
+                    disabled={isLoading}
+                    style={{ marginRight: "auto" }}
+                  >
+                    삭제
+                  </Button>
+                )}
                 <Button
                   variant="subtle"
                   size="md"
-                  block
                   type="button"
-                  onClick={isEdit ? () => setUiMode("view") : onClose}
+                  onClick={() => setUiMode("view")}
                   disabled={isLoading}
+                  style={{ minWidth: 88 }}
                 >
+                  취소
+                </Button>
+                <Button variant="primary" size="md" type="submit" disabled={isLoading} style={{ minWidth: 88 }}>
+                  {isLoading ? "처리중..." : "수정"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="primary" size="md" block type="submit" disabled={isLoading}>
+                  {isLoading ? "처리중..." : "추가"}
+                </Button>
+                <Button variant="subtle" size="md" block type="button" onClick={onClose} disabled={isLoading}>
                   취소
                 </Button>
               </>
             )}
           </div>
-
-          {isEdit && onDelete && (
-            <Button
-              variant="danger-soft"
-              size="md"
-              block
-              type="button"
-              onClick={() => onDelete(initialValue?.fixedId)}
-              disabled={isLoading}
-              style={{ marginTop: 10 }}
-            >
-              이 고정지출 삭제
-            </Button>
-          )}
         </form>
       </div>
     </div>
