@@ -9,14 +9,17 @@ import fxApi from "../../../api/fxApi";
 
 export default function FixedTransModal({
   userId,
-  mode = "create", // "create" | "edit"
-  initialValue = null, // 수정 시 기존 값
+  mode = "create", // "create" | "edit" | "view"
+  initialValue = null, // 수정/상세 시 기존 값
   onClose,
   onSuccess,
   onDelete, // 수정 모드에서만: 삭제 요청(부모가 confirm + 삭제 처리)
 }) {
   const { toast } = useFeedback();
-  const isEdit = mode === "edit";
+  // 부모가 열 때마다 조건부 렌더로 리마운트하므로 여는 시점의 mode가 초기값이 된다.
+  const [uiMode, setUiMode] = useState(mode);
+  const isView = uiMode === "view";
+  const isEdit = uiMode === "edit";
   // 고정지출은 항상 지출(OUT)이라 수입 카테고리 개념이 없음
   const [CATEGORY_OPTIONS] = useCategories(userId, "OUT");
 
@@ -48,7 +51,8 @@ export default function FixedTransModal({
   const [isLastDay, setIsLastDay] = useState(false);
 
   useEffect(() => {
-    if (isEdit && initialValue) {
+    // 상세(view)/수정(edit) 모두 기존 값을 채운다. (create일 땐 initialValue가 없음)
+    if (initialValue) {
       const initCurrency = initialValue.currency ?? "KRW";
       setForm({
         name: initialValue.name ?? "",
@@ -67,7 +71,7 @@ export default function FixedTransModal({
         setPayDayInput(payDayNum);
       }
     }
-  }, [isEdit, initialValue, today]);
+  }, [initialValue, today]);
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -162,8 +166,8 @@ export default function FixedTransModal({
 
   return (
     <div className="ftmOverlay" onMouseDown={onClose}>
-      <div className="ftmModal" onMouseDown={(e) => e.stopPropagation()}>
-        <h3 className="ftmTitle">{isEdit ? "고정지출 수정" : "고정지출 추가"}</h3>
+      <div className={`ftmModal${isView ? " ftmView" : ""}`} onMouseDown={(e) => e.stopPropagation()}>
+        <h3 className="ftmTitle">{isView ? "고정지출 상세" : isEdit ? "고정지출 수정" : "고정지출 추가"}</h3>
 
         <form onSubmit={handleSubmit} className="ftmForm">
           <label className="ftmLabel" htmlFor="name">
@@ -177,6 +181,7 @@ export default function FixedTransModal({
             placeholder="예) 넷플릭스, 월세, 통신비"
             value={form.name}
             onChange={onChange}
+            readOnly={isView}
           />
 
           <label className="ftmLabel" htmlFor="amount">
@@ -192,6 +197,7 @@ export default function FixedTransModal({
               placeholder="예) 15000"
               value={form.amount}
               onChange={onChange}
+              readOnly={isView}
               style={{ flex: 1 }}
             />
             <select
@@ -199,6 +205,7 @@ export default function FixedTransModal({
               name="currency"
               value={form.currency}
               onChange={onChange}
+              disabled={isView}
               aria-label="통화 선택"
               style={{ flex: "0 0 auto", width: 104, fontWeight: 600 }}
             >
@@ -231,6 +238,7 @@ export default function FixedTransModal({
               name="category"
               value={form.category}
               onChange={onChange}
+              disabled={isView}
             >
               <option value="" disabled>
                 카테고리 선택
@@ -261,12 +269,14 @@ export default function FixedTransModal({
               value={isLastDay ? "" : payDayInput}
               onChange={onChangePayDay}
               disabled={isLastDay}
+              readOnly={isView}
             />
             <label className="ftmCheckLabel">
               <input
                 type="checkbox"
                 checked={isLastDay}
                 onChange={onToggleLastDay}
+                disabled={isView}
               />
               매월 말일
             </label>
@@ -275,12 +285,32 @@ export default function FixedTransModal({
           <input type="hidden" name="transDate" value={form.transDate} readOnly />
 
           <div className="ftmButtonGroup">
-            <Button variant="primary" size="md" block type="submit" disabled={isLoading}>
-              {isLoading ? "처리중..." : isEdit ? "수정" : "추가"}
-            </Button>
-            <Button variant="subtle" size="md" block type="button" onClick={onClose} disabled={isLoading}>
-              취소
-            </Button>
+            {isView ? (
+              <>
+                <Button variant="subtle" size="md" block type="button" onClick={onClose}>
+                  확인
+                </Button>
+                <Button variant="primary" size="md" block type="button" onClick={() => setUiMode("edit")}>
+                  수정
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="primary" size="md" block type="submit" disabled={isLoading}>
+                  {isLoading ? "처리중..." : isEdit ? "수정" : "추가"}
+                </Button>
+                <Button
+                  variant="subtle"
+                  size="md"
+                  block
+                  type="button"
+                  onClick={isEdit ? () => setUiMode("view") : onClose}
+                  disabled={isLoading}
+                >
+                  취소
+                </Button>
+              </>
+            )}
           </div>
 
           {isEdit && onDelete && (

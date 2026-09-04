@@ -7,7 +7,7 @@ import { currencyMeta, isForeign } from "../../../constants/currencies";
 import useCategories from "../../../hooks/useCategories";
 
 // 가계부 내역 보기/수정/삭제 공용 모달 (가계부·캘린더뷰에서 공유)
-export default function TransactionModal({ isOpen, type, transaction, onClose, onSave, onDelete }) {
+export default function TransactionModal({ isOpen, type, transaction, onClose, onSave, onDelete, onQuickUpdate }) {
   const { user } = useAuth();
   const { toast } = useFeedback();
   const today = new Date().toISOString().split("T")[0];
@@ -76,18 +76,29 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
         <button type="button" className={styles["modal-close"]} onClick={onClose} aria-label="닫기">✕</button>
         {isDetailMode ? (
           <>
-            <h3>{isViewMode ? "내역 상세" : "내역 수정"}</h3>
+            {isViewMode ? (
+              <h3>
+                상세 내역
+                <span className={`${styles["type-badge"]} ${formData.type === "IN" ? styles.income : styles.expense}`}>
+                  {formData.type === "IN" ? "수입" : "지출"}
+                </span>
+              </h3>
+            ) : (
+              <h3>내역 수정</h3>
+            )}
 
-            <div className={styles["modal-radio-group"]}>
-              <label className={styles["radio-label"]}>
-                <input type="radio" name="type" value="IN" checked={formData.type === "IN"} onChange={handleTypeChange} disabled={isViewMode} />
-                <span style={{ color: formData.type === "IN" ? "var(--income-color)" : "var(--text-weak)" }}>수입</span>
-              </label>
-              <label className={styles["radio-label"]}>
-                <input type="radio" name="type" value="OUT" checked={formData.type === "OUT"} onChange={handleTypeChange} disabled={isViewMode} />
-                <span style={{ color: formData.type === "OUT" ? "var(--expense-color)" : "var(--text-weak)" }}>지출</span>
-              </label>
-            </div>
+            {!isViewMode && (
+              <div className={styles["modal-radio-group"]}>
+                <label className={styles["radio-label"]}>
+                  <input type="radio" name="type" value="IN" checked={formData.type === "IN"} onChange={handleTypeChange} />
+                  <span style={{ color: formData.type === "IN" ? "var(--income-color)" : "var(--text-weak)" }}>수입</span>
+                </label>
+                <label className={styles["radio-label"]}>
+                  <input type="radio" name="type" value="OUT" checked={formData.type === "OUT"} onChange={handleTypeChange} />
+                  <span style={{ color: formData.type === "OUT" ? "var(--expense-color)" : "var(--text-weak)" }}>지출</span>
+                </label>
+              </div>
+            )}
 
             <div className={styles["modal-form"]}>
               <div>
@@ -149,8 +160,14 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
                 <input
                   type="checkbox"
                   checked={formData.excludeAnalysis === "Y"}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, excludeAnalysis: e.target.checked ? "Y" : "N" }))}
-                  disabled={isViewMode}
+                  onChange={(e) => {
+                    const next = e.target.checked ? "Y" : "N";
+                    setFormData((prev) => ({ ...prev, excludeAnalysis: next }));
+                    // 상세(view)에서 토글하면 별도 '수정' 없이 즉시 저장한다.
+                    if (isViewMode && onQuickUpdate) {
+                      onQuickUpdate({ ...transaction, ...formData, excludeAnalysis: next, krwOverride: foreign });
+                    }
+                  }}
                 />
                 <span className={styles["toggle-slider"]} />
               </label>
@@ -160,9 +177,9 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
               {isViewMode ? (
                 <>
                   <button
-                    className={`${styles["modal-btn"]} ${styles.delete}`}
-                    onClick={() => setMode("delete")}
-                  >삭제</button>
+                    className={`${styles["modal-btn"]} ${styles.cancel}`}
+                    onClick={onClose}
+                  >확인</button>
                   <button
                     className={`${styles["modal-btn"]} ${styles.confirm}`}
                     onClick={() => setMode("edit")}
@@ -181,6 +198,14 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
                 </>
               )}
             </div>
+
+            {!isViewMode && (
+              <button
+                type="button"
+                className={styles["modal-delete-link"]}
+                onClick={() => setMode("delete")}
+              >이 내역 삭제</button>
+            )}
           </>
         ) : (
           <>
@@ -189,7 +214,7 @@ export default function TransactionModal({ isOpen, type, transaction, onClose, o
               <strong>"{transaction?.text}"</strong> 내역을<br />정말 삭제하시겠습니까?
             </p>
             <div className={styles["modal-actions"]}>
-              <button className={`${styles["modal-btn"]} ${styles.cancel}`} onClick={() => setMode("view")}>취소</button>
+              <button className={`${styles["modal-btn"]} ${styles.cancel}`} onClick={() => setMode("edit")}>취소</button>
               <button className={`${styles["modal-btn"]} ${styles.delete}`} onClick={() => onDelete(transaction.id)}>삭제</button>
             </div>
           </>

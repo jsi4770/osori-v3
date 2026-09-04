@@ -218,32 +218,49 @@ function CalendarView({ currentDate, setCurrentDate }) {
   // 행을 탭하면 상세('view') 모달을 연다. 수정/삭제는 그 안에서 처리(인라인 버튼 제거).
   const openView = (item) => { setSelectedItem(item); setModalType('view'); setIsModalOpen(true); };
 
+  const buildUpdatePayload = (updated) => {
+    const updForeign = updated.currency && updated.currency !== 'KRW';
+    return {
+      transId: updated.id,
+      title: updated.text,
+      transDate: updated.date,
+      originalAmount: Number(updated.amount),
+      category: updated.category,
+      type: updated.type,
+      memo: updated.memo || '',
+      userId: Number(userId),
+      isShared: 'N',
+      excludeAnalysis: updated.excludeAnalysis === 'Y' ? 'Y' : 'N',
+      currency: updForeign ? updated.currency : 'KRW',
+      fxAmount: updForeign ? (updated.fxAmount ?? null) : null,
+      // 외화 내역은 모달의 금액칸(원화)이 편집 후 최종값 — 서버가 재환산하지 않도록 override.
+      krwOverride: updForeign ? true : undefined,
+    };
+  };
+
   const handleSave = async (updated) => {
     if (!userId) { toast("로그인 정보가 없습니다.", { type: "error" }); return; }
     try {
-      const updForeign = updated.currency && updated.currency !== 'KRW';
-      await transApi.updateTrans({
-        transId: updated.id,
-        title: updated.text,
-        transDate: updated.date,
-        originalAmount: Number(updated.amount),
-        category: updated.category,
-        type: updated.type,
-        memo: updated.memo || '',
-        userId: Number(userId),
-        isShared: 'N',
-        excludeAnalysis: updated.excludeAnalysis === 'Y' ? 'Y' : 'N',
-        currency: updForeign ? updated.currency : 'KRW',
-        fxAmount: updForeign ? (updated.fxAmount ?? null) : null,
-        // 외화 내역은 모달의 금액칸(원화)이 편집 후 최종값 — 서버가 재환산하지 않도록 override.
-        krwOverride: updForeign ? true : undefined,
-      });
+      await transApi.updateTrans(buildUpdatePayload(updated));
       toast("수정되었습니다.", { type: "success" });
       setIsModalOpen(false);
       fetchTransactions();
     } catch (err) {
       console.error(err);
       toast("수정 중 오류가 발생했습니다.", { type: "error" });
+    }
+  };
+
+  // 상세 화면에서 '분석 제외' 토글만 즉시 저장 — 모달은 닫지 않는다.
+  const handleQuickUpdate = async (updated) => {
+    if (!userId) return;
+    try {
+      await transApi.updateTrans(buildUpdatePayload(updated));
+      toast(updated.excludeAnalysis === 'Y' ? "분석에서 제외했어요." : "분석에 다시 포함했어요.", { type: "success" });
+      fetchTransactions();
+    } catch (err) {
+      console.error(err);
+      toast("저장 중 오류가 발생했습니다.", { type: "error" });
     }
   };
 
@@ -418,6 +435,7 @@ function CalendarView({ currentDate, setCurrentDate }) {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         onDelete={handleDelete}
+        onQuickUpdate={handleQuickUpdate}
       />
     </main>
   );

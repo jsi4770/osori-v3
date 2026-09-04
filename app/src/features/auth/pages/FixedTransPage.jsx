@@ -22,7 +22,8 @@ export default function FixedTransPage() {
   );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState(null); // 수정 대상
+  const [editTarget, setEditTarget] = useState(null); // 상세/수정 대상
+  const [modalMode, setModalMode] = useState("create"); // "create" | "view" | "edit"
 
   const fetchList = async () => {
     if (!userId) return;
@@ -45,11 +46,14 @@ export default function FixedTransPage() {
 
   const openCreate = () => {
     setEditTarget(null);
+    setModalMode("create");
     setIsModalOpen(true);
   };
 
-  const openEdit = (item) => {
+  // 행 탭 → 상세(읽기 전용). 상세 안에서 '수정'을 누르면 편집으로 전환된다.
+  const openDetail = (item) => {
     setEditTarget(item);
+    setModalMode("view");
     setIsModalOpen(true);
   };
 
@@ -99,10 +103,10 @@ export default function FixedTransPage() {
                 <div
                   key={item.fixedId}
                   className="ftRow"
-                  onClick={() => openEdit(item)}
+                  onClick={() => openDetail(item)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEdit(item); } }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(item); } }}
                 >
                   <div className="ftRowMain">
                     <div className="ftRowName">
@@ -135,7 +139,7 @@ export default function FixedTransPage() {
       {isModalOpen && (
         <FixedTransModal
           userId={userId}
-          mode={editTarget ? "edit" : "create"}
+          mode={modalMode}
           initialValue={editTarget}
           onClose={() => setIsModalOpen(false)}
           onSuccess={fetchList}

@@ -69,6 +69,17 @@
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+/* 상세(view) 모드: 읽기 전용이지만 값은 또렷하게 보이도록 */
+.ftmView .ftmInput:read-only,
+.ftmView .ftmInput:disabled,
+.ftmView .ftmSelect:disabled {
+  background: var(--surface-subtle);
+  color: var(--text-main);
+  -webkit-text-fill-color: var(--text-main);
+  opacity: 1;
+  cursor: default;
+}
+
 /* select (모달 톤 맞춤) */
 .ftmSelectWrap {
   position: relative;
