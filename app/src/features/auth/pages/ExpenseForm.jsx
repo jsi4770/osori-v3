@@ -233,7 +233,8 @@ const ExpenseForm = () => {
   // 파싱 결과를 그대로 저장(자동 저장 또는 원탭 확인 "저장" 선택 시). apiType: "IN" | "OUT"
   const saveParsedExpense = async (parsed, apiType) => {
     try {
-      const title = parsed.merchant || parsed.memo || nlText;
+      // 제목은 가게명만. 없으면 정리된 설명 → 그래도 없으면 카테고리명(원문 문장은 넣지 않음).
+      const title = parsed.merchant || parsed.memo || parsed.category || '빠른 입력';
       const parsedForeign = isForeign(parsed.currency);
       if (parsed.installmentMonths > 1 && !parsedForeign) {
         // "3개월 할부"처럼 인식되면 단건 저장 대신 N개월치 회차를 한 번에 등록 (외화 할부는 미지원 → 단건 저장)
@@ -244,7 +245,7 @@ const ExpenseForm = () => {
           installmentMonths: parsed.installmentMonths,
           startDate: parsed.date,
           category: parsed.category,
-          memo: parsed.memo || nlText,
+          memo: parsed.memo || "",
         });
       } else {
         await transApi.myTransSave({
@@ -256,7 +257,7 @@ const ExpenseForm = () => {
           currency: parsedForeign ? parsed.currency : 'KRW',
           fxAmount: parsedForeign ? parsed.fxAmount : undefined,
           category: parsed.category,
-          memo: parsed.memo || nlText,
+          memo: parsed.memo || "",
           excludeAnalysis: 'N',
           userId: user?.userId,
         });
@@ -287,12 +288,13 @@ const ExpenseForm = () => {
       ...prev,
       type: isIncome ? '수입' : '지출',
       transDate: parsed.date || today,
-      title: parsed.merchant || parsed.memo || nlText,
+      // 제목은 가게명만. 없으면 정리된 설명(금액·날짜 제거)을 임시로.
+      title: parsed.merchant || parsed.memo || '',
       // 외화면 수동 폼의 금액칸엔 "외화 금액"을, 통화 셀렉트엔 해당 통화를 채운다.
       originalAmount: (parsedForeign ? parsed.fxAmount : parsed.amount) || '',
       currency: parsedForeign ? parsed.currency : DEFAULT_CURRENCY,
       category: categories.includes(parsed.category) ? parsed.category : '기타',
-      memo: parsed.memo || nlText,
+      memo: parsed.memo || '',
       installmentMonths: parsedForeign ? '' : (parsed.installmentMonths || ''),
     }));
     setKrwOverride(false);
@@ -460,7 +462,7 @@ const ExpenseForm = () => {
               {nlParsed && (() => {
                 const p = nlParsed.result;
                 const pForeign = isForeign(p.currency);
-                const pTitle = p.merchant || p.memo || nlText;
+                const pTitle = p.merchant || p.memo || p.category || '빠른 입력';
                 return (
                   <div className="nl-parsed-card">
                     <div className="nl-parsed-main">
