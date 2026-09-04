@@ -275,7 +275,7 @@
   font-weight: bold;
   height: 26px;
   line-height: 26px;
-  margin: 0; /* h3 기본 margin-top(약 17px)이 옆 '+ 추가' 버튼과의 정렬을 틀어지게 해서 제거 */
+  margin: 17px 0 0; /* 버튼(.ledger-add-btn)에도 동일하게 margin-top: 17px을 줘서 정렬 */
   padding-bottom: 0;
   border-bottom: none;
   white-space: nowrap;
@@ -297,6 +297,7 @@
   min-height: 26px;
   padding: 0 12px;
   font-size: 12px;
+  margin-top: 17px;
 }
 
 .ledger-toggle {
