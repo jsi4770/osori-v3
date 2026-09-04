@@ -151,41 +151,4 @@
   margin-top: 18px;
 }
 
-.ftmBtn {
-  flex: 1;
-  height: 48px;
-  border-radius: var(--radius-md);
-  font-weight: 800;
-  cursor: pointer;
-  border: none;
-}
-
-.ftmPrimary {
-  background: var(--primary-color);
-  color: #fff;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-
-.ftmPrimary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.ftmPrimary:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.ftmPrimary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.ftmGhost {
-  background: var(--surface-subtle);
-  color: var(--text-weak);
-  border: 1px solid var(--border);
-}
-
-.ftmGhost:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
+/* 모달 액션 버튼은 공용 <Button>(components/ui)로 렌더 */

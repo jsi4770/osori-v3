@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./ResetPasswordPage.module.css";
 import { authApi } from "../../../api/authApi";
 import { useFeedback } from "../../../context/FeedbackContext";
+import { Button } from "../../../components/ui";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -109,14 +110,22 @@ export default function ResetPasswordPage() {
 
         {serverMessage && <div className={styles.ok}>{serverMessage}</div>}
 
-        <button className={styles.submitBtn} type="submit" disabled={loading}>
+        <Button type="submit" size="lg" pill block disabled={loading} style={{ marginTop: 18 }}>
           {loading ? "처리 중..." : "비밀번호 재설정"}
-        </button>
+        </Button>
       </form>
 
-      <button className={styles.subBtn} type="button" onClick={() => navigate("/login")}>
+      <Button
+        variant="secondary"
+        size="md"
+        pill
+        block
+        type="button"
+        onClick={() => navigate("/login")}
+        style={{ marginTop: 14 }}
+      >
         로그인으로
-      </button>
+      </Button>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { authApi } from "../../../api/authApi";
 import { useAuth } from "../../../context/AuthContext";
 import { useAppReady } from "../../../context/AppReadyContext";
 import { useFeedback } from "../../../context/FeedbackContext";
+import { Button } from "../../../components/ui";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -136,9 +137,9 @@ export default function LoginPage() {
           />
         </div>
 
-        <button className={styles.loginBtn} type="submit">
+        <Button type="submit" size="lg" pill block style={{ marginTop: 8 }}>
           로그인
-        </button>
+        </Button>
       </form>
 
       <div className={styles.simpleArea}>
@@ -157,16 +158,26 @@ export default function LoginPage() {
       </div>
 
       <div className={styles.bottomRow}>
-        <button
-          className={styles.subBtn}
+        <Button
+          variant="secondary"
+          size="md"
+          pill
+          block
           type="button"
           onClick={() => navigate("/find-password")}
         >
           비밀번호 찾기
-        </button>
-        <button className={styles.subBtn} type="button" onClick={() => navigate("/register")}>
+        </Button>
+        <Button
+          variant="secondary"
+          size="md"
+          pill
+          block
+          type="button"
+          onClick={() => navigate("/register")}
+        >
           회원가입
-        </button>
+        </Button>
       </div>
     </div>
   );

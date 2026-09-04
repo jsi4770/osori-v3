@@ -5,6 +5,7 @@ import { getGrowthReport, sendChatMessage } from '../../api/coachingApi';
 import { extractChallenge, createChallenge } from '../../api/challengeApi';
 import { IconArrowUp } from '../../components/icons';
 import { useFeedback } from '../../context/FeedbackContext';
+import { Button } from '../../components/ui';
 import './CoachChatPage.css';
 
 const CoachChatPage = () => {
@@ -187,12 +188,12 @@ const CoachChatPage = () => {
               {' · '}{proposedChallenge.periodDays}일간
             </p>
             <div className="ccp-challenge-actions">
-              <button className="ccp-challenge-cancel" onClick={() => setProposedChallenge(null)}>
+              <Button variant="subtle" size="md" block onClick={() => setProposedChallenge(null)}>
                 취소
-              </button>
-              <button className="ccp-challenge-confirm" onClick={handleConfirmChallenge} disabled={savingChallenge}>
+              </Button>
+              <Button variant="primary" size="md" block onClick={handleConfirmChallenge} disabled={savingChallenge}>
                 {savingChallenge ? '저장 중...' : '확정'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -131,30 +131,7 @@
   gap: 10px;
 }
 
-.ccp-challenge-cancel,
-.ccp-challenge-confirm {
-  flex: 1;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.ccp-challenge-cancel {
-  background: var(--surface-subtle);
-  color: var(--text-sub);
-}
-
-.ccp-challenge-confirm {
-  background: var(--primary-color);
-  color: #fff;
-}
-
-.ccp-challenge-confirm:disabled {
-  background: var(--primary-disabled);
-  cursor: not-allowed;
-}
+/* 챌린지 모달 버튼은 공용 <Button>(components/ui)로 렌더 */
 
 .ccp-messages {
   flex: 1;

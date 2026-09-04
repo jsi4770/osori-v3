@@ -52,26 +52,7 @@
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-.loginBtn{
-  height: 64px;
-  border: none;
-  border-radius: var(--radius-pill);
-  background: var(--primary-color);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 900;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-
-.loginBtn:hover {
-  background: var(--primary-hover);
-}
-
-.loginBtn:active {
-  transform: scale(0.98);
-}
+/* 로그인 버튼은 공용 <Button>(components/ui)로 렌더 */
 
 .simpleArea{
   text-align: center;
@@ -140,38 +121,11 @@
   margin-top: 18px;
 }
 
-/* 버튼이 한 줄에서 동일 너비로 꽉 차게 */
-.subBtn{
-  flex: 1;
-  min-width: 0;
+/* 하단 보조 버튼(비밀번호 찾기/회원가입)은 공용 <Button variant="secondary">로 렌더 */
 
-  height: 52px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-
-  /* 글자가 길어도 3개가 유지되도록 약간 조정 */
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-
-  white-space: nowrap;
-}
-
-.subBtn:hover{
-  background: var(--surface-subtle);
-}
-
-.subBtn:active{
-  transform: scale(0.98);
-}
-
-/* 아주 작은 화면만 2줄 허용(원하면 이 블록도 지워서 완전 고정 가능) */
+/* 아주 작은 화면만 2줄 허용 */
 @media (max-width: 360px){
   .bottomRow{
     flex-wrap: wrap;
-  }
-  .subBtn{
-    flex: 1 1 100%;
   }
 }

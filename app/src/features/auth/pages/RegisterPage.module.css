@@ -42,16 +42,6 @@
   margin-top: 12px; /* 각 섹션 간 간격 */
 }
 
-.checkBtn{
-  border:1px solid var(--border-strong);
-  background:var(--surface);
-  border-radius: var(--radius-pill);
-  padding:8px 12px;
-  font-size:12px;
-  font-weight:900;
-  cursor:pointer;
-}
-
 .input{
   height:50px;
   border:1px solid var(--border);
@@ -81,38 +71,4 @@
   padding: 6px 0 0;
 }
 
-.submitBtn{
-  height:64px;
-  border:none;
-  border-radius: var(--radius-pill);
-  background:var(--primary-color);
-  color:#fff;
-  font-size:16px;
-  font-weight:900;
-  cursor:pointer;
-  margin-top: 18px;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-.submitBtn:hover:not(:disabled){ background:var(--primary-hover); }
-.submitBtn:active:not(:disabled){ transform: scale(0.98); }
-.submitBtn:disabled{ opacity:.7; cursor:not-allowed; }
-
-.subBtn{
-  width: 100%;
-  height:52px;
-  border-radius: var(--radius-pill);
-  border:1px solid var(--border-strong);
-  background:var(--surface);
-  font-size:14px;
-  font-weight:900;
-  cursor:pointer;
-  margin-top: 14px;
-}
-
-.subBtn:hover{
-  background: var(--surface-subtle);
-}
-
-.subBtn:active{
-  transform: scale(0.98);
-}
+/* 제출/보조 버튼은 공용 <Button>(components/ui)로 렌더 */

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { fixedTransApi } from "../../../api/fixedTransApi";
 import "./FixedTransModal.css";
 import { useFeedback } from "../../../context/FeedbackContext";
+import { Button } from "../../../components/ui";
 import useCategories from "../../../hooks/useCategories";
 import { CURRENCIES, isForeign } from "../../../constants/currencies";
 import fxApi from "../../../api/fxApi";
@@ -273,12 +274,12 @@ export default function FixedTransModal({
           <input type="hidden" name="transDate" value={form.transDate} readOnly />
 
           <div className="ftmButtonGroup">
-            <button className="ftmBtn ftmPrimary" type="submit" disabled={isLoading}>
+            <Button variant="primary" size="md" block type="submit" disabled={isLoading}>
               {isLoading ? "처리중..." : isEdit ? "수정" : "추가"}
-            </button>
-            <button className="ftmBtn ftmGhost" type="button" onClick={onClose} disabled={isLoading}>
+            </Button>
+            <Button variant="subtle" size="md" block type="button" onClick={onClose} disabled={isLoading}>
               취소
-            </button>
+            </Button>
           </div>
         </form>
       </div>

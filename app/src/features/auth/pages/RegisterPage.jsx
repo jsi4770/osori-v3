@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "./RegisterPage.module.css";
 import { authApi } from "../../../api/authApi";
 import { useFeedback } from "../../../context/FeedbackContext";
+import { Button } from "../../../components/ui";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NAME_RE = /^[가-힣]{2,10}$/;
@@ -148,9 +149,9 @@ export default function RegisterPage() {
 
           {error && <div className={styles.error}>{error}</div>}
 
-          <button className={styles.submitBtn} type="submit" disabled={loading}>
+          <Button type="submit" size="lg" pill block disabled={loading} style={{ marginTop: 18 }}>
             {loading ? "보내는 중..." : "인증코드 받기"}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -186,21 +187,34 @@ export default function RegisterPage() {
 
           {error && <div className={styles.error}>{error}</div>}
 
-          <button className={styles.submitBtn} type="submit" disabled={loading || expiresIn <= 0}>
+          <Button
+            type="submit"
+            size="lg"
+            pill
+            block
+            disabled={loading || expiresIn <= 0}
+            style={{ marginTop: 18 }}
+          >
             {loading ? "확인 중..." : "확인"}
-          </button>
+          </Button>
 
           <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-            <button
-              className={styles.subBtn}
+            <Button
+              variant="secondary"
+              size="md"
+              pill
+              block
               type="button"
               disabled={loading || cooldown > 0}
               onClick={sendCode}
             >
               {cooldown > 0 ? `코드 다시 받기 (${cooldown}s)` : "코드 다시 받기"}
-            </button>
-            <button
-              className={styles.subBtn}
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              pill
+              block
               type="button"
               onClick={() => {
                 setStep(1);
@@ -208,7 +222,7 @@ export default function RegisterPage() {
               }}
             >
               이메일 다시 입력
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -253,15 +267,23 @@ export default function RegisterPage() {
 
           {error && <div className={styles.error}>{error}</div>}
 
-          <button className={styles.submitBtn} type="submit" disabled={loading}>
+          <Button type="submit" size="lg" pill block disabled={loading} style={{ marginTop: 18 }}>
             {loading ? "가입 중..." : "회원가입"}
-          </button>
+          </Button>
         </form>
       )}
 
-      <button className={styles.subBtn} type="button" onClick={() => navigate("/login")}>
+      <Button
+        variant="secondary"
+        size="md"
+        pill
+        block
+        type="button"
+        onClick={() => navigate("/login")}
+        style={{ marginTop: 14 }}
+      >
         로그인으로
-      </button>
+      </Button>
     </div>
   );
 }
