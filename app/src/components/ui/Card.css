@@ -1,0 +1,16 @@
+/* ============================================================
+   공용 카드 — .info-card / .grp-item / .challenge-card / .ccp-* 등
+   화면마다 조금씩 다르던 "떠 있는 흰 패널"의 기준값.
+   ============================================================ */
+.ui-card {
+  box-sizing: border-box;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-2);
+}
+
+.ui-card--flat { box-shadow: var(--shadow-1); }
+.ui-card--raised { box-shadow: var(--shadow-3); }
+.ui-card--lg { border-radius: var(--radius-xl); padding: var(--space-6); }
+.ui-card--pad-sm { padding: var(--space-4); }

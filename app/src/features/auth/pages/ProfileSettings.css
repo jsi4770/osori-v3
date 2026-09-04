@@ -219,7 +219,7 @@
   flex-shrink: 0;
   gap: 2px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface-subtle);
 }
 .ps-theme-opt {
@@ -229,7 +229,7 @@
   font-size: 13px;
   font-weight: 800;
   padding: 8px 14px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -389,12 +389,12 @@
 
 .ps-btn.danger {
   border-color: transparent !important;
-  color: var(--error-color) !important;
-  background-color: rgba(231, 76, 60, 0.12) !important;
+  color: var(--danger-color) !important;
+  background-color: var(--danger-bg) !important;
 }
 
 .ps-btn.danger:hover:not(:disabled) {
-  background: rgba(231, 76, 60, 0.2) !important;
+  background: var(--danger-bg-hover) !important;
   border-color: transparent !important;
   transform: translateY(-1px) !important;
 }
@@ -433,15 +433,15 @@
 .ps-dormant-banner {
   margin-top: 12px;
   padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(46, 204, 113, 0.10);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--income-color) 12%, transparent);
   color: var(--income-color);
   font-weight: 800;
 }
 
 .ps-dormant-btn {
   padding: 14px 18px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   border: none;
   background: var(--income-color);
   color: #fff;

@@ -1,0 +1,135 @@
+/* ============================================================
+   공용 버튼 — 화면마다 .submitBtn / .loginBtn / .ps-save-btn / .confirm-btn-ok /
+   .ob-btn-next / .ftBtn … 25종으로 흩어져 있던 버튼 스타일을 하나로 통일.
+   전역 index.css 의 button 기본 규칙(눌림 피드백, focus-visible) 위에 얹는다.
+   ============================================================ */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  font-family: inherit;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.15s ease;
+}
+
+.ui-btn:focus-visible {
+  outline: 3px solid var(--primary-tint);
+  outline-offset: 2px;
+}
+
+.ui-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+.ui-btn:disabled,
+.ui-btn[aria-busy="true"] {
+  cursor: not-allowed;
+}
+
+/* ---- 크기 ---- */
+.ui-btn--sm {
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+}
+.ui-btn--md {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+}
+.ui-btn--lg {
+  min-height: 52px;
+  padding: 0 var(--space-5);
+  font-size: var(--text-base);
+}
+
+/* ---- 모양 ---- */
+.ui-btn--pill { border-radius: var(--radius-pill); }
+.ui-btn--block { width: 100%; }
+
+/* ---- 변형 ---- */
+.ui-btn--primary {
+  background: var(--primary-color);
+  color: #fff;
+}
+.ui-btn--primary:hover:not(:disabled):not([aria-busy="true"]) {
+  background: var(--primary-hover);
+}
+.ui-btn--primary:disabled,
+.ui-btn--primary[aria-busy="true"] {
+  background: var(--primary-disabled);
+}
+
+.ui-btn--secondary {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text-main);
+}
+.ui-btn--secondary:hover:not(:disabled):not([aria-busy="true"]) {
+  background: var(--surface-subtle);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+.ui-btn--secondary:disabled { opacity: 0.5; }
+
+.ui-btn--ghost {
+  background: transparent;
+  color: var(--primary-color);
+}
+.ui-btn--ghost:hover:not(:disabled):not([aria-busy="true"]) {
+  background: var(--surface-subtle);
+}
+.ui-btn--ghost:disabled { opacity: 0.5; }
+
+/* 무채색 옅은 채움 — 모달 '취소', 대시보드 보조 액션 등
+   (.confirm-btn-cancel / .ftmGhost / .ccp-challenge-cancel / .modal-btn.cancel / .grp-dismiss-btn) */
+.ui-btn--subtle {
+  background: var(--surface-subtle);
+  color: var(--text-sub);
+}
+.ui-btn--subtle:hover:not(:disabled):not([aria-busy="true"]) {
+  background: var(--border);
+}
+.ui-btn--subtle:disabled { opacity: 0.6; }
+
+.ui-btn--danger {
+  background: var(--danger-color);
+  color: #fff;
+}
+.ui-btn--danger:hover:not(:disabled):not([aria-busy="true"]) {
+  background: var(--danger-hover);
+}
+.ui-btn--danger:disabled { opacity: 0.55; }
+
+/* 옅은 배경의 위험 버튼(탈퇴/삭제 링크형) */
+.ui-btn--danger-soft {
+  background: var(--danger-bg);
+  color: var(--danger-color);
+}
+.ui-btn--danger-soft:hover:not(:disabled):not([aria-busy="true"]) {
+  background: var(--danger-bg-hover);
+}
+.ui-btn--danger-soft:disabled { opacity: 0.55; }
+
+/* ---- 로딩 스피너 ---- */
+.ui-btn__spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: uiBtnSpin 0.7s linear infinite;
+}
+@keyframes uiBtnSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ui-btn__spinner { animation-duration: 1.6s; }
+}

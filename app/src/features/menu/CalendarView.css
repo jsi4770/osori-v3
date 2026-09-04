@@ -79,7 +79,7 @@
   gap: 8px;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   transition: background 0.15s ease;
 }
 
@@ -209,7 +209,7 @@
 .react-calendar__navigation button:enabled:hover,
 .react-calendar__navigation button:enabled:focus {
   background-color: var(--surface-subtle);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .react-calendar__tile {
@@ -218,14 +218,14 @@
   align-items: center;
   justify-content: flex-start;
   padding: 8px 4px !important;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   /* 🌟 기존의 height: auto나 flex: 1을 제거하고 그리드에 맡김 */
 }
 
 /* 오늘 날짜의 배경색 수정 (기본 노란색 제거) */
 .react-calendar__tile--now {
   background: var(--surface-subtle) !important;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .react-calendar__tile--now.react-calendar__tile--active abbr {
@@ -283,7 +283,7 @@
 
 .react-calendar__tile--active {
   background: var(--primary-color) !important;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   color: white !important;
 }
 .react-calendar__tile--active .income-tag,
@@ -359,7 +359,7 @@
   padding: 8px 10px;
   margin-bottom: 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text-main);
   font-size: 13px;
@@ -455,9 +455,9 @@
   display: inline-block;
   margin-left: 6px;
   padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--surface-weak, #eef1f6);
-  color: var(--text-weak, #6b7280);
+  border-radius: var(--radius-pill);
+  background: var(--surface-subtle);
+  color: var(--text-weak);
   font-size: 11px;
   font-weight: 700;
   vertical-align: middle;
@@ -496,7 +496,7 @@
   gap: 6px;
   padding: 10px 12px;
   margin-bottom: 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-subtle);
 }
 
@@ -567,12 +567,12 @@
 /* 공휴일 */
 /* 1. 공휴일 및 일요일: 빨간색 (우선순위를 위해 !important 사용 가능) */
 .holiday-red abbr {
-  color: #e74c3c !important;
+  color: var(--expense-color) !important;
 }
 
 /* 2. 일반 토요일: 파란색 */
 .holiday-blue abbr {
-  color: #3b82f6 !important;
+  color: var(--holiday-blue) !important;
 }
 
 /* 3. 선택된 날짜: 글자색 흰색 유지 */

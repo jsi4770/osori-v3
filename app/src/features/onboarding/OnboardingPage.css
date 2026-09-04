@@ -88,7 +88,7 @@
   color: var(--primary-color);
   background: var(--primary-tint);
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   margin-bottom: 14px;
 }
 .ob-title {
@@ -125,7 +125,7 @@
   height: 8px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--border-strong);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -258,7 +258,7 @@
   max-width: 260px;
   background: var(--surface);
   border: 1.5px solid var(--primary-color);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 14px 18px;
   box-shadow: 0 10px 26px var(--shadow-color);
   display: flex;
@@ -318,7 +318,7 @@
   line-height: 1.5;
   font-weight: 600;
   padding: 12px 15px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 6px 16px var(--shadow-color);
 }
 .ob-bubble b { color: var(--primary-color); }
@@ -328,7 +328,7 @@
   align-self: center;
   max-width: 94%;
   text-align: center;
-  background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+  background: linear-gradient(135deg, var(--primary-color), var(--holiday-blue));
   color: #fff;
 }
 .ob-bubble-ai b { color: #fff; }
@@ -360,7 +360,7 @@
 .ob-dash-total { margin: 0; font-size: 22px; font-weight: 900; color: var(--text-strong); }
 .ob-dash-badge {
   width: 40px; height: 40px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--primary-tint);
   color: var(--primary-color);
   display: flex; align-items: center; justify-content: center;
@@ -374,7 +374,7 @@
 }
 .ob-sub-icon {
   width: 34px; height: 34px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-subtle);
   display: flex; align-items: center; justify-content: center;
   font-size: 17px;

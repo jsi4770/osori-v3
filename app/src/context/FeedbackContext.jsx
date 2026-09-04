@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { Button } from "../components/ui";
 import "./FeedbackContext.css";
 
 const FeedbackContext = createContext(null);
@@ -64,16 +65,17 @@ export const FeedbackProvider = ({ children }) => {
           <div className="confirm-sheet" onClick={(e) => e.stopPropagation()}>
             <p className="confirm-message">{confirmState.message}</p>
             <div className="confirm-actions">
-              <button type="button" className="confirm-btn confirm-btn-cancel" onClick={() => closeConfirm(false)}>
+              <Button type="button" variant="subtle" block onClick={() => closeConfirm(false)}>
                 {confirmState.cancelLabel}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className={`confirm-btn confirm-btn-ok ${confirmState.danger ? "danger" : ""}`}
+                variant={confirmState.danger ? "danger" : "primary"}
+                block
                 onClick={() => closeConfirm(true)}
               >
                 {confirmState.confirmLabel}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

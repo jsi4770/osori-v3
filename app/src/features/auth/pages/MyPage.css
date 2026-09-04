@@ -95,7 +95,7 @@
     border: none;
     background: none;
     padding: 4px 6px;
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
     cursor: pointer;
     max-width: 55%;
   }
@@ -230,13 +230,13 @@
 }
 .account-detail::-webkit-scrollbar-thumb {
   background: var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .menu-item {
   padding: 15px 20px;
   margin-bottom: 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 600;
   color: var(--text-sub);
@@ -262,7 +262,7 @@
 }
 
 .alarm{
-  border: 3px solid lightgray;
+  border: 3px solid var(--border-strong);
   border-radius: 50%;
   width:30px;
   margin:0px;
@@ -271,7 +271,7 @@
 }
 
 .alarm:hover{
-  background-color: #c1c1c1;
+  background-color: var(--surface-subtle);
   color: var(--text-main);
 }
 
@@ -281,7 +281,7 @@
   right: 2px;
   width: 15px;
   height: 15px;
-  background-color: #ff4757;
+  background-color: var(--danger-color);
   border-radius: 50%;
   border: 2px solid var(--surface);
   z-index: 10;
@@ -295,7 +295,7 @@
 
 
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   box-shadow: 0 8px 24px var(--shadow-color);
   padding: 15px;
   z-index: 1002;
@@ -307,7 +307,7 @@
 
 .noti-dropdown::-webkit-scrollbar-thumb {
   background: var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 .noti-item{
@@ -340,7 +340,7 @@
   width:100px;
   cursor: pointer;
   transition: opacity 0.2s;
-  border:2px solid lightgray;
+  border:2px solid var(--border-strong);
 }
 
 .buttons-wrapper{
@@ -368,7 +368,7 @@
 }
 
 .reject-btn:hover {
-  background-color: #ff4d4f;
+  background-color: var(--danger-color);
   color: white;
 }
 
@@ -530,7 +530,7 @@
   font-weight: 600;
 }
 
-.logout-btn:hover { color: #ff4d4f; }
+.logout-btn:hover { color: var(--danger-color); }
 
 .profile-fixed-card {
   display: flex;
@@ -598,7 +598,7 @@
 .group-name {
   background: var(--surface-sunken);
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   margin-bottom: 8px;
   font-weight: 500;
 }
@@ -660,7 +660,7 @@
 .home-shortcut-btn {
   flex: 1;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   border: none;
   background: var(--primary-color);
   color: white;
@@ -737,7 +737,7 @@
 
 .recent-expense-amount {
   font-weight: 700;
-  color: var(--expense-color, #e74c3c);
+  color: var(--expense-color);
   font-size: 0.95rem;
   font-variant-numeric: tabular-nums;
 }
@@ -770,7 +770,7 @@
   cursor: pointer;
   background-color: var(--border);
   transition: 0.2s;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
 }
 
 .toggle-slider::before {
@@ -886,7 +886,7 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: #d0d5dd;
+  background: var(--border-strong);
   cursor: pointer;
   transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease;
 }

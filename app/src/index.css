@@ -50,6 +50,41 @@
   --error-color: var(--expense-color);
   --focus-ring: rgba(0, 102, 255, 0.15);
 
+  /* ===== 파괴적 동작(삭제/탈퇴/거절/로그아웃) 전용 위험색 =====
+     화면마다 #ff4757 / #ff4d4f / #d9363e / #b91c1c / #d1242f 로 제각각이던 빨강을 하나로 통일.
+     - color: 버튼/아이콘 채움, hover: 눌렀을 때, bg: 옅게 깔리는 배경(고스트 위험 버튼) */
+  --danger-color: #e5484d;
+  --danger-hover: #c93a3f;
+  --danger-bg: rgba(229, 72, 77, 0.12);
+  --danger-bg-hover: rgba(229, 72, 77, 0.2);
+
+  /* 비활성 상태의 파랑 버튼 — 화면마다 #b3c9f5 로 흩어져 있던 값 */
+  --primary-disabled: #a9c7f7;
+
+  /* 달력 토요일/평일-파랑 표기 (공휴일·일요일 빨강은 --expense-color 재사용) */
+  --holiday-blue: #3b82f6;
+
+  /* ===== 간격(spacing) 스케일 — 4px 그리드. 화면마다 10/14/18/22/25px 난립하던 것을 여기로 수렴 =====
+     1:4 2:8 3:12 4:16 5:20 6:24 8:32 10:40 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ===== 타이포 스케일 — rem 고정. px/rem 혼용 및 0.72~1.6rem 난립 정리용 =====
+     xs 12 / sm 14 / base 16 / lg 18 / xl 20 / 2xl 24 / 3xl 30 */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
   /* ===== 컨테이너 폭 — 화면별로 제각각이던 max-width 통일 ===== */
   --container-narrow: 480px;
   --container-wide: 720px;
@@ -89,6 +124,13 @@
   --warn-bg: #2a2410;
   --warn-border: #4a3f18;
   --warn-text: #e8c86a;
+
+  --danger-color: #ff6166;
+  --danger-hover: #ff7b80;
+  --danger-bg: rgba(255, 97, 102, 0.16);
+  --danger-bg-hover: rgba(255, 97, 102, 0.26);
+  --primary-disabled: #2f3f5e;
+  --holiday-blue: #5b9bff;
 
   color-scheme: dark;
 }
@@ -136,7 +178,7 @@ a:hover {
 }
 
 button {
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;

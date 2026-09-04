@@ -64,7 +64,7 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 13px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border-subtle);
   background: var(--surface);
   color: var(--text-main);
@@ -190,7 +190,7 @@
   font-weight: 800;
   color: var(--primary-color);
   background: var(--focus-ring);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 8px;
 }
 

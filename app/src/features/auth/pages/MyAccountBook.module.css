@@ -43,7 +43,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   background: var(--surface);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 10px 30px var(--shadow-color);
 }
 
@@ -81,8 +81,8 @@ body {
   font-weight: 700;
 }
 
-.label-text.income { color: #2ecc71; }
-.label-text.expense { color: #e74c3c; }
+.label-text.income { color: var(--income-color); }
+.label-text.expense { color: var(--expense-color); }
 .label-text.shared { color: var(--shared-color); }
 
 .search-input {
@@ -145,7 +145,7 @@ body {
 }
 
 .modal-content h3 {
-    font-size: 1.5rem !important;
+    font-size: var(--text-2xl) !important;
 }
 
 .modal-content p {
@@ -213,7 +213,7 @@ input[type="date"] {
   font-size: 0.9rem;
   color: var(--text-main);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 6px 12px;
   outline: none;
   background-color: var(--surface);
@@ -278,7 +278,7 @@ input[type="date"] {
     cursor: pointer;
     background-color: var(--border);
     transition: 0.2s;
-    border-radius: 24px;
+    border-radius: var(--radius-xl);
 }
 
 .toggle-slider::before {
@@ -317,7 +317,7 @@ input[type="date"] {
     background: var(--surface-subtle) !important;
     color: var(--text-sub) !important;
     padding: 12px 24px !important;
-    border-radius: 12px !important;
+    border-radius: var(--radius-md) !important;
     font-weight: 700 !important;
     font-size: 1rem !important;
 }
@@ -326,7 +326,7 @@ input[type="date"] {
     background: var(--primary-color) !important;
     color: #ffffff !important;
     padding: 12px 24px !important;
-    border-radius: 12px !important;
+    border-radius: var(--radius-md) !important;
     font-weight: 700 !important;
     font-size: 1rem !important;
     box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25) !important;
@@ -385,10 +385,10 @@ input[type="date"] {
 }
 
 .modal-btn.delete {
-    background-color: #ff4d4f !important;
+    background-color: var(--danger-color) !important;
     color: #ffffff !important;
     padding: 10px 24px !important;
-    border-radius: 12px !important;
+    border-radius: var(--radius-md) !important;
     font-weight: 700 !important;
     border: none !important;
     box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2) !important;
@@ -396,7 +396,7 @@ input[type="date"] {
 }
 
 .modal-btn.delete:hover {
-    background-color: #d9363e !important;
+    background-color: var(--danger-hover) !important;
     transform: translateY(-1px);
     box-shadow: 0 6px 15px rgba(231, 76, 60, 0.3) !important;
 }
@@ -421,7 +421,7 @@ input[type="date"] {
   display: flex !important;
   flex-direction: column !important;
   background: var(--surface);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   padding: 10px !important;
   box-shadow: 0 10px 30px var(--shadow-color);
   box-sizing: border-box;
@@ -462,7 +462,7 @@ canvas {
   align-items: center;
   padding: 15px 0 !important;
   background: var(--surface);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 4px 12px var(--shadow-color);
   margin-bottom: 5px;
 }
@@ -518,7 +518,7 @@ canvas {
     padding: 8px 14px !important;
     font-size: 0.85rem !important;
     font-weight: 700 !important;
-    border-radius: 8px !important;
+    border-radius: var(--radius-sm) !important;
     border: 1px solid var(--border-strong) !important;
     background-color: var(--surface) !important;
     color: var(--text-sub) !important;
@@ -529,25 +529,25 @@ canvas {
 
 .action-btn:hover {
     background: var(--surface-accent) !important;
-    border-color: #a5b4fc !important;
+    border-color: var(--primary-color) !important;
     color: var(--primary-color) !important;
     transform: translateY(-1px);
 }
 
 .action-btn.del-btn {
-    border-color: #fecaca !important;
-    color: #b91c1c !important;
+    border-color: color-mix(in srgb, var(--danger-color) 42%, transparent) !important;
+    color: var(--danger-color) !important;
 }
 
 .action-btn.del-btn:hover {
-    background: #fff1f2 !important;
-    border-color: #fca5a5 !important;
-    color: #b91c1c !important;
+    background: var(--danger-bg) !important;
+    border-color: color-mix(in srgb, var(--danger-color) 55%, transparent) !important;
+    color: var(--danger-color) !important;
     transform: translateY(-1px);
 }
 
 :global(:root[data-theme="dark"]) .action-btn.del-btn:hover {
-    background: rgba(239, 68, 68, 0.15) !important;
+    background: var(--danger-bg-hover) !important;
 }
 
 .action-btn:active {
@@ -555,7 +555,7 @@ canvas {
 }
 
 .action-btn:focus-visible {
-    outline: 3px solid rgba(99, 102, 241, 0.30) !important;
+    outline: 3px solid var(--focus-ring) !important;
     outline-offset: 2px;
 }
 
@@ -584,7 +584,7 @@ canvas {
   .search-wrapper {
     flex-wrap: wrap;
     padding: 12px 16px;
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
   }
 
   .filter-group {
@@ -603,7 +603,7 @@ canvas {
 
   .modal-content {
     padding: 24px !important;
-    border-radius: 24px;
+    border-radius: var(--radius-xl);
   }
 
   .modal-form {

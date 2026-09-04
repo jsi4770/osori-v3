@@ -178,7 +178,7 @@
   justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.16);
   font-size: 14px;
   line-height: 1;
@@ -231,22 +231,22 @@
 }
 
 .ftBtnDelete {
-  background: rgba(231, 76, 60, 0.12);
+  background: var(--danger-bg);
   border-color: transparent;
-  color: var(--error-color);
+  color: var(--danger-color);
 }
 
 .ftBtnDelete:hover {
-  background: rgba(231, 76, 60, 0.2);
+  background: var(--danger-bg-hover);
   border-color: transparent;
-  color: var(--error-color);
+  color: var(--danger-color);
 }
 
 /* 기존 .alarm 버튼이 너무 커서 리스트용으로만 살짝 축소(혹시 남아있을 때만) */
 .alarm.ftAction {
   padding: 10px 14px;
   margin: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 @media (max-width: 640px) {

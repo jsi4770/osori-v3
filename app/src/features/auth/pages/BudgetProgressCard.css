@@ -37,14 +37,14 @@
 
 .bp-bar-track {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-subtle);
   overflow: hidden;
 }
 
 .bp-bar-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--primary-color);
   transition: width 0.3s ease;
 }
@@ -54,7 +54,7 @@
 }
 
 .bp-sub {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--text-weak);
 }
