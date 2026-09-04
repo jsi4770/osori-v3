@@ -275,7 +275,7 @@
   font-weight: bold;
   height: 26px;
   line-height: 26px;
-  margin-bottom: 0;
+  margin: 0; /* h3 기본 margin-top(약 17px)이 옆 '+ 추가' 버튼과의 정렬을 틀어지게 해서 제거 */
   padding-bottom: 0;
   border-bottom: none;
   white-space: nowrap;
@@ -291,7 +291,13 @@
 }
 
 /* '＋ 추가' 버튼은 공용 <Button variant="primary" size="sm" pill>로 렌더
-   (고정지출 화면의 '추가' 버튼과 동일 스펙) */
+   (고정지출 화면의 '추가' 버튼과 동일 스펙이나, 여기서는 옆 제목(.detail-title, 26px)과
+   높이를 맞추기 위해 기본 sm(min-height 34px)보다 낮게 오버라이드) */
+.ledger-add-btn {
+  min-height: 26px;
+  padding: 0 12px;
+  font-size: 12px;
+}
 
 .ledger-toggle {
   display: flex;
@@ -400,10 +406,46 @@
   vertical-align: middle;
 }
 
-.ledger-item-sub {
-  font-size: 13px;
+.ledger-item-category {
+  display: inline-block;
+  flex-shrink: 0;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-weak);
-  margin-top: 2px;
+  background: var(--surface-subtle);
+  border-radius: var(--radius-xs);
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
+/* "이 달 전체" 날짜 그룹 */
+.ledger-date-group + .ledger-date-group {
+  margin-top: 12px;
+}
+
+.ledger-date-group-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 6px 2px;
+}
+
+.ledger-date-group-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-weak);
+}
+
+/* 요청에 따라 날짜별 합계는 최대한 눈에 띄지 않게: 작고 흐린 텍스트만, 배경/색상 강조 없음 */
+.ledger-date-group-total {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-weak);
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .ledger-item-right {

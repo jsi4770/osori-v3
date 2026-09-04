@@ -29,6 +29,15 @@ const fmtCompact = (n) => {
   return n.toLocaleString();
 };
 
+// "이 달 전체" 목록의 날짜 그룹 헤더용: "9월 3일 (수)"
+const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'];
+const fmtGroupDate = (dateStr) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || "");
+  if (!m) return dateStr || "";
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return `${Number(m[2])}월 ${Number(m[3])}일 (${WEEKDAY_KO[d.getDay()]})`;
+};
+
 function CalendarView({ currentDate, setCurrentDate }) {
   const { user } = useAuth();
   const { toast } = useFeedback();
@@ -141,6 +150,24 @@ function CalendarView({ currentDate, setCurrentDate }) {
       item.text.toLowerCase().includes(term) || item.category.toLowerCase().includes(term)
     );
   }, [transactions, selectedDate, listMode, currentDate, searchTerm]);
+
+  // "이 달 전체"에서는 나열형 대신 날짜별로 묶어서 보여준다. listItems가 이미 날짜 내림차순 정렬이라
+  // 그 순서 그대로 그룹만 묶으면 된다.
+  const groupedMonthItems = useMemo(() => {
+    if (listMode !== 'month') return [];
+    const groups = [];
+    const byDate = new Map();
+    listItems.forEach(item => {
+      let group = byDate.get(item.date);
+      if (!group) {
+        group = { date: item.date, items: [] };
+        byDate.set(item.date, group);
+        groups.push(group);
+      }
+      group.items.push(item);
+    });
+    return groups;
+  }, [listItems, listMode]);
 
   // 이번에 보고 있는 달 기준, 아직 실제 내역으로 등록되지 않은(오늘 이후) 고정지출 예정일 → 회색 미리보기용.
   // 실제 지출 집계(monthlyTotalExpense)에는 포함하지 않는다: 스케줄러가 당일 실제 내역을 만들면
@@ -300,6 +327,48 @@ function CalendarView({ currentDate, setCurrentDate }) {
     setCurrentDate(next);
   };
 
+  // 내역 한 줄. '이 날'/'이 달 전체' 둘 다, 그리고 날짜 그룹 안에서도 동일하게 사용.
+  const renderLedgerItem = (item) => (
+    <li
+      key={item.id}
+      className="ledger-item"
+      onClick={() => openView(item)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openView(item); } }}
+    >
+      <div className="ledger-item-main">
+        <div className="ledger-item-title">
+          <span className="ledger-item-title-text">{item.text}</span>
+          <span className="ledger-item-category">{item.category}</span>
+          {item.memo === FIXED_AUTO_MEMO && (
+            <span className="ledger-fixed-badge">고정지출</span>
+          )}
+          {item.installmentId != null && (
+            <span className="ledger-fixed-badge">할부</span>
+          )}
+          {item.excludeAnalysis === 'Y' && (
+            <span className="ledger-exclude-badge">분석 제외</span>
+          )}
+        </div>
+      </div>
+      <div className="ledger-item-right">
+        <div
+          className="ledger-item-amt"
+          style={{ color: item.type === 'IN' ? 'var(--income-color)' : 'var(--expense-color)' }}
+        >
+          {item.type === 'IN' ? '+' : '-'}{item.amount.toLocaleString()}원
+          {isForeign(item.currency) && item.fxAmount != null && (
+            <span className="ledger-fx-badge">
+              {currencyMeta(item.currency).flag} {currencyMeta(item.currency).symbol}{Number(item.fxAmount).toLocaleString()}
+            </span>
+          )}
+        </div>
+      </div>
+      <span className="ledger-item-chevron" aria-hidden="true">›</span>
+    </li>
+  );
+
   return (
     <main className="fade-in calendar-page-container">
       <div className="calendar-content-wrapper" style={{ display: 'flex', gap: '20px' }}>
@@ -341,7 +410,14 @@ function CalendarView({ currentDate, setCurrentDate }) {
             <h3 className="detail-title">
               {listMode === 'day' ? `${fmtKoreanDate(selectedDate)} 내역` : `${currentDate.getMonth() + 1}월 전체`}
             </h3>
-            <Button type="button" variant="primary" size="sm" pill onClick={() => navigate('/mypage/expenseForm')}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              pill
+              className="ledger-add-btn"
+              onClick={() => navigate('/mypage/expenseForm')}
+            >
               ＋ 추가
             </Button>
           </div>
@@ -371,56 +447,40 @@ function CalendarView({ currentDate, setCurrentDate }) {
           )}
 
           <div className="detail-list-container">
-            {listItems.length > 0 ? (
+            {listMode === 'month' ? (
+              groupedMonthItems.length > 0 ? (
+                groupedMonthItems.map((group) => {
+                  const income = group.items.filter(i => i.type === 'IN').reduce((s, i) => s + i.amount, 0);
+                  const expense = group.items.filter(i => i.type === 'OUT').reduce((s, i) => s + i.amount, 0);
+                  const totalParts = [];
+                  if (income > 0) totalParts.push(`+${fmtCompact(income)}`);
+                  if (expense > 0) totalParts.push(`-${fmtCompact(expense)}`);
+                  return (
+                    <div key={group.date} className="ledger-date-group">
+                      <div className="ledger-date-group-header">
+                        <span className="ledger-date-group-date">{fmtGroupDate(group.date)}</span>
+                        {totalParts.length > 0 && (
+                          <span className="ledger-date-group-total">{totalParts.join(' · ')}</span>
+                        )}
+                      </div>
+                      <ul className="detail-list">
+                        {group.items.map(renderLedgerItem)}
+                      </ul>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="ledger-empty">
+                  {searchTerm.trim() ? '검색 결과가 없어요.' : '이 달 등록된 내역이 없어요.'}
+                </p>
+              )
+            ) : listItems.length > 0 ? (
               <ul className="detail-list">
-                {listItems.map((item) => (
-                  <li
-                    key={item.id}
-                    className="ledger-item"
-                    onClick={() => openView(item)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openView(item); } }}
-                  >
-                    <div className="ledger-item-main">
-                      <div className="ledger-item-title">
-                        <span className="ledger-item-title-text">{item.text}</span>
-                        {item.memo === FIXED_AUTO_MEMO && (
-                          <span className="ledger-fixed-badge">고정지출</span>
-                        )}
-                        {item.installmentId != null && (
-                          <span className="ledger-fixed-badge">할부</span>
-                        )}
-                        {item.excludeAnalysis === 'Y' && (
-                          <span className="ledger-exclude-badge">분석 제외</span>
-                        )}
-                      </div>
-                      <div className="ledger-item-sub">
-                        {item.category}{listMode === 'month' ? ` · ${fmtKoreanDate(item.date)}` : ''}
-                      </div>
-                    </div>
-                    <div className="ledger-item-right">
-                      <div
-                        className="ledger-item-amt"
-                        style={{ color: item.type === 'IN' ? 'var(--income-color)' : 'var(--expense-color)' }}
-                      >
-                        {item.type === 'IN' ? '+' : '-'}{item.amount.toLocaleString()}원
-                        {isForeign(item.currency) && item.fxAmount != null && (
-                          <span className="ledger-fx-badge">
-                            {currencyMeta(item.currency).flag} {currencyMeta(item.currency).symbol}{Number(item.fxAmount).toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="ledger-item-chevron" aria-hidden="true">›</span>
-                  </li>
-                ))}
+                {listItems.map(renderLedgerItem)}
               </ul>
             ) : (
               <p className="ledger-empty">
-                {searchTerm.trim()
-                  ? '검색 결과가 없어요.'
-                  : (listMode === 'day' ? '이 날 등록된 내역이 없어요.' : '이 달 등록된 내역이 없어요.')}
+                {searchTerm.trim() ? '검색 결과가 없어요.' : '이 날 등록된 내역이 없어요.'}
               </p>
             )}
           </div>
