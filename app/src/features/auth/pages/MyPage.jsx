@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./MyPage.css";
 import { useAuth } from "../../../context/AuthContext";
@@ -7,8 +7,7 @@ import HomeInsightCard from "../../coaching/HomeInsightCard";
 import BudgetProgressCard from "./BudgetProgressCard";
 import ChallengeCard from "../../coaching/ChallengeCard";
 import transApi from "../../../api/transApi";
-import ExpenseChart from "./ExpenseChart";
-import MonthlyTrendChart from "./MonthlyTrendChart";
+import { normalizeTransactions } from "../../Util/analytics";
 import { maybeNotifyBudgetExceeded } from "../../Util/budgetLocalAlert";
 import { currencyMeta, isForeign } from "../../../constants/currencies";
 
@@ -20,33 +19,6 @@ const MyPage = () => {
   const [currentDate] = useState(new Date());
   const [transactions, setTransactions] = useState([]);
   const [showRecent, setShowRecent] = useState(true);
-  const [analysisDate, setAnalysisDate] = useState(new Date());
-  const [activeSlide, setActiveSlide] = useState(0);
-  const carouselRef = useRef(null);
-
-  const analysisYear = analysisDate.getFullYear();
-  const analysisMonth = analysisDate.getMonth() + 1;
-
-  const handleCarouselScroll = () => {
-    const el = carouselRef.current;
-    if (!el) return;
-    const index = Math.round(el.scrollLeft / el.clientWidth);
-    setActiveSlide(index);
-  };
-
-  const goToSlide = (index) => {
-    const el = carouselRef.current;
-    if (!el) return;
-    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
-  };
-
-  const handlePrevMonth = () => {
-    setAnalysisDate(new Date(analysisDate.getFullYear(), analysisDate.getMonth() - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setAnalysisDate(new Date(analysisDate.getFullYear(), analysisDate.getMonth() + 1, 1));
-  };
 
   //내 가계부 지출액 표시 함수
   const loadData = async () => {
@@ -54,29 +26,9 @@ const MyPage = () => {
     try {
       if (user?.userId) {
         const transData = await transApi.getUserTrans(user.userId);
-        const mappedData = (transData || []).map((item) => {
-          const rawDate = item.transDate || item.TRANS_DATE || item.date || "";
-          let formattedDate = rawDate;
-          if (rawDate && typeof rawDate === "string" && rawDate.includes("/")) {
-            const [yy, mm, dd] = rawDate.split("/");
-            formattedDate = `20${yy}-${mm}-${dd}`;
-          }
-
-          return {
-            id: item.transId || item.TRAN_ID || item.trans_id || item.id || 0,
-            text: item.title || item.TITLE || item.text || "",
-            amount: Number(item.originalAmount || item.ORIGINAL_AMOUNT || item.amount || 0),
-            date: formattedDate,
-            type: item.type || item.TYPE,
-            category: item.category || item.CATEGORY || "기타",
-            memo: item.memo || item.MEMO || "",
-            excludeAnalysis: (item.excludeAnalysis || item.EXCLUDE_ANALYSIS) === "Y" ? "Y" : "N",
-            currency: item.currency || item.CURRENCY || "KRW",
-            fxAmount: item.fxAmount ?? item.FX_AMOUNT ?? null,
-          };
-        });
+        const mappedData = normalizeTransactions(transData);
         // 할부로 미리 생성된 미래 회차는 아직 실제로 지출된 게 아니므로, 홈 화면의 모든 지출 통계
-        // (이번 달 지출, 이상치 탐지, 챌린지 진행률, 차트)에서 제외한다. 미래 회차 미리보기는
+        // (이번 달 지출, 이상치 탐지, 챌린지 진행률)에서 제외한다. 미래 회차 미리보기는
         // CalendarView에서만 별도로(회색 "예정" 표시) 다룬다.
         const todayStr = new Date().toLocaleDateString("en-CA");
         const actualData = mappedData.filter((t) => !t.date || t.date <= todayStr);
@@ -203,40 +155,6 @@ const MyPage = () => {
               )}
             </ul>
           )}
-        </div>
-      </div>
-
-      <div className="home-analysis-section">
-        <div className="month-selector-container">
-          <div className="month-nav-group">
-            <button onClick={handlePrevMonth} className="nav-btn">◀</button>
-            <span className="month-nav-label">{analysisYear}년 {analysisMonth}월 분석</span>
-            <button onClick={handleNextMonth} className="nav-btn">▶</button>
-          </div>
-        </div>
-
-        <div
-          className="chart-carousel"
-          ref={carouselRef}
-          onScroll={handleCarouselScroll}
-        >
-          <div className="chart-slide">
-            <ExpenseChart transactions={transactions} currentDate={analysisDate} />
-          </div>
-          <div className="chart-slide">
-            <MonthlyTrendChart transactions={transactions} currentDate={analysisDate} />
-          </div>
-        </div>
-
-        <div className="carousel-dots">
-          {[0, 1].map((i) => (
-            <button
-              key={i}
-              className={`carousel-dot ${activeSlide === i ? "active" : ""}`}
-              onClick={() => goToSlide(i)}
-              aria-label={`${i + 1}번째 분석 보기`}
-            />
-          ))}
         </div>
       </div>
     </main>

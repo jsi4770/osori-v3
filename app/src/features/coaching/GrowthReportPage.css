@@ -1,6 +1,323 @@
 .growth-report-page {
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== 요약 스탯 카드 ===== */
+.report-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.report-stat-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  padding: 14px 10px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.report-stat-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-weak);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.report-stat-value {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+  word-break: keep-all;
+}
+
+.report-stat-value.is-up { color: var(--expense-color); }
+.report-stat-value.is-down { color: var(--income-color); }
+
+/* ===== 이번 달 분석 (홈에서 이동한 도넛/추이 캐러셀) ===== */
+.home-analysis-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2);
+  padding: 6px 14px 12px;
+  box-sizing: border-box;
+}
+
+.month-selector-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.month-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.month-nav-label {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.nav-btn:hover {
+  background: var(--surface-subtle);
+}
+
+/* 분석 차트 스와이프 캐러셀 */
+.chart-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  height: 420px;
+}
+
+.chart-carousel::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.chart-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  scroll-snap-align: center;
+  box-sizing: border-box;
+}
+
+/* 슬라이드 안의 차트 카드가 슬라이드를 꽉 채우고, 통합 카드 안이라 개별 카드 장식은 제거 */
+.chart-slide > div {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease;
+}
+
+.carousel-dot.active {
+  width: 22px;
+  border-radius: 4px;
+  background: var(--primary-color);
+}
+
+@media (max-width: 900px) {
+  .chart-carousel {
+    height: 380px;
+  }
+}
+
+/* 예상 지출 문구 롤링 (MonthlyTrendChart) */
+.rolling-summary {
+  flex: 0 0 auto;
+  height: 22px;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 22px;
+  color: var(--text-main);
+}
+
+.rolling-summary-item {
+  animation: rollUp 0.5s ease;
+}
+
+@keyframes rollUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 요일별 소비 패턴 / 가맹점 TOP5 / 카테고리 증감 — 공용 섹션 카드 ===== */
+.report-section {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.report-section h3 {
+  margin: 0 0 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.report-section-empty {
+  color: var(--text-weak);
+  font-size: 0.88rem;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* 요일별 소비 패턴 */
+.weekday-chart-wrap {
+  height: 180px;
+}
+
+/* 가맹점 TOP5 */
+.merchant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.merchant-row {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.merchant-rank {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-weak);
+}
+
+.merchant-info {
+  min-width: 0;
+}
+
+.merchant-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.merchant-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.merchant-count {
+  font-size: 0.72rem;
+  color: var(--text-weak);
+  flex-shrink: 0;
+}
+
+.merchant-bar-track {
+  margin-top: 5px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-subtle);
+  overflow: hidden;
+}
+
+.merchant-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--primary-color);
+}
+
+.merchant-amount {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+/* 카테고리별 전월 대비 증감 */
+.delta-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.delta-col-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-weak);
+  margin-bottom: 8px;
+}
+
+.delta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 8px;
+}
+
+.delta-row:last-child {
+  border-bottom: none;
+}
+
+.delta-category {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.delta-value {
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.delta-value.is-up { color: var(--expense-color); }
+.delta-value.is-down { color: var(--income-color); }
+
+@media (max-width: 420px) {
+  .delta-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 예전 페이지 헤더 규칙(.grp-header*)은 미사용이라 제거됨.

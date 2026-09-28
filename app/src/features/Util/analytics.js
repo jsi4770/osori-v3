@@ -52,6 +52,109 @@ export const getCategoryMonthlyTotals = (transactions, currentDate) => {
     .map((key) => ({ yearMonth: key, categories: totals[key] }));
 };
 
+// 백엔드 트랜잭션 원본(camelCase/UPPER_SNAKE 혼재, transDate가 "YY/MM/DD" 슬래시 포맷일 수 있음)을
+// 분석 함수들이 기대하는 정규화된 형태로 변환한다. MyPage.jsx / SpendingTrendCard.jsx / GrowthReportPage.jsx가
+// 각자 이 로직을 따로 들고 있던 걸 여기 하나로 모았다.
+export const normalizeTransactions = (rawList) => (rawList || []).map((item) => {
+  const rawDate = item.transDate || item.TRANS_DATE || item.date || '';
+  let formattedDate = rawDate;
+  if (rawDate && typeof rawDate === 'string' && rawDate.includes('/')) {
+    const [yy, mm, dd] = rawDate.split('/');
+    formattedDate = `20${yy}-${mm}-${dd}`;
+  }
+  return {
+    id: item.transId || item.TRAN_ID || item.trans_id || item.id || 0,
+    text: item.title || item.TITLE || item.text || '',
+    amount: Number(item.originalAmount || item.ORIGINAL_AMOUNT || item.amount || 0),
+    date: formattedDate,
+    type: item.type || item.TYPE,
+    category: item.category || item.CATEGORY || '기타',
+    memo: item.memo || item.MEMO || '',
+    excludeAnalysis: (item.excludeAnalysis || item.EXCLUDE_ANALYSIS) === 'Y' ? 'Y' : 'N',
+    currency: item.currency || item.CURRENCY || 'KRW',
+    fxAmount: item.fxAmount ?? item.FX_AMOUNT ?? null,
+  };
+});
+
+const isCountableExpense = (t, todayStr) =>
+  t.type?.toUpperCase() === 'OUT' && t.excludeAnalysis !== 'Y' && (!t.date || t.date <= todayStr);
+
+// 요일별(일~토) 소비 패턴 — 최근 monthsBack개월(기본 3개월)간 지출을 요일에 누적해 평균을 낸다.
+// 한 달치만 보면 요일당 4~5건뿐이라 노이즈가 커서 기본을 3개월로 잡았다.
+export const getWeekdayTotals = (transactions, currentDate, monthsBack = 3) => {
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const cutoff = new Date(currentDate.getFullYear(), currentDate.getMonth() - (monthsBack - 1), 1);
+
+  const sums = new Array(7).fill(0);
+  const counts = new Array(7).fill(0);
+
+  transactions
+    .filter((t) => isCountableExpense(t, todayStr) && t.date && new Date(t.date) >= cutoff)
+    .forEach((t) => {
+      const day = new Date(t.date).getDay(); // 0=일 ... 6=토
+      sums[day] += Math.abs(t.amount || 0);
+      counts[day] += 1;
+    });
+
+  // 같은 요일이 항상 monthsBack개월 안에 4~5번씩 나오므로, "평균 1회 지출액"이 아니라
+  // "요일별 총합"을 보여준다 — 어느 요일에 돈이 몰리는지가 궁금한 거지 1회 평균이 궁금한 게 아니라서.
+  return ['일', '월', '화', '수', '목', '금', '토'].map((label, idx) => ({
+    label,
+    total: sums[idx],
+    count: counts[idx],
+  }));
+};
+
+// 특정 월(기본: currentDate가 속한 달) 가맹점(title) 상위 지출 랭킹.
+export const getTopMerchants = (transactions, currentDate, limit = 5) => {
+  const targetYM = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const todayStr = new Date().toLocaleDateString('en-CA');
+
+  const totals = {};
+  transactions
+    .filter((t) => isCountableExpense(t, todayStr) && t.date?.startsWith(targetYM))
+    .forEach((t) => {
+      const name = (t.text || '').trim() || '(내용 없음)';
+      if (!totals[name]) totals[name] = { name, total: 0, count: 0, category: t.category };
+      totals[name].total += Math.abs(t.amount || 0);
+      totals[name].count += 1;
+    });
+
+  return Object.values(totals)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, limit);
+};
+
+// 이번 달 vs 전월 카테고리별 증감. previous가 0인데 current만 있으면(신규 카테고리) deltaPct는 null로 —
+// 0에서 올라간 건 "% 증가"로 표현할 수 없어서(분모가 0) 별도 처리한다.
+export const getCategoryDeltas = (transactions, currentDate) => {
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const curYM = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const prevDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+  const prevYM = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+  const curTotals = {};
+  const prevTotals = {};
+  transactions
+    .filter((t) => isCountableExpense(t, todayStr))
+    .forEach((t) => {
+      const cat = t.category || '기타';
+      if (t.date?.startsWith(curYM)) curTotals[cat] = (curTotals[cat] || 0) + Math.abs(t.amount || 0);
+      else if (t.date?.startsWith(prevYM)) prevTotals[cat] = (prevTotals[cat] || 0) + Math.abs(t.amount || 0);
+    });
+
+  const categories = new Set([...Object.keys(curTotals), ...Object.keys(prevTotals)]);
+  return [...categories]
+    .map((category) => {
+      const current = curTotals[category] || 0;
+      const previous = prevTotals[category] || 0;
+      const delta = current - previous;
+      const deltaPct = previous > 0 ? Math.round((delta / previous) * 100) : null;
+      return { category, current, previous, delta, deltaPct };
+    })
+    .filter((d) => d.current > 0 || d.previous > 0);
+};
+
 // 이번 달 말 예상 지출 계산 함수
 export const calculateProjectedExpense = (currentExpense, currentDate) => {
   const year = currentDate.getFullYear();
