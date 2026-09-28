@@ -6,6 +6,8 @@ import { useAppReady } from "../../../context/AppReadyContext";
 import HomeInsightCard from "../../coaching/HomeInsightCard";
 import BudgetProgressCard from "./BudgetProgressCard";
 import ChallengeCard from "../../coaching/ChallengeCard";
+import TodayLogReminderCard from "./TodayLogReminderCard";
+import UpcomingFixedExpensesCard from "./UpcomingFixedExpensesCard";
 import transApi from "../../../api/transApi";
 import { normalizeTransactions } from "../../Util/analytics";
 import { maybeNotifyBudgetExceeded } from "../../Util/budgetLocalAlert";
@@ -156,6 +158,9 @@ const MyPage = () => {
             </ul>
           )}
         </div>
+
+        {!isLoading && <TodayLogReminderCard transactions={transactions} />}
+        <UpcomingFixedExpensesCard />
       </div>
     </main>
   );

@@ -1,0 +1,76 @@
+.upcoming-fixed-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-2);
+}
+
+.upcoming-fixed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.upcoming-fixed-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.upcoming-fixed-more {
+  font-size: 0.8rem;
+  color: var(--text-weak);
+  font-weight: 600;
+}
+
+.upcoming-fixed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upcoming-fixed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upcoming-fixed-icon {
+  color: var(--text-weak);
+  flex-shrink: 0;
+}
+
+.upcoming-fixed-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-fixed-dday {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-weak);
+  background: var(--surface-subtle);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.upcoming-fixed-dday.is-soon {
+  color: var(--expense-color);
+  background: color-mix(in srgb, var(--expense-color) 14%, transparent);
+}
+
+.upcoming-fixed-amount {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-main);
+}

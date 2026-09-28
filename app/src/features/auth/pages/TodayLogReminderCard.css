@@ -1,0 +1,41 @@
+.today-log-card {
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-2);
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.today-log-pending {
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-main);
+}
+
+.today-log-btn {
+  flex-shrink: 0;
+  border: none;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.today-log-btn:hover {
+  background: var(--primary-hover);
+}
+
+.today-log-done {
+  background: color-mix(in srgb, var(--income-color) 12%, var(--surface));
+  color: var(--income-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
