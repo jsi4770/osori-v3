@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="nlShadowLogMapper">
+
+	<insert id="insert" parameterType="NlShadowLog">
+		INSERT INTO NL_SHADOW_LOG (
+			LOG_ID,
+			USER_ID,
+			TYPE,
+			INPUT_TEXT,
+			GEMINI_CATEGORY,
+			GEMINI_MERCHANT,
+			MODEL_CATEGORY,
+			MODEL_MERCHANT,
+			CATEGORY_AGREE,
+			MERCHANT_AGREE,
+			MODEL_MS,
+			CREATED_AT
+		) VALUES (
+			nextval('SEQ_NL_SHADOW_LOG'),
+			#{userId},
+			#{type},
+			#{inputText},
+			#{geminiCategory},
+			#{geminiMerchant},
+			#{modelCategory},
+			#{modelMerchant},
+			#{categoryAgree},
+			#{merchantAgree},
+			#{modelMillis},
+			CURRENT_TIMESTAMP
+		)
+	</insert>
+
+</mapper>

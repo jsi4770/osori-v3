@@ -58,6 +58,10 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 	@Autowired
 	private SqlSessionTemplate sqlSession;
 
+	// 섀도우 모드: 자체 모델이 켜져 있을 때만 주입된다(없으면 null). 파싱 응답에는 영향 없음.
+	@Autowired(required = false)
+	private com.suin.fincoach.nlparse.model.localmodel.NlShadowComparator shadowComparator;
+
 	@Value("${coaching.llm.enabled:false}")
 	private boolean llmEnabled;
 
@@ -219,6 +223,11 @@ public class NlExpenseParseServiceImpl implements NlExpenseParseService {
 		}
 
 		logParse(userId, txType, text, source, llm, result, confidence);
+
+		// 섀도우: 자체 모델 예측을 나란히 기록(비동기, 실패 무시). 응답은 위 result 그대로.
+		if (shadowComparator != null) {
+			shadowComparator.compareAsync(userId, txType, text, result);
+		}
 
 		return result;
 	}

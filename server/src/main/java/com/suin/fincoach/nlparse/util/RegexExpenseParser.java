@@ -11,14 +11,32 @@ public class RegexExpenseParser {
 
 	private static final Pattern MAN_PATTERN =
 			Pattern.compile("(\\d+(?:\\.\\d+)?)\\s*만\\s*(?:(\\d+)\\s*천)?\\s*원?");
+	private static final Pattern CHEON_BAEK_PATTERN = Pattern.compile("(\\d+)\\s*천\\s*(\\d+)\\s*백"); // "8천5백" = 8500
 	private static final Pattern CHEON_PATTERN = Pattern.compile("(\\d+)\\s*천\\s*원?");
 	private static final Pattern WON_PATTERN = Pattern.compile("([\\d,]+)\\s*원");
 	private static final Pattern BARE_COMMA_PATTERN = Pattern.compile("\\d{1,3}(?:,\\d{3})+");
 
+	// 순수/혼합 한글 수사("만오천원", "삼천오백원", "이만삼천", "십오만원"). LLM 없이도 이런 표기를 읽어야 하므로 추가.
+	private static final String KO_NUM_CHARS = "영공일이삼사오육륙칠팔구십백천만억";
+	private static final Pattern KO_AMOUNT_WON =
+			Pattern.compile("([0-9" + KO_NUM_CHARS + "]{1,20})\\s*원");
+	private static final Pattern KO_AMOUNT_BARE =
+			Pattern.compile("([0-9" + KO_NUM_CHARS + "]*[만천][0-9" + KO_NUM_CHARS + "]*)");
+
 	private static final Pattern D_AGO_PATTERN = Pattern.compile("(\\d+)\\s*일\\s*전");
+	private static final Pattern W_AGO_PATTERN = Pattern.compile("(\\d+)\\s*주\\s*전");
 	private static final Pattern ISO_DATE_PATTERN =
 			Pattern.compile("(20\\d{2})[.\\-/년]\\s*(\\d{1,2})[.\\-/월]\\s*(\\d{1,2})");
 	private static final Pattern MONTH_DAY_PATTERN = Pattern.compile("(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일");
+	// "지난달 25일", "이번달 5일", "다음달 3일", "지지난달 15일"
+	private static final Pattern MONTH_REL_DAY_PATTERN =
+			Pattern.compile("(지지난|지난|저번|다다음|다음|담|이번)\\s*달\\s*(\\d{1,2})\\s*일");
+	// "지난달 말일", "저번달 마지막 날"
+	private static final Pattern MONTH_REL_LAST_PATTERN =
+			Pattern.compile("(지지난|지난|저번)\\s*달\\s*(?:말일|마지막\\s*날)");
+	// "지난주 화요일", "이번주 월요일", "다음 주 금요일", "지지난주 수요일"
+	private static final Pattern WEEKDAY_PATTERN =
+			Pattern.compile("(지지난|지난|저번|이번|다다음|다음|담)\\s*주?\\s*([월화수목금토일])요일");
 
 	private static final Pattern INSTALLMENT_PATTERN_A = Pattern.compile("(\\d+)\\s*개월\\s*할부");
 	private static final Pattern INSTALLMENT_PATTERN_B = Pattern.compile("할부\\s*(\\d+)\\s*개월");
@@ -50,6 +68,11 @@ public class RegexExpenseParser {
 			return (int) Math.round(manValue * 10000) + cheonPart;
 		}
 
+		Matcher cheonBaek = CHEON_BAEK_PATTERN.matcher(text);
+		if (cheonBaek.find()) {
+			return Integer.parseInt(cheonBaek.group(1)) * 1000 + Integer.parseInt(cheonBaek.group(2)) * 100;
+		}
+
 		Matcher cheon = CHEON_PATTERN.matcher(text);
 		if (cheon.find()) {
 			return Integer.parseInt(cheon.group(1)) * 1000;
@@ -69,7 +92,65 @@ public class RegexExpenseParser {
 			return Integer.parseInt(bare.group().replace(",", ""));
 		}
 
+		// 한글 수사: "...원"이 붙은 경우 우선(안전), 그다음 만/천을 포함한 2자 이상 run.
+		Matcher koWon = KO_AMOUNT_WON.matcher(text);
+		if (koWon.find() && containsKoNumChar(koWon.group(1))) {
+			Long v = parseKoreanNumber(koWon.group(1));
+			if (v != null && v > 0) return v.intValue();
+		}
+		Matcher koBare = KO_AMOUNT_BARE.matcher(text);
+		if (koBare.find() && koBare.group(1).length() >= 2) {
+			Long v = parseKoreanNumber(koBare.group(1));
+			if (v != null && v > 0) return v.intValue();
+		}
+
 		return null;
+	}
+
+	private static boolean containsKoNumChar(String s) {
+		for (int i = 0; i < s.length(); i++) {
+			if (KO_NUM_CHARS.indexOf(s.charAt(i)) >= 0) return true;
+		}
+		return false;
+	}
+
+	private static final String KO_DIGITS = "영일이삼사오육칠팔구"; // 인덱스 = 값. '공'/'륙'은 별도 처리.
+
+	// "만오천" -> 15000, "삼천오백" -> 3500, "이만삼천" -> 23000, "8천5백" -> 8500. 못 읽으면 null.
+	private static Long parseKoreanNumber(String s) {
+		long total = 0, section = 0, cur = 0;
+		boolean seen = false;
+		for (int i = 0; i < s.length(); i++) {
+			char ch = s.charAt(i);
+			if (ch >= '0' && ch <= '9') {
+				cur = cur * 10 + (ch - '0');
+				seen = true;
+			} else if (ch == '공') {
+				cur = 0;
+				seen = true;
+			} else if (ch == '륙') {
+				cur = 6;
+				seen = true;
+			} else if (KO_DIGITS.indexOf(ch) >= 0) {
+				cur = KO_DIGITS.indexOf(ch);
+				seen = true;
+			} else if (ch == '십' || ch == '백' || ch == '천') {
+				long unit = ch == '십' ? 10 : ch == '백' ? 100 : 1000;
+				section += (cur == 0 ? 1 : cur) * unit;
+				cur = 0;
+				seen = true;
+			} else if (ch == '만' || ch == '억') {
+				long unit = ch == '만' ? 10000L : 100000000L;
+				section += cur;
+				total += (section == 0 ? 1 : section) * unit;
+				section = 0;
+				cur = 0;
+				seen = true;
+			} else {
+				break;
+			}
+		}
+		return seen ? (total + section + cur) : null;
 	}
 
 	// 텍스트에 외화 단위가 숫자에 붙어 있으면 통화 코드(USD/JPY/EUR/GBP/CNY/TWD)를, 없으면 null(=원화).
@@ -163,21 +244,50 @@ public class RegexExpenseParser {
 	}
 
 	// 텍스트에서 상대/절대 날짜 표현을 오늘(today) 기준으로 해석. 못 찾으면 오늘.
-	// 미래 날짜로 풀리면(예: 오타·모호한 표현) 오늘로 clamp — 앱 전체가 미래 지출 등록을 막는 정책과 동일하게 맞춘다.
+	// 사용자가 달력상 특정일(N월 N일, 지난달 N일, 이번달 N일...)을 콕 집으면 미래여도 그대로 신뢰하고,
+	// 애매한 상대표현이 미래로 풀리는 경우만 오늘로 clamp — 앱 전체가 미래 지출 등록을 막는 정책과 맞춘다.
 	public static LocalDate parseDate(String text, LocalDate today) {
 		LocalDate resolved = resolve(text, today);
-		return resolved.isAfter(today) ? today : resolved;
+		if (!isExplicitCalendarDate(text) && resolved.isAfter(today)) {
+			return today;
+		}
+		return resolved;
+	}
+
+	private static boolean isExplicitCalendarDate(String text) {
+		if (text == null) return false;
+		return ISO_DATE_PATTERN.matcher(text).find()
+				|| MONTH_DAY_PATTERN.matcher(text).find()
+				|| MONTH_REL_DAY_PATTERN.matcher(text).find()
+				|| MONTH_REL_LAST_PATTERN.matcher(text).find()
+				|| WEEKDAY_PATTERN.matcher(text).find();
+	}
+
+	private static int monthDelta(String word) {
+		switch (word) {
+			case "다다음": return 2;
+			case "다음": case "담": return 1;
+			case "이번": return 0;
+			case "지지난": return -2;
+			default: return -1; // 지난 / 저번
+		}
 	}
 
 	private static LocalDate resolve(String text, LocalDate today) {
 		if (text == null || text.isBlank()) return today;
 		if (text.contains("오늘")) return today;
 		if (text.contains("어제")) return today.minusDays(1);
+		if (text.contains("그끄저께") || text.contains("그끄제")) return today.minusDays(3);
 		if (text.contains("그저께") || text.contains("그제")) return today.minusDays(2);
 
 		Matcher dAgo = D_AGO_PATTERN.matcher(text);
 		if (dAgo.find()) {
 			return today.minusDays(Long.parseLong(dAgo.group(1)));
+		}
+
+		Matcher wAgo = W_AGO_PATTERN.matcher(text);
+		if (wAgo.find()) {
+			return today.minusWeeks(Long.parseLong(wAgo.group(1)));
 		}
 
 		Matcher iso = ISO_DATE_PATTERN.matcher(text);
@@ -188,6 +298,29 @@ public class RegexExpenseParser {
 			} catch (Exception ignored) {
 				// fall through
 			}
+		}
+
+		Matcher relLast = MONTH_REL_LAST_PATTERN.matcher(text);
+		if (relLast.find()) {
+			return today.withDayOfMonth(1).minusDays(1); // 지난달 말일
+		}
+
+		Matcher relDay = MONTH_REL_DAY_PATTERN.matcher(text);
+		if (relDay.find()) {
+			try {
+				LocalDate base = today.withDayOfMonth(1).plusMonths(monthDelta(relDay.group(1)));
+				return base.withDayOfMonth(Integer.parseInt(relDay.group(2)));
+			} catch (Exception ignored) {
+				// fall through
+			}
+		}
+
+		Matcher wd = WEEKDAY_PATTERN.matcher(text);
+		if (wd.find()) {
+			int delta = monthDelta(wd.group(1));
+			int target = "월화수목금토일".indexOf(wd.group(2)) + 1; // 1=월 .. 7=일
+			LocalDate mondayThis = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+			return mondayThis.plusWeeks(delta).plusDays(target - 1L);
 		}
 
 		Matcher md = MONTH_DAY_PATTERN.matcher(text);

@@ -162,6 +162,20 @@
 		    <version>1.78.1</version>
 		</dependency>
 
+		<!-- 자연어 파싱 자체 모델(KLUE-RoBERTa 2-head) 섀도우 추론용.
+		     nlparse.localmodel.enabled=true 일 때만 로드된다. 모델 파일(model.int8.onnx / tokenizer.json /
+		     labels.json)은 jar 에 넣지 않고 ${nlparse.localmodel.dir} 로 지정한 경로에서 읽는다. -->
+		<dependency>
+		    <groupId>com.microsoft.onnxruntime</groupId>
+		    <artifactId>onnxruntime</artifactId>
+		    <version>1.20.0</version>
+		</dependency>
+		<dependency>
+		    <groupId>ai.djl.huggingface</groupId>
+		    <artifactId>tokenizers</artifactId>
+		    <version>0.31.1</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
