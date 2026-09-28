@@ -25,7 +25,7 @@ function TodayLogReminderCard({ transactions = [] }) {
 
   return (
     <div className="today-log-card today-log-pending">
-      <span>오늘 아직 지출 기록이 없어요. 잊기 전에 남겨볼까요?</span>
+      <span>오늘 아직 지출 기록이 없어요.<br />잊기 전에 남겨볼까요?</span>
       <button className="today-log-btn" onClick={() => navigate('/mypage/expenseForm')}>
         지금 기록하기
       </button>
