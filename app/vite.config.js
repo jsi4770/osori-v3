@@ -74,7 +74,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/fincoach": {
-        target: "http://localhost:8080",
+        target: process.env.DEV_API_PROXY || "http://localhost:8080",
         changeOrigin: true,
       },
     },
