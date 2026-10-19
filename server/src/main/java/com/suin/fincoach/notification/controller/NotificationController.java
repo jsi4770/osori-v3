@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.suin.fincoach.notification.model.dao.NotificationDao;
+import com.suin.fincoach.notification.model.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +27,7 @@ public class NotificationController {
 
 	private final NotificationDao dao;
 	private final SqlSessionTemplate sqlSession;
+	private final NotificationService notifications;
 
 	/** 최근 알림 목록 + 안 읽은 개수. */
 	@GetMapping
@@ -46,6 +48,13 @@ public class NotificationController {
 	public ResponseEntity<?> read(@PathVariable int notiId, @RequestParam int userId) {
 		dao.markRead(sqlSession, userId, notiId);
 		return ResponseEntity.ok(Map.of("unreadCount", dao.countUnread(sqlSession, userId)));
+	}
+
+	/** "리캡 지금 받기" — 본인의 지난주 리캡을 지금 알림함에 만들고 푸시도 보낸다. */
+	@PostMapping("/recap-now")
+	public ResponseEntity<?> recapNow(@RequestParam int userId) {
+		boolean created = notifications.sendRecapNow(userId);
+		return ResponseEntity.ok(Map.of("created", created, "unreadCount", dao.countUnread(sqlSession, userId)));
 	}
 
 	@PostMapping("/read-all")

@@ -44,7 +44,7 @@
 	</delete>
 
 	<!-- 지난주 = 이번 주 월요일 기준 직전 월~일. 분석 제외 거래는 뺀다. -->
-	<select id="findWeeklyRecapRows"
+	<select id="findWeeklyRecapRows" parameterType="map"
 	        resultType="com.suin.fincoach.notification.model.dao.NotificationDao$WeeklyRecapRow">
 		WITH w AS (
 			SELECT (date_trunc('week', CURRENT_DATE) - INTERVAL '7 days')::date AS last_start,
@@ -85,6 +85,7 @@
 		LEFT JOIN cat c ON c.USER_ID = s.USER_ID
 		CROSS JOIN w
 		WHERE s.tx_count &gt; 0
+		<if test="userId != null">AND s.USER_ID = #{userId}</if>
 	</select>
 
 </mapper>

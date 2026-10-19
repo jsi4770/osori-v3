@@ -21,6 +21,11 @@ export const notificationApi = {
         await api.post("/notification/read-all", null, { params: { userId } });
     },
 
+    recapNow: async (userId) => {
+        const response = await api.post("/notification/recap-now", null, { params: { userId } });
+        return response.data; // { created, unreadCount }
+    },
+
     remove: async (userId, notiId) => {
         const response = await api.delete(`/notification/${notiId}`, { params: { userId } });
         return response.data.unreadCount;

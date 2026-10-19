@@ -5,6 +5,8 @@
   box-sizing: border-box;
 }
 
+.ntf-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
+
 .ntf-readall {
   background: none;
   border: 1px solid var(--border);

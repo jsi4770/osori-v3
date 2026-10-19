@@ -35,6 +35,7 @@ export default function NotificationPage() {
 
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [recapBusy, setRecapBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -72,6 +73,20 @@ export default function NotificationPage() {
     notificationApi.remove(userId, n.notiId).then(setUnreadCount).catch(load);
   };
 
+  // 정기 발송(월요일 아침)을 기다리지 않고 지난주 리캡을 지금 받아본다 — 푸시도 함께 전송된다.
+  const recapNow = async () => {
+    if (recapBusy) return;
+    setRecapBusy(true);
+    try {
+      await notificationApi.recapNow(userId);
+      await load();
+    } catch {
+      setStatus("error");
+    } finally {
+      setRecapBusy(false);
+    }
+  };
+
   const hasUnread = items.some((n) => !n.read);
 
   return (
@@ -80,9 +95,14 @@ export default function NotificationPage() {
         title="알림"
         subtitle="주간 리캡, 예산·고정지출 알림이 여기에 모여요."
         actions={
-          <button type="button" className="ntf-readall" onClick={readAll} disabled={!hasUnread}>
-            모두 읽음
-          </button>
+          <div className="ntf-actions">
+            <button type="button" className="ntf-readall" onClick={recapNow} disabled={recapBusy}>
+              {recapBusy ? "만드는 중…" : "리캡 지금 받기"}
+            </button>
+            <button type="button" className="ntf-readall" onClick={readAll} disabled={!hasUnread}>
+              모두 읽음
+            </button>
+          </div>
         }
       />
 

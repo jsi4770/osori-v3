@@ -101,7 +101,7 @@ public class PushSchedulerConfig {
 		int sent = 0;
 		for (WeeklyRecapRow row : rows) {
 			if (notifications.notify(row.getUserId(), NotificationService.WEEKLY_RECAP,
-					"지난주 소비 리캡", recapBody(row), "/mypage/coaching/report",
+					"지난주 소비 리캡", NotificationService.recapBody(row), "/mypage/coaching/report",
 					"WEEKLY_RECAP:" + row.getWeekStart())) {
 				sent++;
 			}
@@ -109,24 +109,6 @@ public class PushSchedulerConfig {
 		if (sent > 0) {
 			log.info("[notification] 주간 리캡 발송 {}명", sent);
 		}
-	}
-
-	static String recapBody(WeeklyRecapRow row) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("지난주 총 %s원을 썼어요.", format(row.getLastWeek())));
-		if (row.getPrevWeek() > 0) {
-			long diff = row.getLastWeek() - row.getPrevWeek();
-			long pct = Math.round(Math.abs(diff) * 100.0 / row.getPrevWeek());
-			if (pct == 0) {
-				sb.append(" 그 전주와 비슷해요.");
-			} else {
-				sb.append(String.format(" 그 전주보다 %d%% %s.", pct, diff > 0 ? "늘었어요" : "줄었어요"));
-			}
-		}
-		if (row.getTopCategory() != null) {
-			sb.append(String.format(" 가장 많이 쓴 곳은 %s(%s원)이에요.", row.getTopCategory(), format(row.getTopCategoryAmount())));
-		}
-		return sb.toString();
 	}
 
 	private static String format(long amount) {

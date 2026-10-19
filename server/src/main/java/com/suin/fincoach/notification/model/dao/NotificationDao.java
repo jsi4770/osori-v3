@@ -48,7 +48,14 @@ public class NotificationDao {
 
 	/** 지난주(월~일) 지출 요약 대상 — 지난주 또는 그 전주에 지출 기록이 있는 활성 사용자. */
 	public List<WeeklyRecapRow> findWeeklyRecapRows(SqlSessionTemplate sqlSession) {
-		return sqlSession.selectList(NS + "findWeeklyRecapRows");
+		return findWeeklyRecapRows(sqlSession, null);
+	}
+
+	/** userId가 null이면 전체, 아니면 해당 사용자 한 명만. */
+	public List<WeeklyRecapRow> findWeeklyRecapRows(SqlSessionTemplate sqlSession, Integer userId) {
+		Map<String, Object> p = new java.util.HashMap<>();
+		p.put("userId", userId);
+		return sqlSession.selectList(NS + "findWeeklyRecapRows", p);
 	}
 
 	@lombok.Data
