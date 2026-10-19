@@ -135,7 +135,7 @@ body {
 .modal-content {
   background: var(--surface);
   width: 95%;
-  max-width: 650px;
+  max-width: clamp(650px, 50vw, 900px);
   border-radius: var(--radius-lg);
   padding: 38px;
   box-shadow: var(--shadow-3);

@@ -2,7 +2,7 @@
   margin: 10px auto;
   align-self: center; /* flex 부모 안에서 확실히 가로 중앙 정렬 */
   width: 100%;
-  max-width: 520px;
+  max-width: clamp(520px, 50vw, 960px);
   display: flex;
   flex-direction: column;
   justify-content: center;

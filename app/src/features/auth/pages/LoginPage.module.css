@@ -4,7 +4,7 @@
      부모보다 넓어지고 오른쪽으로 넘쳐 우측 치우침이 생김 */
   box-sizing: border-box;
   background: var(--surface);
-  max-width: 520px;
+  max-width: clamp(520px, 40vw, 800px);
   margin: 0 auto;
   padding: 28px 18px 22px;
 }

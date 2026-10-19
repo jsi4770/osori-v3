@@ -87,8 +87,8 @@
   --text-3xl: 1.875rem;
 
   /* ===== 컨테이너 폭 — 화면별로 제각각이던 max-width 통일 ===== */
-  --container-narrow: 480px;
-  --container-wide: 720px;
+  --container-narrow: clamp(480px, 48vw, 960px);
+  --container-wide: clamp(720px, 62vw, 1200px);
 
   font-family: 'Pretendard', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

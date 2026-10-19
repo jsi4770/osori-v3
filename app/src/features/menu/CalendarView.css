@@ -128,7 +128,7 @@
 }
 
 .detail-card {
-  flex: 0 0 320px;
+  flex: 0 0 clamp(320px, 26vw, 560px);
   min-width: 0;
   background: var(--surface);
   border-radius: var(--radius-lg);
