@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="notificationMapper">
+
+	<!-- (USER_ID, DEDUPE_KEY) 충돌이면 0행 → 이미 보낸 알림 -->
+	<insert id="insert" parameterType="map">
+		INSERT INTO NOTIFICATION (NOTI_ID, USER_ID, TYPE, TITLE, BODY, URL, DEDUPE_KEY)
+		VALUES (nextval('SEQ_NOTIFICATION'), #{userId}, #{type}, #{title}, #{body}, #{url}, #{dedupeKey})
+		ON CONFLICT (USER_ID, DEDUPE_KEY) DO NOTHING
+	</insert>
+
+	<select id="findByUser" parameterType="map" resultType="com.suin.fincoach.notification.model.vo.Notification">
+		SELECT NOTI_ID AS notiId,
+		       USER_ID AS userId,
+		       TYPE AS type,
+		       TITLE AS title,
+		       BODY AS body,
+		       URL AS url,
+		       (IS_READ = 'Y') AS read,
+		       CREATED_AT AS createdAt
+		FROM NOTIFICATION
+		WHERE USER_ID = #{userId}
+		ORDER BY NOTI_ID DESC
+		LIMIT #{limit}
+	</select>
+
+	<select id="countUnread" parameterType="int" resultType="int">
+		SELECT COUNT(*) FROM NOTIFICATION WHERE USER_ID = #{userId} AND IS_READ = 'N'
+	</select>
+
+	<update id="markRead" parameterType="map">
+		UPDATE NOTIFICATION SET IS_READ = 'Y' WHERE USER_ID = #{userId} AND NOTI_ID = #{notiId}
+	</update>
+
+	<update id="markAllRead" parameterType="int">
+		UPDATE NOTIFICATION SET IS_READ = 'Y' WHERE USER_ID = #{userId} AND IS_READ = 'N'
+	</update>
+
+	<delete id="delete" parameterType="map">
+		DELETE FROM NOTIFICATION WHERE USER_ID = #{userId} AND NOTI_ID = #{notiId}
+	</delete>
+
+	<!-- 지난주 = 이번 주 월요일 기준 직전 월~일. 분석 제외 거래는 뺀다. -->
+	<select id="findWeeklyRecapRows"
+	        resultType="com.suin.fincoach.notification.model.dao.NotificationDao$WeeklyRecapRow">
+		WITH w AS (
+			SELECT (date_trunc('week', CURRENT_DATE) - INTERVAL '7 days')::date AS last_start,
+			       (date_trunc('week', CURRENT_DATE) - INTERVAL '14 days')::date AS prev_start,
+			       date_trunc('week', CURRENT_DATE)::date AS this_start
+		),
+		t AS (
+			SELECT m.USER_ID, m.CATEGORY, m.ORIGINAL_AMOUNT AS amt,
+			       (m.TRANS_DATE &gt;= w.last_start) AS is_last
+			FROM MYTRANS m, w
+			WHERE m.TYPE = 'OUT'
+			  AND COALESCE(m.EXCLUDE_ANALYSIS, 'N') = 'N'
+			  AND m.TRANS_DATE &gt;= w.prev_start
+			  AND m.TRANS_DATE &lt; w.this_start
+		),
+		sums AS (
+			SELECT USER_ID,
+			       COALESCE(SUM(amt) FILTER (WHERE is_last), 0) AS last_week,
+			       COALESCE(SUM(amt) FILTER (WHERE NOT is_last), 0) AS prev_week,
+			       COUNT(*) FILTER (WHERE is_last) AS tx_count
+			FROM t GROUP BY USER_ID
+		),
+		cat AS (
+			SELECT DISTINCT ON (USER_ID) USER_ID, CATEGORY, SUM(amt) AS cat_amt
+			FROM t WHERE is_last
+			GROUP BY USER_ID, CATEGORY
+			ORDER BY USER_ID, SUM(amt) DESC
+		)
+		SELECT s.USER_ID AS userId,
+		       s.last_week AS lastWeek,
+		       s.prev_week AS prevWeek,
+		       s.tx_count AS txCount,
+		       c.CATEGORY AS topCategory,
+		       COALESCE(c.cat_amt, 0) AS topCategoryAmount,
+		       to_char(w.last_start, 'YYYY-MM-DD') AS weekStart
+		FROM sums s
+		JOIN USERS u ON u.USER_ID = s.USER_ID AND u.STATUS = 'Y'
+		LEFT JOIN cat c ON c.USER_ID = s.USER_ID
+		CROSS JOIN w
+		WHERE s.tx_count &gt; 0
+	</select>
+
+</mapper>

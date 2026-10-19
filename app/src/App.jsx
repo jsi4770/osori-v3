@@ -16,6 +16,7 @@ import FixedTransPage from "./features/auth/pages/FixedTransPage";
 import KakaoCallback from "./features/auth/pages/KakaoCallback";
 import CoachChatPage from "./features/coaching/CoachChatPage";
 import GrowthReportPage from "./features/coaching/GrowthReportPage";
+import NotificationPage from "./features/notification/NotificationPage";
 import OnboardingPage from "./features/onboarding/OnboardingPage";
 import { useAuth } from "./context/AuthContext";
 
@@ -86,6 +87,7 @@ function App() {
           <Route path="fixedTrans" element={<FixedTransPage />} />
           <Route path="coaching/chat/:threadId" element={<CoachChatPage />} />
           <Route path="coaching/report" element={<GrowthReportPage />} />
+          <Route path="notifications" element={<NotificationPage />} />
         </Route>
         <Route path="*" element={<RootRedirect />} />
       </Routes>

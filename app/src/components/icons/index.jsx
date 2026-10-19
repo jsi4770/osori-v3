@@ -113,3 +113,10 @@ export const IconArrowUp = ({ size = 20, color = "currentColor", strokeWidth = 2
     <path d="M3.5 12.5 12 4l8.5 8.5" />
   </svg>
 );
+
+export const IconBell = ({ size = 20, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...props}>
+    <path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15L6 16.5Z" />
+    <path d="M10 21a2.2 2.2 0 0 0 4 0" />
+  </svg>
+);

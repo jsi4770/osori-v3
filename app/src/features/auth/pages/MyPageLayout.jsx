@@ -3,11 +3,13 @@ import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import "./MyPage.css";
 import { useAuth } from "../../../context/AuthContext";
-import { IconHome, IconCalendar, IconTrendingUp, IconUser, IconReceipt } from "../../../components/icons";
+import { NotificationProvider, useNotifications } from "../../../context/NotificationContext";
+import { IconHome, IconCalendar, IconTrendingUp, IconUser, IconReceipt, IconBell } from "../../../components/icons";
 
-const MyPageLayout = ({refreshGroupList}) => {
+const MyPageLayoutInner = () => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { unreadCount } = useNotifications();
 
   const handleLogout = () => {
     logout();
@@ -20,6 +22,15 @@ const MyPageLayout = ({refreshGroupList}) => {
     <div className="mypage-container">
       <div className="mobile-topbar">
         <div className="mobile-topbar-logo" onClick={() => navigate("/mypage/assets")}>OSORI</div>
+
+        <button
+          className="mobile-noti-btn"
+          onClick={() => navigate("/mypage/notifications")}
+          aria-label={unreadCount > 0 ? `알림 ${unreadCount}개 안 읽음` : "알림"}
+        >
+          <IconBell size={22} />
+          {unreadCount > 0 && <span className="noti-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+        </button>
 
         <button
           className="mobile-profile-chip"
@@ -57,6 +68,12 @@ const MyPageLayout = ({refreshGroupList}) => {
               className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
             >
               <IconReceipt size={19} /> <span>고정지출</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/mypage/notifications" className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}>
+              <IconBell size={19} /> <span>알림</span>
+              {unreadCount > 0 && <span className="noti-badge noti-badge--menu">{unreadCount > 99 ? "99+" : unreadCount}</span>}
             </NavLink>
           </li>
           <li>
@@ -101,5 +118,11 @@ const MyPageLayout = ({refreshGroupList}) => {
     </div>
   );
 };
+
+const MyPageLayout = (props) => (
+  <NotificationProvider>
+    <MyPageLayoutInner {...props} />
+  </NotificationProvider>
+);
 
 export default MyPageLayout;

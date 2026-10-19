@@ -8,6 +8,9 @@ import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.suin.fincoach.notification.model.dao.NotificationDao;
+import com.suin.fincoach.notification.model.dao.NotificationDao.WeeklyRecapRow;
+import com.suin.fincoach.notification.model.service.NotificationService;
 import com.suin.fincoach.push.model.dao.PushSubscriptionDao;
 import com.suin.fincoach.push.model.dao.PushSubscriptionDao.BudgetStatus;
 import com.suin.fincoach.push.model.dao.PushSubscriptionDao.UpcomingFixedTrans;
@@ -31,6 +34,8 @@ public class PushSchedulerConfig {
 	private final PushNotificationService push;
 	private final PushSubscriptionDao pushDao;
 	private final SqlSessionTemplate sqlSession;
+	private final NotificationService notifications;
+	private final NotificationDao notificationDao;
 
 	/** 매일 21:00 — 오늘의 소비 리포트 리마인더. */
 	@Scheduled(cron = "0 0 21 * * *", zone = "Asia/Seoul")
@@ -60,11 +65,11 @@ public class PushSchedulerConfig {
 			// 이번 달 첫 초과일 때만 1행이 실제로 들어간다 → 그때만 발송
 			if (pushDao.markBudgetAlertSent(sqlSession, row.getUserId(), yearMonth) == 1) {
 				long over = row.getSpent() - row.getBudget();
-				push.sendToUser(row.getUserId(), new PushPayload(
+				notifications.notify(row.getUserId(), NotificationService.BUDGET_OVER,
 						"예산 초과 알림",
 						String.format("이번 달 지출이 예산을 %s원 초과했어요.", format(over)),
 						"/mypage/assets",
-						"budget-overspend"));
+						"BUDGET_OVER:" + yearMonth);
 				sent++;
 			}
 		}
@@ -78,15 +83,50 @@ public class PushSchedulerConfig {
 	public void fixedTransDueTomorrow() {
 		List<UpcomingFixedTrans> rows = pushDao.findFixedTransDueTomorrow(sqlSession);
 		for (UpcomingFixedTrans row : rows) {
-			push.sendToUser(row.getUserId(), new PushPayload(
+			notifications.notify(row.getUserId(), NotificationService.FIXED_DUE,
 					"고정지출 결제 예정",
 					String.format("내일 '%s' %s원이 결제될 예정이에요.", row.getName(), format(row.getAmount())),
 					"/mypage/fixedTrans",
-					"fixed-due"));
+					"FIXED_DUE:" + LocalDate.now().plusDays(1) + ":" + row.getName());
 		}
 		if (!rows.isEmpty()) {
 			log.info("[webpush] 고정지출 예정 알림 발송 {}건", rows.size());
 		}
+	}
+
+	/** 매주 월요일 09:00 — 지난주(월~일) 소비 요약. 알림함에는 모두에게, 푸시는 구독자에게만 간다. */
+	@Scheduled(cron = "0 0 9 * * MON", zone = "Asia/Seoul")
+	public void weeklyRecap() {
+		List<WeeklyRecapRow> rows = notificationDao.findWeeklyRecapRows(sqlSession);
+		int sent = 0;
+		for (WeeklyRecapRow row : rows) {
+			if (notifications.notify(row.getUserId(), NotificationService.WEEKLY_RECAP,
+					"지난주 소비 리캡", recapBody(row), "/mypage/coaching/report",
+					"WEEKLY_RECAP:" + row.getWeekStart())) {
+				sent++;
+			}
+		}
+		if (sent > 0) {
+			log.info("[notification] 주간 리캡 발송 {}명", sent);
+		}
+	}
+
+	static String recapBody(WeeklyRecapRow row) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("지난주 총 %s원을 썼어요.", format(row.getLastWeek())));
+		if (row.getPrevWeek() > 0) {
+			long diff = row.getLastWeek() - row.getPrevWeek();
+			long pct = Math.round(Math.abs(diff) * 100.0 / row.getPrevWeek());
+			if (pct == 0) {
+				sb.append(" 그 전주와 비슷해요.");
+			} else {
+				sb.append(String.format(" 그 전주보다 %d%% %s.", pct, diff > 0 ? "늘었어요" : "줄었어요"));
+			}
+		}
+		if (row.getTopCategory() != null) {
+			sb.append(String.format(" 가장 많이 쓴 곳은 %s(%s원)이에요.", row.getTopCategory(), format(row.getTopCategoryAmount())));
+		}
+		return sb.toString();
 	}
 
 	private static String format(long amount) {

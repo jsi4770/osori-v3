@@ -767,3 +767,49 @@
     box-shadow: none;
   }
 }
+
+/* ===== 알림 뱃지 / 모바일 상단바 알림 버튼 ===== */
+.noti-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: var(--danger-color);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.noti-badge--menu {
+  margin-left: auto;
+}
+
+.mobile-noti-btn {
+  position: relative;
+  margin-left: auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-main);
+  border-radius: 50%;
+}
+
+.mobile-noti-btn .noti-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+}
+
+@media (max-width: 900px) {
+  .mobile-noti-btn {
+    display: inline-flex;
+  }
+}
