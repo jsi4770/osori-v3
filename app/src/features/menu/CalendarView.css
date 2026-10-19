@@ -577,6 +577,22 @@
   color: var(--holiday-blue) !important;
 }
 
+/* 이전/다음 달 날짜: 밝은 회색. 공휴일·일요일/토요일은 회색 대신 해당 색을 옅게 */
+.react-calendar__month-view__days__day--neighboringMonth:not(.react-calendar__tile--active) abbr {
+  color: var(--text-weak) !important;
+  opacity: 0.55;
+}
+
+.react-calendar__month-view__days__day--neighboringMonth.holiday-red:not(.react-calendar__tile--active) abbr {
+  color: var(--expense-color) !important;
+  opacity: 0.4;
+}
+
+.react-calendar__month-view__days__day--neighboringMonth.holiday-blue:not(.react-calendar__tile--active) abbr {
+  color: var(--holiday-blue) !important;
+  opacity: 0.4;
+}
+
 /* 3. 선택된 날짜: 글자색 흰색 유지 */
 .react-calendar__tile--active.holiday-red abbr,
 .react-calendar__tile--active.holiday-blue abbr {
